@@ -1,0 +1,95 @@
+---
+title: "Banco de Dados: Aula Prática 2"
+author: "Prof. Dr. Sergio T. Carvalho"
+date: "24/05/2024"
+output: pdf_document
+---
+
+# Parte prática
+
+
+Considere o modelo conceitual de Exemplo apresentado na aula teórica.
+
+O objetivo aqui é criar o modelo executando o script de criação do banco de dados. Na sequência, faremos diversos testes usando SQL no ambiente RStudio.
+
+
+```{r}
+# Create an ephemeral in-memory RSQLite database
+con <- dbConnect(RSQLite::SQLite(), ":memory:") 
+```
+
+Executando o script:
+
+```{sql}
+--| connection = con
+
+CREATE TABLE FUNC (
+       Cd_Mat               NUMBER(5) NOT NULL,
+       Nm_Func              VARCHAR2(12) ,
+       Nm_Sobrenome         VARCHAR2(12),
+       Cd_Depto             CHAR(3) REFERENCES DEPTO(CD_DEPTO),
+       Nr_Ramal             NUMBER(4),
+       Dt_Adm               DATE,
+       Nr_Cargo             NUMBER(3),
+       Nr_Git               NUMBER(2),
+       In_Sexo              VARCHAR2(1) CHECK (IN_SEXO IN ('F', 'M')),
+       Dt_Nasc              DATE,
+       Vl_Sal               NUMBER(9,2),
+       Nm_Foto              VARCHAR2(100),
+       PRIMARY KEY (Cd_Mat));
+````
+
+```{sql}
+--| connection = con
+ 
+ CREATE TABLE Proj (
+       Cd_Proj      CHAR(6) NOT NULL,
+       Nm_Proj      VARCHAR2(30) NOT NULL,
+       Cd_Depto     CHAR(3) NOT NULL REFERENCES DEPTO (CD_DEPTO),
+       Cd_Resp      NUMBER(5) NOT NULL REFERENCES FUNC (CD_MAT),
+       Qt_Eqp       NUMBER(2),
+       Dt_Fim       DATE,
+       Dt_Ini       DATE,
+       PRIMARY KEY (CD_PROJ));
+```
+
+```{sql}
+--| connection = con
+
+CREATE TABLE Ativ (
+Cd_Ativ              NUMBER(3) PRIMARY KEY,
+Nm_Sigla             VARCHAR2(12),
+Tx_Descricao         VARCHAR2(30));
+````
+
+```{sql}
+--| connection = con
+
+CREATE TABLE PrjAtv (
+       Cd_Proj             CHAR(6) NOT NULL REFERENCES PROJ,
+       Cd_Ativ             NUMBER(3) NOT NULL REFERENCES ATIV,
+       Dt_Fim              DATE NOT NULL,
+       Dt_Ini                DATE NOT NULL,
+       PRIMARY KEY (CD_PROJ, CD_ATIV));
+````
+
+```{sql}
+--| connection = con
+
+CREATE TABLE HST_PROMO (
+       Dt_Promocao              DATE NOT NULL,
+       Cd_Mat		        NUMBER(5) NOT NULL,
+       VL_SAL	                NUMBER(9,2),
+       CD_DEPTO	                CHAR(3),
+       NR_CARGO	                NUMBER(3),
+       TX_MOTIVO	        VARCHAR2(200),
+       PRIMARY KEY (Dt_Promocao, Cd_Mat));
+````
+
+```{sql}
+--| connection = con
+
+DROP TABLE FUNC;
+````
+
+

@@ -1,0 +1,98 @@
+# Atividade Avaliativa
+# Questão 1: a forma que eu optei em resolver foi usar vetores de cada ano e usar o rbind para transforma-los em matriz.
+# Matriz Goiás
+g_2017 <- c(23,15,27,35,55,269,238,29,17,18,5)
+g_2018 <- c(8,6,24,30,46,221,165,19,12,12,3)
+g_2019 <- c(4,11,14,30,29,148,106,13,7,17,3)
+g_2020 <- c(18,6,16,11,16,115,71,13,6,5,3)
+g_2021 <- c(22,15,32,38,51,367,372,50,34,37,14)
+g_2022 <- c(60,107,180,258,289,1929,2476,389,332,342,101)
+g_2023 <- c(35,80,130,187,269,1445,1369,222,170,181,61)
+g_2024 <- c(43,125,240,328,491,2477,2799,508,429,535,244)
+
+dados_goias <- rbind(g_2017, g_2018, g_2019, g_2020, g_2021, g_2022, g_2023, g_2024)
+faixa <- c("< 1", "1-4", "5-9", "10-14", "15-19", "20-39", "40-59", "60-64", "65-69", "70-79", "80 +")
+anos <- c("2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024")
+colnames(dados_goias) <- faixa
+rownames(dados_goias) <- anos
+# Matriz Maranhão
+m_2017 <- c(159,179,402,581,775,3063,1863,305,250,305,117)
+m_2018 <- c(44,30,37,40,84,365,251,32,25,51,15)
+m_2019 <- c(33,66,79,112,88,360,186,24,16,21,4)
+m_2020 <- c(26,18,28,27,23,75,40,6,2,5,2)
+m_2021 <- c(28,33,29,20,19,69,55,8,9,5,3)
+m_2022 <- c(154,144,245,275,235,1183,915,129,96,105,32)
+m_2023 <- c(78,120,267,302,260,1453,1266,207,159,203,81)
+m_2024 <- c(28,75,89,85,101,480,335,51,39,43,15)
+
+dados_maranhao <- rbind(m_2017, m_2018, m_2019, m_2020, m_2021, m_2022, m_2023, m_2024)
+colnames(dados_maranhao) <- faixa
+rownames(dados_maranhao) <- anos
+# Matriz Brasil
+b_2017 <- c(3346,4976,9930,13999,18984,91150,69186,11401,9123,10826,4704)
+b_2018 <- c(1715,2514,4376,6060,8301,41701,36162,6306,4705,5176,1722)
+b_2019 <- c(2226,3528,6741,9016,11645,62033,54629,10042,7678,7975,2895)
+b_2020 <- c(1820,1874,3757,4724,5577,36982,33253,4878,3573,3972,1606)
+b_2021 <- c(1789,3329,5554,6430,7189,45081,40969,6212,4791,5482,2060)
+b_2022 <- c(3723,6918,12126,15108,16824,96867,83007,12675,9670,12032,4873)
+b_2023 <- c(2352,5684,10986,14309,16772,85526,73568,12268,9817,11524,4894)
+b_2024 <- c(1850,5064,9715,12573,15512,72253,66695,12289,9881,11574,4680)
+
+dados_brasil <- rbind(b_2017, b_2018, b_2019, b_2020, b_2021, b_2022, b_2023, b_2024)
+colnames(dados_brasil) <- faixa
+rownames(dados_brasil) <- anos
+#Questão 2 para calcular a média por ano, podemos somar as linhas e dividir pelo tamanho das colunas, usando o round para arreddondar
+# ou usar a função rowMeans, para calcular a média por faixa, podemos usar a função colMeans.
+media_ano_go <- round(rowMeans(dados_goias), 1)
+media_faixa_go <-round(colMeans(dados_goias), 1)
+
+media_ano_ma <- round(rowSums(dados_maranhao) / ncol(dados_maranhao), 1)
+media_faixa_ma <-round(colMeans(dados_maranhao, 1))
+
+media_ano_br <- round(rowSums(dados_brasil) / ncol(dados_brasil), 1)
+media_faixa_br <-round(colMeans(dados_brasil, 1))
+
+#Questão 3: uma forma de resolver é usar o cbind para inserir a coluna de médias calculada no item anterior
+#na matriz para cada caso
+sum_ano_go <- rowSums(dados_goias)
+dados_goias <- cbind(dados_goias,sum_ano_go)
+
+dados_maranhao <- cbind(dados_maranhao, media_ano_ma)
+
+dados_brasil <- cbind(dados_brasil, media_ano_br)
+
+#Questão 4: para isso, basta usar o rbind e unir os vetores de média por faixa calculados no item 2
+media_regiao <- rbind(media_faixa_br, media_faixa_go, media_faixa_ma)
+
+# Questão 5: Na construção das matrizes e nos itens anteriores isso já foi feito usando os vetore por ano de 
+#região para a coluna de ano e usando o vetor faixa para a coluna de faixa etária, sendo aplicado com
+# o colnames
+
+# Questão 6: item 1. Qual é o percentual do Brasil para cada faixa etária em Goiás e no Maranhão? 
+#Segundo o tutor, deve-se considerar somando todos os anos juntos.
+sum_faixa_go <- colSums(dados_goias)
+sum_faixa_ma <- colSums(dados_maranhao)
+sum_faixa_br <- colSums(dados_brasil)
+perc_goias <- round((sum_faixa_go/sum_faixa_br)*100, 2)
+perc_maranhao <- round((sum_faixa_ma/sum_faixa_br)*100, 2)
+sum_total_faixa <- rbind(sum_faixa_br, sum_faixa_go, perc_goias, sum_faixa_ma, perc_maranhao)
+
+#item 2: Qual é a faixa etária com o maior número de casos em Goiás, Maranhão e no Brasil?
+#Passo 1: Somar as colunas para ter o total por faixa etária independente do ano, para isso usamos a função colSums, feito no item anterior
+
+#passo2: usar a função which max para identificar a faixa etária com maior número de casos
+max_f_go <- faixa[which.max(sum_faixa_go)]
+maxmax_f_ma <- faixa[which.max(sum_faixa_ma)]
+max_f_br <- faixa[which.max(sum_faixa_br)]
+
+# Questão 6. Item 3: Qual é o ano com o maior número casos em Goiás, Maranhão e no Brasil?
+#Passo 1: somar as linhas para obter o total por ano independente da faixa etária, usando a função rowSums
+
+sum_ano_go <- rowSums(dados_goias)
+sum_ano_ma <- rowSums(dados_maranhao)
+sum_ano_br <- rowSums(dados_brasil)
+#passo 2: usar a função which max para identificar o ano com maior número de casos para cada região
+max_a_go <- anos[which.max(sum_ano_go)]
+max_a_ma <- anos[which.max(sum_ano_ma)]
+max_a_br <- anos[which.max(sum_ano_br)]
+

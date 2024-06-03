@@ -1,0 +1,99 @@
+---
+title: "Banco de Dados: Aula Prática 1"
+author: "Prof. Dr. Sergio T. Carvalho"
+date: "24/05/2024"
+output: pdf_document
+---
+
+# Parte prática
+
+
+Considere o modelo conceitual de Exemplo apresentado na aula teórica.
+
+O objetivo aqui é criar algumas tabelas no SQLite, SGBD relacional.
+
+Instalação do pacote DBI:
+
+```{r}
+#install.packages('DBI')
+#library('DBI')
+```
+
+Conexão com o SQLite: 
+
+```{r}
+# Create an ephemeral in-memory RSQLite database
+con <- dbConnect(RSQLite::SQLite(), ":memory:") 
+```
+
+Criando a tabela Depto sem as chaves:
+
+```{sql}
+--| connection = con
+
+CREATE TABLE Depto (
+       Cd_Depto           CHAR(3) NOT NULL,
+       Nm_Depto           VARCHAR2(40));
+````
+Execute o chunk anterior novamente, para tentar criar a tabela.
+
+Para apagar a tabela:
+
+```{sql}
+--| connection = con
+DROP TABLE Depto;
+```
+
+Inserindo uma linha na tabela:
+
+```{sql}
+--| connection = con
+INSERT INTO Depto VALUES ('20', 'Depto Contabil');
+````
+
+Realizando uma recuperação:
+
+```{sql}
+--| connection = con
+SELECT * FROM Depto;
+```
+
+Criando a tabela Depto com chave primária:
+
+```{sql}
+--| connection = con
+
+CREATE TABLE Depto (
+       Cd_Depto           CHAR(3) NOT NULL,
+       Nm_Depto           VARCHAR2(40),
+       PRIMARY KEY (Cd_Depto));
+````
+
+Apague a tabela antes de executar o trecho anterior.
+
+```{sql}
+--| connection = con
+INSERT INTO Depto VALUES ('10', 'Depto Financeiro');
+````
+
+
+```{sql}
+--| connection = con
+SELECT * FROM Depto;
+```
+
+```{r}
+DBI::dbDisconnect(con)
+```
+
+
+Observe que não é possível criar outra linha repetindo a chave primária, neste caso o dado '10'.
+
+Na sequência, para cada tabela, crie uma versão sem as respectivas chaves primárias e, em seguida, com as respectivas chaves primárias, sempre realizando os testes inserindo e consultando os dados.
+
+
+
+
+
+
+

@@ -1,0 +1,61 @@
+---
+title: "aluno_disciplina_nota"
+output: html_document
+date: "2024-05-30"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Qual o caminho?
+```{r}
+getwd()
+```
+
+## Conexão com o BD
+
+```{r}
+setwd("/Users/sergio/Documents/especializacao-fen/bd")
+conexao <- RSQLite::dbConnect(RSQLite::SQLite(), dbname = "alun_disciplina_nota.db"
+)
+```
+
+```{r}
+dbListTables(conexao)
+```
+
+## Importando tabela Alunos para o R
+
+```{r}
+alunos_tbl <- dplyr::tbl(conexao,"Alunos")
+alunos_df <- dplyr::collect(alunos_tbl)
+```
+
+## Mostrando df
+
+```{r}
+alunos_df
+```
+
+## Importando o resultado de um Select para o R
+
+```{r}
+instrucao <- dplyr::sql("SELECT * FROM Alunos WHERE idade = 20")
+alunos_select <- dplyr::tbl(conexao, instrucao)
+alunos_select_df <- dplyr::collect(alunos_select)
+```
+
+## Mostrando df
+
+```{r}
+alunos_select_df
+```
+
+## Enviando uma query SQL para o BD
+
+```{sql}
+--| connection = conexao
+SELECT * FROM Alunos;
+```
+

@@ -1,0 +1,60 @@
+---
+title: "animal_fazenda"
+output: html_document
+date: "2024-05-30"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Qual o caminho?
+```{r}
+getwd()
+```
+
+## Conexão com o BD
+
+```{r}
+#setwd("/Users/anamaria/especializacao/modulo_2")
+conexao <- RSQLite::dbConnect(RSQLite::SQLite(), dbname = "animal_fazenda.db")
+```
+
+```{r}
+DBI::dbListTables(conexao)
+```
+
+## Importando tabela Animal para o R
+
+```{r}
+animal_tbl <- dplyr::tbl(conexao,"Animal")
+animal_df <- dplyr::collect(animal_tbl)
+```
+
+## Mostrando df
+
+```{r}
+animal_df
+```
+
+## Importando o resultado de um Select para o R
+
+```{r}
+instrucao <- dplyr::sql("SELECT * FROM Animal WHERE peso_nasc = 3")
+animal_select <- dplyr::tbl(conexao, instrucao)
+animal_select_df <- dplyr::collect(animal_select)
+```
+
+## Mostrando df
+
+```{r}
+animal_select_df
+```
+
+## Enviando uma query SQL para o BD
+
+```{sql}
+--| connection = conexao
+SELECT * FROM Animal;
+```
+
