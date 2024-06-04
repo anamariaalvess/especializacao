@@ -1,0 +1,356 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Curso de Especialização em Data Science e Estatística Aplicada Módulo I - Introdução à programação Atividade Avaliativa},
+  pdfauthor={Prof.~Dr.~Fabrizzio Soares},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Curso de Especialização em Data Science e Estatística Aplicada
+Módulo I - Introdução à programação\\
+Atividade Avaliativa}
+\author{Prof.~Dr.~Fabrizzio Soares}
+\date{2024-05-10}
+
+\begin{document}
+\maketitle
+
+\section{Instruções}\label{instruuxe7uxf5es}
+
+\begin{itemize}
+\item
+  O desenvolvimento desta atividade deve ser realizada de forma
+  individual.
+\item
+  Deve-se completar o arquivo Rmd enviado na atividade.
+\item
+  É necessário devolver o arquivo em Rmd e em pdf.
+\item
+  Valor da atividade: 10 pontos.
+\end{itemize}
+
+\textbf{Data disponível: 09/05/2024}
+
+\textbf{Data máxima para entrega: 31/05/2024}
+
+\section{Atividade}\label{atividade}
+
+Nesta atividade avaliativa, desenvolveremos um pequeno projeto para
+analisar dados do \textbf{Sinan} (\emph{Sistema de Informação de Agravos
+de Notificação}) do Ministério da Saúde.
+
+\subsection{Sobre o Sinan}\label{sobre-o-sinan}
+
+O Sistema de Informação de Agravos de Notificação (Sinan) é alimentado,
+pela notificação e investigação de casos de doenças e agravos que
+constam da lista nacional de doenças de notificação compulsória
+(Portaria GM/MS no. 217, de 1 de março de 2023), mas é facultado a
+estados e municípios incluir outros problemas de saúde importantes em
+sua região. Sua utilização efetiva permite a realização do diagnóstico
+da ocorrência de um evento na população, podendo fornecer subsídios para
+explicações dos agravos de notificação compulsória, além de indicar
+riscos aos quais as pessoas estão sujeitas, contribuindo assim, para a
+identificação da realidade epidemiológica de determinada área
+geográfica. O seu uso sistemático, de forma descentralizada, contribui
+para a democratização da informação, permitindo que todos os
+profissionais de saúde tenham acesso à informação e as tornem
+disponíveis para a comunidade. É, portanto, um instrumento relevante
+para auxiliar o planejamento da saúde, definir prioridades de
+intervenção, além de permitir que seja avaliado o impacto das
+intervenções. Fonte: \href{http://portalsinan.saude.gov.br/}{Portal
+SINAN} - \url{http://portalsinan.saude.gov.br/}.
+
+\subsection{Sobre os dados}\label{sobre-os-dados}
+
+Para esta atividade, foram coletados dados de Febre de Chikungunya dos
+estados de Goiás, do Maranhão e do Brasil.
+
+Os dados podem ser baixados da página do
+\href{https://datasus.saude.gov.br/acesso-a-informacao/doencas-e-agravos-de-notificacao-de-2007-em-diante-sinan/}{SINAN}
+\url{https://datasus.saude.gov.br/acesso-a-informacao/doencas-e-agravos-de-notificacao-de-2007-em-diante-sinan/},
+onde é possível escolher a Doenças e Agravos de Notificação, e a área
+geográfica de abrangência.
+
+\includegraphics{img/sinan1.png} \includegraphics{img/sinan2.png}
+
+Uma vez escolhido a doença e a área geográfica de abrangência, na
+próxima página são escolhidos os dados de interesse.
+
+\includegraphics{img/sinan3.png}
+
+Foram escolhidos para análise, como linha, o ano de notificação, e como
+coluna, a faixa etária. Foram escolhidos todos os períodos disponíveis
+de 2017 a 2024.
+
+Os dados podem ser visualizados em formato com tabela com bordas e podem
+ser baixados em formato CSV.
+
+\includegraphics{img/sinan6.png}
+
+Você pode escolher também em colunas separadas por ponto e vírgula (;).
+
+\includegraphics{img/sinan4.png}
+
+Com o objetivo de simplificar essa tarefa, os dados foram coletados e
+foram organizados em forma de vetores.
+
+\includegraphics{img/sinan5.png}
+
+Foram descartadas os nomes de colunas, porém o nome das linhas (anos)
+foram mantidos para auxiliar na reorganização dos dados durante a
+extração. A linha e a coluna de totais também foi descartada.
+
+As colunas dos dados são apresentados na Tabela 1.
+
+\newpage
+
+\begin{longtable}[]{@{}ll@{}}
+\caption{Faixas de idades.}\tabularnewline
+\toprule\noalign{}
+Coluna & Descrição \\
+\midrule\noalign{}
+\endfirsthead
+\toprule\noalign{}
+Coluna & Descrição \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+1 & ``Ano notificação'' \\
+2 & ``Em branco/IGN'' \\
+3 & ``\textless1 Ano'' \\
+4 & ``1-4'' \\
+5 & ``5-9'' \\
+6 & ``10-14'' \\
+7 & ``15-19'' \\
+8 & ``20-39'' \\
+9 & ``40-59'' \\
+10 & ``60-64'' \\
+11 & ``65-69'' \\
+12 & ``70-79'' \\
+13 & ``80 e +'' \\
+\end{longtable}
+
+A seguir, estão os dados de Goiás,
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{dados\_goias }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{2017}\NormalTok{,}\ConstantTok{NA}\NormalTok{,}\DecValTok{23}\NormalTok{,}\DecValTok{15}\NormalTok{,}\DecValTok{27}\NormalTok{,}\DecValTok{35}\NormalTok{,}\DecValTok{55}\NormalTok{,}
+                \DecValTok{269}\NormalTok{,}\DecValTok{238}\NormalTok{,}\DecValTok{29}\NormalTok{,}\DecValTok{17}\NormalTok{,}\DecValTok{18}\NormalTok{,}\DecValTok{5}\NormalTok{,}
+               \DecValTok{2018}\NormalTok{,}\ConstantTok{NA}\NormalTok{,}\DecValTok{8}\NormalTok{,}\DecValTok{6}\NormalTok{,}\DecValTok{24}\NormalTok{,}\DecValTok{30}\NormalTok{,}\DecValTok{46}\NormalTok{,}
+                \DecValTok{221}\NormalTok{,}\DecValTok{165}\NormalTok{,}\DecValTok{19}\NormalTok{,}\DecValTok{12}\NormalTok{,}\DecValTok{12}\NormalTok{,}\DecValTok{3}\NormalTok{,}
+               \DecValTok{2019}\NormalTok{,}\ConstantTok{NA}\NormalTok{,}\DecValTok{4}\NormalTok{,}\DecValTok{11}\NormalTok{,}\DecValTok{14}\NormalTok{,}\DecValTok{30}\NormalTok{,}\DecValTok{29}\NormalTok{,}
+                \DecValTok{148}\NormalTok{,}\DecValTok{106}\NormalTok{,}\DecValTok{13}\NormalTok{,}\DecValTok{7}\NormalTok{,}\DecValTok{17}\NormalTok{,}\DecValTok{3}\NormalTok{,}
+               \DecValTok{2020}\NormalTok{,}\ConstantTok{NA}\NormalTok{,}\DecValTok{18}\NormalTok{,}\DecValTok{6}\NormalTok{,}\DecValTok{16}\NormalTok{,}\DecValTok{11}\NormalTok{,}\DecValTok{16}\NormalTok{,}
+                \DecValTok{115}\NormalTok{,}\DecValTok{71}\NormalTok{,}\DecValTok{13}\NormalTok{,}\DecValTok{6}\NormalTok{,}\DecValTok{5}\NormalTok{,}\DecValTok{3}\NormalTok{,}
+               \DecValTok{2021}\NormalTok{,}\DecValTok{3}\NormalTok{,}\DecValTok{22}\NormalTok{,}\DecValTok{15}\NormalTok{,}\DecValTok{32}\NormalTok{,}\DecValTok{38}\NormalTok{,}\DecValTok{51}\NormalTok{,}
+                \DecValTok{367}\NormalTok{,}\DecValTok{372}\NormalTok{,}\DecValTok{50}\NormalTok{,}\DecValTok{34}\NormalTok{,}\DecValTok{37}\NormalTok{,}\DecValTok{14}\NormalTok{,}
+               \DecValTok{2022}\NormalTok{,}\ConstantTok{NA}\NormalTok{,}\DecValTok{60}\NormalTok{,}\DecValTok{107}\NormalTok{,}\DecValTok{180}\NormalTok{,}\DecValTok{258}\NormalTok{,}\DecValTok{289}\NormalTok{,}
+                \DecValTok{1929}\NormalTok{,}\DecValTok{2476}\NormalTok{,}\DecValTok{389}\NormalTok{,}\DecValTok{332}\NormalTok{,}\DecValTok{342}\NormalTok{,}\DecValTok{101}\NormalTok{,}
+               \DecValTok{2023}\NormalTok{,}\DecValTok{1}\NormalTok{,}\DecValTok{35}\NormalTok{,}\DecValTok{80}\NormalTok{,}\DecValTok{130}\NormalTok{,}\DecValTok{187}\NormalTok{,}\DecValTok{269}\NormalTok{,}
+                \DecValTok{1445}\NormalTok{,}\DecValTok{1369}\NormalTok{,}\DecValTok{222}\NormalTok{,}\DecValTok{170}\NormalTok{,}\DecValTok{181}\NormalTok{,}\DecValTok{61}\NormalTok{,}
+               \DecValTok{2024}\NormalTok{,}\DecValTok{1}\NormalTok{,}\DecValTok{43}\NormalTok{,}\DecValTok{125}\NormalTok{,}\DecValTok{240}\NormalTok{,}\DecValTok{328}\NormalTok{,}\DecValTok{491}\NormalTok{,}
+                \DecValTok{2477}\NormalTok{,}\DecValTok{2799}\NormalTok{,}\DecValTok{508}\NormalTok{,}\DecValTok{429}\NormalTok{,}\DecValTok{535}\NormalTok{,}\DecValTok{244}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+do Maranhão
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{dados\_maranhao }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{2017}\NormalTok{,}\ConstantTok{NA}\NormalTok{,}\DecValTok{159}\NormalTok{,}\DecValTok{179}\NormalTok{,}\DecValTok{402}\NormalTok{,}\DecValTok{581}\NormalTok{,}\DecValTok{775}\NormalTok{,}
+                      \DecValTok{3063}\NormalTok{,}\DecValTok{1863}\NormalTok{,}\DecValTok{305}\NormalTok{,}\DecValTok{250}\NormalTok{,}\DecValTok{305}\NormalTok{,}\DecValTok{117}\NormalTok{,}
+                    \DecValTok{2018}\NormalTok{,}\ConstantTok{NA}\NormalTok{,}\DecValTok{44}\NormalTok{,}\DecValTok{30}\NormalTok{,}\DecValTok{37}\NormalTok{,}\DecValTok{40}\NormalTok{,}\DecValTok{84}\NormalTok{,}
+                      \DecValTok{365}\NormalTok{,}\DecValTok{251}\NormalTok{,}\DecValTok{32}\NormalTok{,}\DecValTok{25}\NormalTok{,}\DecValTok{51}\NormalTok{,}\DecValTok{15}\NormalTok{,}
+                    \DecValTok{2019}\NormalTok{,}\ConstantTok{NA}\NormalTok{,}\DecValTok{33}\NormalTok{,}\DecValTok{66}\NormalTok{,}\DecValTok{79}\NormalTok{,}\DecValTok{112}\NormalTok{,}\DecValTok{88}\NormalTok{,}
+                      \DecValTok{360}\NormalTok{,}\DecValTok{186}\NormalTok{,}\DecValTok{24}\NormalTok{,}\DecValTok{16}\NormalTok{,}\DecValTok{21}\NormalTok{,}\DecValTok{4}\NormalTok{,}
+                    \DecValTok{2020}\NormalTok{,}\ConstantTok{NA}\NormalTok{,}\DecValTok{26}\NormalTok{,}\DecValTok{18}\NormalTok{,}\DecValTok{28}\NormalTok{,}\DecValTok{27}\NormalTok{,}\DecValTok{23}\NormalTok{,}
+                      \DecValTok{75}\NormalTok{,}\DecValTok{40}\NormalTok{,}\DecValTok{6}\NormalTok{,}\DecValTok{2}\NormalTok{,}\DecValTok{5}\NormalTok{,}\DecValTok{2}\NormalTok{,}
+                    \DecValTok{2021}\NormalTok{,}\DecValTok{1}\NormalTok{,}\DecValTok{28}\NormalTok{,}\DecValTok{33}\NormalTok{,}\DecValTok{29}\NormalTok{,}\DecValTok{20}\NormalTok{,}\DecValTok{19}\NormalTok{,}
+                      \DecValTok{69}\NormalTok{,}\DecValTok{55}\NormalTok{,}\DecValTok{8}\NormalTok{,}\DecValTok{9}\NormalTok{,}\DecValTok{5}\NormalTok{,}\DecValTok{3}\NormalTok{,}
+                    \DecValTok{2022}\NormalTok{,}\DecValTok{5}\NormalTok{,}\DecValTok{154}\NormalTok{,}\DecValTok{144}\NormalTok{,}\DecValTok{245}\NormalTok{,}\DecValTok{275}\NormalTok{,}\DecValTok{235}\NormalTok{,}
+                      \DecValTok{1183}\NormalTok{,}\DecValTok{915}\NormalTok{,}\DecValTok{129}\NormalTok{,}\DecValTok{96}\NormalTok{,}\DecValTok{105}\NormalTok{,}\DecValTok{32}\NormalTok{,}
+                    \DecValTok{2023}\NormalTok{,}\DecValTok{1}\NormalTok{,}\DecValTok{78}\NormalTok{,}\DecValTok{120}\NormalTok{,}\DecValTok{267}\NormalTok{,}\DecValTok{302}\NormalTok{,}\DecValTok{260}\NormalTok{,}
+                      \DecValTok{1453}\NormalTok{,}\DecValTok{1266}\NormalTok{,}\DecValTok{207}\NormalTok{,}\DecValTok{159}\NormalTok{,}\DecValTok{203}\NormalTok{,}\DecValTok{81}\NormalTok{,}
+                    \DecValTok{2024}\NormalTok{,}\ConstantTok{NA}\NormalTok{,}\DecValTok{28}\NormalTok{,}\DecValTok{75}\NormalTok{,}\DecValTok{89}\NormalTok{,}\DecValTok{85}\NormalTok{,}\DecValTok{101}\NormalTok{,}
+                      \DecValTok{480}\NormalTok{,}\DecValTok{335}\NormalTok{,}\DecValTok{51}\NormalTok{,}\DecValTok{39}\NormalTok{,}\DecValTok{43}\NormalTok{,}\DecValTok{15}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+e do Brasil
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{dados\_brasil }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{2017}\NormalTok{,}\DecValTok{66}\NormalTok{,}\DecValTok{3346}\NormalTok{,}\DecValTok{4976}\NormalTok{,}\DecValTok{9930}\NormalTok{,}\DecValTok{13999}\NormalTok{,}\DecValTok{18984}\NormalTok{,}
+                    \DecValTok{91150}\NormalTok{,}\DecValTok{69186}\NormalTok{,}\DecValTok{11401}\NormalTok{,}\DecValTok{9123}\NormalTok{,}\DecValTok{10826}\NormalTok{,}\DecValTok{4704}\NormalTok{,}
+                  \DecValTok{2018}\NormalTok{,}\DecValTok{27}\NormalTok{,}\DecValTok{1715}\NormalTok{,}\DecValTok{2514}\NormalTok{,}\DecValTok{4376}\NormalTok{,}\DecValTok{6060}\NormalTok{,}\DecValTok{8301}\NormalTok{,}
+                    \DecValTok{41701}\NormalTok{,}\DecValTok{36162}\NormalTok{,}\DecValTok{6306}\NormalTok{,}\DecValTok{4705}\NormalTok{,}\DecValTok{5176}\NormalTok{,}\DecValTok{1722}\NormalTok{,}
+                  \DecValTok{2019}\NormalTok{,}\DecValTok{91}\NormalTok{,}\DecValTok{2226}\NormalTok{,}\DecValTok{3528}\NormalTok{,}\DecValTok{6741}\NormalTok{,}\DecValTok{9016}\NormalTok{,}\DecValTok{11645}\NormalTok{,}
+                    \DecValTok{62033}\NormalTok{,}\DecValTok{54629}\NormalTok{,}\DecValTok{10042}\NormalTok{,}\DecValTok{7678}\NormalTok{,}\DecValTok{7975}\NormalTok{,}\DecValTok{2895}\NormalTok{,}
+                  \DecValTok{2020}\NormalTok{,}\DecValTok{55}\NormalTok{,}\DecValTok{1820}\NormalTok{,}\DecValTok{1874}\NormalTok{,}\DecValTok{3757}\NormalTok{,}\DecValTok{4724}\NormalTok{,}\DecValTok{5577}\NormalTok{,}
+                    \DecValTok{36982}\NormalTok{,}\DecValTok{33253}\NormalTok{,}\DecValTok{4878}\NormalTok{,}\DecValTok{3573}\NormalTok{,}\DecValTok{3972}\NormalTok{,}\DecValTok{1606}\NormalTok{,}
+                  \DecValTok{2021}\NormalTok{,}\DecValTok{89}\NormalTok{,}\DecValTok{1789}\NormalTok{,}\DecValTok{3329}\NormalTok{,}\DecValTok{5554}\NormalTok{,}\DecValTok{6430}\NormalTok{,}\DecValTok{7189}\NormalTok{,}
+                    \DecValTok{45081}\NormalTok{,}\DecValTok{40969}\NormalTok{,}\DecValTok{6212}\NormalTok{,}\DecValTok{4791}\NormalTok{,}\DecValTok{5482}\NormalTok{,}\DecValTok{2060}\NormalTok{,}
+                  \DecValTok{2022}\NormalTok{,}\DecValTok{99}\NormalTok{,}\DecValTok{3723}\NormalTok{,}\DecValTok{6918}\NormalTok{,}\DecValTok{12126}\NormalTok{,}\DecValTok{15108}\NormalTok{,}\DecValTok{16824}\NormalTok{,}
+                    \DecValTok{96867}\NormalTok{,}\DecValTok{83007}\NormalTok{,}\DecValTok{12675}\NormalTok{,}\DecValTok{9670}\NormalTok{,}\DecValTok{12032}\NormalTok{,}\DecValTok{4873}\NormalTok{,}
+                  \DecValTok{2023}\NormalTok{,}\DecValTok{74}\NormalTok{,}\DecValTok{2352}\NormalTok{,}\DecValTok{5684}\NormalTok{,}\DecValTok{10986}\NormalTok{,}\DecValTok{14309}\NormalTok{,}\DecValTok{16772}\NormalTok{,}
+                    \DecValTok{85526}\NormalTok{,}\DecValTok{73568}\NormalTok{,}\DecValTok{12268}\NormalTok{,}\DecValTok{9817}\NormalTok{,}\DecValTok{11524}\NormalTok{,}\DecValTok{4894}\NormalTok{,}
+                  \DecValTok{2024}\NormalTok{,}\DecValTok{53}\NormalTok{,}\DecValTok{1850}\NormalTok{,}\DecValTok{5064}\NormalTok{,}\DecValTok{9715}\NormalTok{,}\DecValTok{12573}\NormalTok{,}\DecValTok{15512}\NormalTok{,}
+                    \DecValTok{72253}\NormalTok{,}\DecValTok{66695}\NormalTok{,}\DecValTok{12289}\NormalTok{,}\DecValTok{9881}\NormalTok{,}\DecValTok{11574}\NormalTok{,}\DecValTok{4680}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\subsection{Desenvolva e/ou responda os itens
+abaixo.}\label{desenvolva-eou-responda-os-itens-abaixo.}
+
+Item 1. Montar as 3 matrizes dos dados de Goiás, Maranhão e Brasil,
+respectivamente, em que, as colunas conterão os dados de faixa etária,
+descartando-se a coluna ``Ano notificacao'', e ``Em branco/IGN''.
+
+Item 2. Desenvolver comandos e gerar vetores de totais por ano, e por
+faixa etária para cada conjunto de dado. Assim, serão gerados 6 vetores
+(2 para cada área geográfica).
+
+Item 3. Desenvolver comandos para concatenar os vetores de totais por
+ano nas matrizes de dados, para que os dados passem a ter uma coluna de
+totais por ano (\emph{lembra da função cbind?}).
+
+Item 4. Desenvolver comandos para concatenar os vetores de totais por
+faixa etária para formar uma matriz em que as linhas são as áreas
+geográficas (\textbf{Goiás, Maranhão e Brasil}).
+
+Item 5. Desenvolver comandos e para dar nome às linhas e colunas das
+matrizes de dados (\emph{lembra das funções rownames e colnames?}), em
+que as linhas e colunas representarão o ano de notificação e faixa
+etária, respectivamente (\emph{Não se esqueça da coluna de totais!}).
+
+Item 6. Agora é hora de analisar. Utilizando as operações de
+vetores/matrizes (sum, colSums, rowSums, max, min, entre outros),
+desenvolva um script para responder às seguintes perguntas:
+
+\begin{itemize}
+\tightlist
+\item
+  Qual é o percentual do Brasil para cada faixa etária em Goiás e no
+  Maranhão?
+\item
+  Qual é a faixa etária com o maior número de casos em Goiás, Maranhão e
+  no Brasil?
+\item
+  Qual é o ano com o maior número casos em Goiás, Maranhão e no Brasil?
+\end{itemize}
+
+Estes resultados podem ser exibidos de forma individual ou organizados
+em forma de tabela.
+
+\end{document}
