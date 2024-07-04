@@ -35,11 +35,11 @@ output: pdf_document
 
 13. Quais dos 3 imdb (csv, sqlite, rds), você consegue importar para o R e trabalhar como data frames ou mesmo tibbles? Escreva os scripts necessários para realizar a importação de cada um deles. Mostre ainda instruções de manipulação dos data frames e tibbles resultantes da importação. ok
 
-14. Considere o data set Melanoma.xlsx disponível em https://drive.google.com/drive/folders/1CkVbB02B1Rltl2FiEtgzxRxHN4nnqLGE?usp=drive_link. a) Faça a importação do data set para o R; b) realize operações de manipulação do data frame e do tibble; e c) faça consultas usando SQL.
+14. Considere o data set Melanoma.xlsx disponível em https://drive.google.com/drive/folders/1CkVbB02B1Rltl2FiEtgzxRxHN4nnqLGE?usp=drive_link. a) Faça a importação do data set para o R; b) realize operações de manipulação do data frame e do tibble; e c) faça consultas usando SQL. ok
 
-15. Considere o data set imdb.csv disponível em https://drive.google.com/drive/folders/1CkVbB02B1Rltl2FiEtgzxRxHN4nnqLGE?usp=drive_link. a) Faça a importação do data set para o R; b) realize operações de manipulação do data frame e do tibble; e c) faça consultas usando SQL.
+15. Considere o data set imdb.csv disponível em https://drive.google.com/drive/folders/1CkVbB02B1Rltl2FiEtgzxRxHN4nnqLGE?usp=drive_link. a) Faça a importação do data set para o R; b) realize operações de manipulação do data frame e do tibble; e c) faça consultas usando SQL. ok
 
-16. Considere o data set cancer_cerebro.csv disponível em https://drive.google.com/drive/folders/1CkVbB02B1Rltl2FiEtgzxRxHN4nnqLGE?usp=drive_link. a) Faça a importação do data set para o R; b) realize operações de manipulação do data frame e do tibble; e c) faça consultas usando SQL.
+16. Considere o data set cancer_cerebro.csv disponível em https://drive.google.com/drive/folders/1CkVbB02B1Rltl2FiEtgzxRxHN4nnqLGE?usp=drive_link. a) Faça a importação do data set para o R; b) realize operações de manipulação do data frame e do tibble; e c) faça consultas usando SQL. ok
 
 
 ```{r setup, include=FALSE}

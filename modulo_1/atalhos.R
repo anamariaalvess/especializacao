@@ -42,3 +42,8 @@ repeat {
 while ( expressão ) {
   \\ operações
 }
+
+tinytex::uninstall_tinytex()
+
+tinytex::install_tinytex()
+
