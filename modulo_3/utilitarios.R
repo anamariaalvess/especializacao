@@ -54,3 +54,14 @@ attach(estudante)
 idade
 
 summary(estudante)
+
+nchar( ) # número de caracteres do texto
+toupper() # converte os caracteres para maiúsculo
+tolower() # converte o texto para minúsculos
+substr() # extrai partes específicas de um string.
+grep() # busca um padrão em um vetor de strings, retornando a posição do vetor que tenha string e o padrão.
+texto <- "Introdução à Linguagem R"
+substr(texto, start=8, stop =9) <- "ca" # sobreposição de texto, não pode atribuir o texto maior do que a string é.
+strsplit() # divide uma string em substrings com base em um separador especificado
+
+# Na atividade avaliativa, os itens 6,7 e 8 apenas para Goiânia, outras questões para o dataframe inteiro.

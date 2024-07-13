@@ -49,3 +49,5 @@ Administrativo <- departamentos[ departamentos$Departamento == "Administrativo",
 
 media_comercial <- sum(Comercial$Salario, na.rm = TRUE)/sum(!is.na(Comercial$Salario))
 media_adm <- sum(Administrativo$Salario, na.rm = TRUE)/sum(!is.na(Administrativo$Salario))
+
+#############################################################################################

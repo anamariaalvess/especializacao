@@ -1,0 +1,245 @@
+---
+title: "Atividade Avaliativa"
+subtitle: "Introdução à Linguagem R"
+author: "Ana Maria Alves da Silva"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+```
+
+```{r libraries, echo=FALSE, warning = FALSE, message=FALSE}
+
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+
+```
+
+## Importante
+
+Entregue qualquer coisa que você consiga fazer. É normal que encontre dificuldades. Qualquer coisa que seja entregue será passível de análise e receber nota.
+
+## Análise de Dado do Portal COVID
+
+Nesta atividade estão sendo analisados os dados casos e óbitos de COVID em Goiânia no ano de 2021. Os dados foram obtidos do site do Ministério da Saúde.
+
+## Item 1. Importe os dados de COVID-19 do ano de 2021, obtidos no site do Ministério da Saúde, ou baixada da página do curso.
+
+**Solução:**
+
+Para importar os dados podemos utilizar, após a instalação, o pacote *readxl* e a função *read_excel* deste pacote desde que os dados a serem importados estejam em formato excel. Para utilizar esta função basta passarmos o caminho de onde está o arquivo excel que desejamos importar juntamente com o nome do arquivo. Além disso, como vamos utilizar esse arquivo no decorrer da atividade, iremos salva-lo em uma váriavel chamada df. Veja comandos abaixo.
+
+```{r , echo=TRUE}
+
+df <- read_excel("/Users/anamaria/especializacao/modulo_3/atividade/df.xlsx")
+
+```
+
+Observe que para melhor leitura do texto, renomeei o arquivo excel fornecido para df.
+
+# Considerando a base toda (Todo o território nacional)
+
+## Item 2. Realize a limpeza dos dados de todas as colunas (*NA's, Datas, etc*). Use as funções e as ferramentas trabalhadas em aula.
+
+**Solução:** Note que a limpeza dos dados é uma parte essencial para que análise de dados seja efetiva pois dados faltantes (Na's) e dados em formatos incorretos podem interferir ou impedir que os cálculos sejam realizados ou levar a informações inveridicas e imprecisas. Logo, antes que qualquer tipo de análise seja realizada é recomendado que seja realizado a limpeza dos dados para que as análise posteriores sejam assertivas e coerentes.
+
+- Verificando se df é um dataframe:
+```{r , echo=TRUE}
+is_data_frame <- is.data.frame(df)
+print(is_data_frame)
+```
+Observe que se df não fosse um dataframe poderiamos utilizar o comando a baixo para transformar df em um dataframe. Como, no nosso caso, df já é um dataframe o comando não está sendo executado.
+```{r , echo=TRUE, eval=FALSE}
+df <- as.data.frame(df)
+```
+
+- Renomear as colunas do dataframe para remover espaços e acentuação:
+```{r, echo=TRUE}
+names(df)
+names(df)[names(df) == "Município"] <- "Municipio"
+names(df)[names(df) == "Casos novos notificados na semana epidemiológica"] <- "Casos_novos_notificados_semana_epidemiologica"
+names(df)[names(df) == "Óbitos novos notificados na semana epidemiológica"] <- "Obitos_novos_notificados_semana_epidemiologica"
+names(df)[names(df) == "Casos Acumulados"] <- "Casos_Acumulados"
+names(df)[names(df) == "Óbitos Acumulados"] <- "Obitos_Acumulados"
+```
+- Verificar o tipo de dado de cada coluna:
+```{r, echo=TRUE}
+str(df)
+```
+Note que a colunas do tipo Ano_Semana faz referência a um período temporal mas seu tipo de dado está no formato string ou caracter. Como em demais questões da atividade será necessário realizar algumas operações envolvendo ANO irei criar uma nova coluna chamada ANO na qual eu irei extrair o ano correspondente da coluna Ano_Semana usando a função **substr**. Faremos o mesmo para determinar a semana epidemológica.
+
+```{r, echo=TRUE}
+df$Ano <- ifelse(nchar(df$Ano_Semana) == 7, 
+                 substr(df$Ano_Semana, 4, 7), 
+                 ifelse(nchar(df$Ano_Semana) == 6, substr(df$Ano_Semana, 3, 6), NA))
+
+df$Semana <- ifelse(nchar(df$Ano_Semana) == 7, 
+                 substr(df$Ano_Semana, 1, 2), 
+                 ifelse(nchar(df$Ano_Semana) == 6, substr(df$Ano_Semana, 1, 1), NA))
+```
+
+- Vamos agora, verificar se há valores ausentes. Inicialmente vamos verificar a quantidade de valores ausentes no dataframe através de:
+
+```{r, echo=TRUE}
+sum(is.na(df))
+```
+
+Como obtido pelo comando acima, sabemos que há mais de mil valores ausentes. Vamos agora, verificar os valores ausentes por colunas do dataframe.
+
+```{r, echo=TRUE}
+colSums(is.na(df)) 
+```
+
+Logo, a única coluna do dataframe que possui valores ausentes é a coluna **Município**. Agora, vamos identificar se há alguma caracteristica comum aos municípios que possuem valores ausentes para que possamos identificar a melhor maneira de lidar com eles, isso é, remover do dataframe ou substitui-los por alguma informação relevante. No caso de optarmos por substituição dos NA`s, é importante verificamos qual o tipo de dado da coluna município para que a substituição seja realizada de forma coerente.
+
+```{r, exho=TRUE}
+missing_values = subset(df, is.na(Municipio))
+head(missing_values, 20)
+```
+Note que em várias linhas correspondentes aos valores ausentes na coluna Município, as colunas casos acumulados, Casos novos notificados na semana epidemiológica, Óbitos Acumulados e Óbitos novos notificados na semana epidemiológica possuem valor 0, nesses casos, optarei por excluir essas linhas do dataframe. Já para a situação onde essas colunas não são nulas há algumas possibilidades a serem consideradas, uma delas seria substituir pelo valor que mais aparece (moda) ou substituir pelo valor que está no meio (mediana), no entanto como ainda não vimos esses métodos estatísticos ainda eu não irei aplica-los. Eu  optarei por criar uma nova categoria chamda "Não informado" para realizar a substituição desses dados ausentes.
+
+```{r, echo=TRUE}
+df$Municipio[is.na(df$Municipio) & df$Casos_Acumulados != 0] <- "Não informado"
+colSums(is.na(df)) 
+df <- na.omit(df) 
+colSums(is.na(df)) 
+```
+- Verficar se há linhas duplicadas no dataframe:
+
+```{r, echo=TRUE}
+duplicados <- duplicated(df) 
+ha_duplicados <- any(duplicados)
+print(ha_duplicados)
+```
+Note que não há colunas duplicadas, caso houvesse na a váriavel ha_duplicados retornaria "TRUE". Se houvesse dados duplicados poderiamos remove-los do dataframe usando:
+
+```{r , echo=TRUE, eval=FALSE}
+df <- df[!duplicated(df), ]
+```
+
+Dessa forma, realizamos a limpeza dos dados.
+
+## Item 3. Use a função "factor" para categorizar a coluna "Metro/Interior" no data frame.
+**Solução:**
+
+Note que a coluna "Metro/Interior" é uma categorização da região, sendo metro para região metropolitana da UF ou Interior para uma região no interior da UF, logo podemos usar a função factor para categorizar essa coluna.
+
+```{r , echo=TRUE}
+df$`Metro/Interior` <- factor(df$`Metro/Interior`, levels = c("Reg. Metropolitana", "Interior"),
+          labels = c("Reg. Metropolitana", "Interior"))
+is_factor <- is.factor(df$`Metro/Interior`)
+print(is_factor)
+```
+
+## Item 4. Realize um resumo dos dados utilizando a função summary.
+**Solução:**
+
+```{r , echo=TRUE}
+summary_df <- summary(df)
+print(summary_df)
+```
+
+Note que a função summary está nos trazendo que existem valores negativos na coluna Casos_novos_notificados_semana_epidemiologica, de fator, veja:
+
+```{r, echo=TRUE}
+casos_negativos <- df[df$Casos_novos_notificados_semana_epidemiologica < 0,]
+print(casos_negativos$Casos_novos_notificados_semana_epidemiologica)
+```
+
+Como não tem como ter tido casos negativos de Covid podemos considerar que foi um erro de digitação ou um erro do sistema e vamos substituir esses valores por 0.
+
+```{r, echo=TRUE}
+df$Casos_novos_notificados_semana_epidemiologica[df$Casos_novos_notificados_semana_epidemiologica < 0] <- 0
+```
+
+Validando novamente a summarização:
+
+```{r , echo=TRUE}
+summary_df_new <- summary(df)
+print(summary_df_new)
+```
+## Item 5. Filtre os dados para a cidade de Goiânia e mostre as 10 primeiras linhas do data frame.
+**Solução:**
+
+```{r , echo=TRUE}
+df_goiania <- df[df$Municipio == "Goiânia", ]
+print(head(df_goiania, 10))
+```
+
+# Considerando os dados Filtrados de Goiânia
+
+## Item 6. Calcule e exiba o número de casos e de óbitos acumulados de COVID-19 no ano de 2021.
+**Solução:**
+
+Note que no dataframe *df_goiania*, onde está filtrado apenas os dados de covid referente a Goiânia há apenas casos de covid referente ao Ano de 2021. Logo, para obter o números de casos de de óbitos acumlados no ano de 2021 basta usarmos o colSums() para somar os dados das respectivas colunas. Note ainda, que no exercício 2 desta atividade nós verificamos que essas colunas são to tipo numerica, logo não é necessário realizarmos nenhum tipo de alteração.
+
+```{r , echo=FALSE}
+
+total_casos_acumulados <- colSums(df_goiania["Casos_Acumulados"])
+total_obitos_acumulados <- colSums(df_goiania["Obitos_Acumulados"])
+mensagem1 <- paste("O total de casos acumulados de Covid19 em Goiânia no Ano de 2021 foi de ", total_casos_acumulados, "casos.")
+mensagem2 <- paste("Enquanto o total de óbitos acumulados foi", total_obitos_acumulados, "no Ano de 2021.")
+print(mensagem1)
+print(mensagem2)
+```
+
+## Item 7. Gere e exiba um gráfico de linha de casos acumulados de COVID-19 por semana em 2021.
+**Solução:**
+
+Para gerar e exibir o gráfico de linhas solicitados, iremos filtrar a Semana, através da coluna que criamos no exercício 2, e a coluna de casos acumulados. Depois iremos usar a função plot.
+
+```{r , echo=TRUE}
+
+x_1 <- df_goiania$Semana
+y_1 <- df_goiania$Casos_Acumulados
+
+plot(x_1, y_1, type = "l",
+     main = "Casos Acumulados por Semana",
+     xlab = "Semana",
+     ylab = "Casos Acumulados",
+     col = "blue",
+     lwd = 1)
+
+
+```
+
+## Item 8. Gere e exiba um gráfico de linha de óbitos acumulados de COVID-19 por semana em 2021.
+**Solução:**
+
+Para gerar e exibir o gráfico de linhas solicitados, iremos filtrar a Semana, através da coluna que criamos no exercício 2, e a coluna de obtos acumulados. Depois iremos usar a função plot.
+```{r , echo=TRUE}
+
+x_2 <- df_goiania$Semana
+y_2 <- df_goiania$Obitos_Acumulados
+
+plot(x_2, y_2, type = "l",
+     main = "Óbitos Acumulados por Semana",
+     xlab = "Semana",
+     ylab = "'Óbitos  Acumulados",
+     col = "red",
+     lwd = 1)
+
+```
+
+# Bônus
+
+## Item 9. Crie uma nova coluna denominada "Regiao", partir da coluna "UF". Agrupe as UF segundo suas regiões específicas: Norte, Nordeste, Centro-Oeste, Sul e Sudeste.
+**Solução:** 
+
+Irei realizar a criação dessa coluna usando um ifelse para identificar se a UF correspondente a Região está na coluna UF e categorizar a partir dessa filtragem.
+```{r , echo=TRUE}
+df$Regiao <- ifelse(df$UF %in% c("AC", "AP", "AM", "PA", "RO", "RR", "TO"), "Norte",
+                    ifelse(df$UF %in% c("AL", "BA", "CE", "MA", "PB", "PI", "PE", "RN", "SE"), "Nordeste",
+                           ifelse(df$UF %in% c("DF", "GO", "MT", "MS"), "Centro-Oeste",
+                                  ifelse(df$UF %in% c("PR", "RS", "SC"), "Sul",
+                                         ifelse(df$UF %in% c("ES", "MG", "RJ", "SP"), "Sudeste", NA)))))
+
+df_filtrado <- df[, c("UF", "Regiao")]
+head(df_filtrado, 10)
+```
