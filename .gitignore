@@ -1,6 +1,8 @@
 *.xlsx
-*.bd
+*.db
 *.csv
 *.xls
 *.sqlite
 *.txt
+*.RData
+*Rhistory
