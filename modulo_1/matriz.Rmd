@@ -1,0 +1,77 @@
+---
+title: "Analise de Notas"
+author: "Ana M. Alves"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document: default
+  html_document: default
+  
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, eval = TRUE)
+```
+
+###  Esse documento fornece uma análise de notas a partir de 5 notas de 3 alunos.
+```{r results='asis', echo=FALSE}
+aluno1<- c(runif(5, min = 0, max = 10))
+aluno2<- c(runif(5, min = 0, max = 10))
+aluno3<- c(runif(5, min = 0, max = 10))
+
+notas <- rbind(aluno1, aluno2, aluno3)
+nomes <- c("Pedro", "Maria", "José")
+avaliacoes <- c("A1","A2","A3","A4","A5")
+
+colnames(notas) <- avaliacoes
+rownames(notas) <- nomes
+```
+
+- As notas são:
+```{r matriz-notas, echo=FALSE, results='asis'}
+b_2017 <- c(3346,4976,9930,13999,18984,91150,69186,11401,9123,10826,4704)
+b_2018 <- c(1715,2514,4376,6060,8301,41701,36162,6306,4705,5176,1722)
+b_2019 <- c(2226,3528,6741,9016,11645,62033,54629,10042,7678,7975,2895)
+b_2020 <- c(1820,1874,3757,4724,5577,36982,33253,4878,3573,3972,1606)
+b_2021 <- c(1789,3329,5554,6430,7189,45081,40969,6212,4791,5482,2060)
+b_2022 <- c(3723,6918,12126,15108,16824,96867,83007,12675,9670,12032,4873)
+b_2023 <- c(2352,5684,10986,14309,16772,85526,73568,12268,9817,11524,4894)
+b_2024 <- c(1850,5064,9715,12573,15512,72253,66695,12289,9881,11574,4680)
+
+dados_brasil <- rbind(b_2017, b_2018, b_2019, b_2020, b_2021, b_2022, b_2023, b_2024)
+colnames(dados_brasil) <- faixa
+rownames(dados_brasil) <- anos
+
+
+library(knitr)
+kable(notas, caption = "Notas dos Alunos")
+```
+
+- A média dos alunos é dada por:
+
+```{r matriz-medias, echo=FALSE, results='asis'}
+library(knitr)
+media_alunos <- rowSums(notas) / ncol(notas)
+kable(media_alunos, caption = " ")
+```
+
+
+- A média de cada avaliação é dada por:
+
+```{r matriz-media-notas, echo=FALSE, results='asis'}
+library(knitr)
+media_avaliacoes <- round(colMeans(notas), 1)
+kable(media_avaliacoes, caption = "")
+
+```
+
+
+
+```{r results='asis', echo=FALSE}
+aluno_max<- nomes[which.max(rowSums(notas) / ncol(notas))]
+cat("O(a) aluno(a) com maior média é o aluno", aluno_max)
+```
+
+```{r results='asis', echo=FALSE}
+avaliacao_minima <- avaliacoes[which.min(round(colMeans(notas), 1))]
+cat("A avaliação com a menor média é a avaliação", avaliacao_minima)
+```

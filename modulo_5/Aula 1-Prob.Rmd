@@ -1,0 +1,530 @@
+---
+title: "renata"
+author: "Profª Drª Renata M. R. Vasconcelos"
+date: "16/08/2024"
+output:
+  pdf_document: default
+  html_document: default
+  word_document: default
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Parte prática - Análise estatística para Data Science
+
+Para essa atividade, vamos utilizar dados reais obtidos no site do
+Ministério da Saúde - Vacinômetro COVID-19:
+
+[Vacinometro COVID-19
+(saude.gov.br)](https://infoms.saude.gov.br/extensions/SEIDIGI_DEMAS_Vacina_C19/SEIDIGI_DEMAS_Vacina_C19.html)
+
+O conjunto de dados referente à vacinação da população indígena atendida
+pelo Subsistema de Atenção à Saúde Indígena do SUS- SASISUS reúne as
+populações indígenas em 34 regiões do Brasil. Esse conjunto apresenta os
+dados sobre a vacinação de covid-19, quanto as doses 1, 2 e de reforço.
+Também separa as populações vacinadas por faixa de idade.
+
+Nota:
+
+Os dados apresentados são preliminares e representam o consolidado total
+de doses aplicadas pelos Distritos Sanitários Especiais Indígenas
+(DSEI).
+
+Data da última atualização do Painel Vacinômetro-SUS: 14/06/2024.
+
+BRASIL. Ministério da Saúde. Secretaria Especial de Saúde Indígena
+
+Obs.: População indígena de 3 anos ou mais atendida pelo SASISUS,
+incluindo-se as especificidades da ADPF 709. O público alvo a ser
+vacinado pode ser alterado devido a atualizações a partir do censo
+vacinal realizado durante as ações de imunização.
+
+{r setup, include=FALSE} knitr::opts_chunk\$set(echo = TRUE)
+
+## Exibindo a matriz de dados
+
+O conjunto de dados reúne as populações indíginas em 34 regiões do país
+e traz os dados sobre a vacinação de covid-19, quanto as doses 1, 2,
+reforço. Também separa as populações vacinadas por faixa de idade.
+
+Total população indígena: 707.739
+
+Total de doses aplicadas: 1.490.036
+
+*Variáveis no banco de dados:*
+
+V1 : DSEI (Distritos Sanitários Especiais Indígenas);
+
+V2: População Indígena (nº de indígenas por distrito);
+
+V3: Dose 1 (nº de indígenas vacinados com a 1a dose);
+
+V4: % Dose 1 (percentual de indígenas vacinados com a 1a dose);
+
+V5: Dose 2 e Única (nº de indígenas vacinados com a 2a dose e dose
+única);
+
+V6: % Dose 2 e Única (percentual de indígenas vacinados com a 2a dose e
+dose única);
+
+V7: Dose 1 (3 a 4 anos): (nº de indígenas vacinados com a 1a dose com
+faixa etária entre 3 e 4 anos);
+
+V8: Dose 1 (5 a 17 anos): (nº de indígenas vacinados com a 1a dose com
+faixa etária entre 5 e 17 anos);
+
+V9: Dose 1 (\>18 anos): (nº de indígenas vacinados com a 1a dose com
+faixa etária maior que 18 anos);
+
+V10: Dose 2 (3 a 4 anos): (nº de indígenas vacinados com a 2a dose com
+faixa etária entre 3 e 4 anos);
+
+V8: Dose 2 (5 a 17 anos): (nº de indígenas vacinados com a 2a dose com
+faixa etária entre 5 e 17 anos);
+
+V9: Dose 2 (\>18 anos): (nº de indígenas vacinados com a 2a dose com
+faixa etária maior que 18 anos);
+
+V10: Reforço 1 (\> 18 anos): (nº de indígenas vacinados com a 1a dose de
+Reforço com faixa etária maior que 18 anos);
+
+Inicialmente vamos carregar os dados no R, utilizando os códigos a
+seguir.
+
+```{r}
+setwd <- "/Users/anamaria/especializacao/modulo_5/"
+
+dados_saude <- read_excel("/Users/anamaria/especializacao/modulo_5/dados_saude.xlsx")
+``` 
+
+
+```{r}
+x<-data.frame(dados_saude)
+print(x)
+str(x)
+#table(dados_saude$V1)
+```
+
+## Calculando o total de população indígena
+
+```{r}
+totalPI <- sum(x[, 2]) #somando os elementos da coluna 2 (#linhas=34 e #col=13)
+print(totalPI)
+```
+
+Logo, temos 707.739 indígenas distribuídos nos 34 distritos.
+
+## Calculando a média da população indígena
+
+```{r}
+mean <- mean(x[,2]) #média da pop ind 
+
+print(round(mean,1))
+```
+
+Tem-se, em média, aproximadamente 21 mil indígenas sendo atendidos pelo
+Subsistema de Atenção à Saúde Indígena do SASISUS.
+
+## Encontrando valores em uma célula: Ex. Total de indígenas no distrito do Alto do Rio Juruá
+
+```{r}
+valor <- x[3, 2] #obtendo a info da linha 3 coluna 2 
+##valor <- x$População.Indígena[3] #obtendo qtde de indíg. no dist. alto rio do juruá (linha 3)
+print(valor)
+```
+
+#################################################### 
+
+```{r}
+# Localizar a linha da cidade
+linha <- which(x[, 1] == "Pernambuco") 
+print(linha) # nº da linha referente a "Pernambuco" na coluna 1 (DSEI)
+
+# Acessar a célula específica
+valor <- x[linha, 3] # considerando o nº da linha de pernambuco, encontramos aqui o                         total de indig. na coluna 3 (1a Dose)
+
+# Exibir o valor
+print(valor)  # extraindo da linha 25 (pernambuco) a qtde de indígenas que tomaram                  a 1a dose da vacina (3a coluna = 1a Dose)
+```
+
+Temos então que:
+
+1)  no alto do juruá tem 16.361 indígenas;
+
+2)  pernambuco está na 25a linha na tabela e que o total de indígenas em
+    pernambuco é 37.776 que tomaram a 1a dose da vacina.
+
+# Vamos aplicar alguns conceitos estudados
+
+*\*EXERCÍCIO* *1:*
+
+*Experimento =\>* Escolher um indígena ao acaso considerando os 34
+distritos sanitários.
+
+*Esp. Amostral =\>* $\Omega = n = 707.739$ habitantes indígenas em todos
+os distritos considerados (totalPI).
+
+## Consideremos os eventos:
+
+### Evento A: Regiões com população indígena maior que 10 mil habitantes
+
+### Evento B: Mais de 90% da população indígena vacinada com 1ª dose.
+
+Vamos, primeiramente, identificar o evento A:
+
+#### A : evento que corresponde escolher, ao acaso, um indivíduo somente das regiões com mais de 10 mil indígenas.
+
+```{r}
+A <- x[x[, 2] > 10000,] # obtendo as regiões em que o total de indígenas seja                                   maior que 10 mil [> 10.000]), considerando todas as                                  covariáveis (colunas);
+
+                          # Se quiser covariáveis específicas, use, por exemplo,                                x[x[, 2] > 10.000, c(1,3,4)] para restringir às                                   colunas 2 (População indígena), coluna 3 (Dose 1) e                                  coluna 5 (Dose 2)
+print(A)
+```
+
+Calculando agora, *a probabilidade de selecionar um indígena ao acaso
+(proporção de indígenas) que mora em uma das regiões que contém mais de
+10 mil habitantes indígenas, P(A).*
+
+### Cálculo da Probabilidade de A
+
+```{r}
+
+nA <- sum(A[,2]) #obtendo o total de indígenas que moram nas regiões consideradas                        (nº de indígenas favoráveis para ocorrência do evento A _ n(A))
+print(nA)
+pA<-nA/totalPI   #calculando (prob. clássica) a probabilidade/chance/proporção de                    ocorrer indígenas em todas as regiões consideradas (probabilidade                   do evento A ocorrer _ P(A))
+print(round(pA,4))
+
+# Interpretando o resultado
+cat("A probabilidade de um selecionar um indígena em uma das regiões com mais de 10 mil habitantes indígenas é de", round(pA*100,2),"%\n")
+```
+
+### 
+
+Identificar o evento B:
+
+#### B : evento que corresponde viver em uma região em que mais de 90% da população indígena foi vacinada com a 1a dose da vacina.
+
+```{r}
+#B <- x[x[,4] > 0.90,c(1,2,4)]
+
+B <- x[x[,4] > 0.90,] # nº de indivíduos que moram na regiões em que mais de 90% da                         população tomaram a 1a dose da vacina (coluna 4).
+print(B)
+```
+
+Calculando agora, *a probabilidade de selecionar um indígena, ao acaso,
+(proporção de indígenas) e ele viver em uma região em que mais de 90% da
+população indígena foi vacinada com a 1a dose da vacina.*
+
+### Cálculo da Probabilidade de B
+
+```{r}
+nB <- sum(B[,2]) # n(B) _ nº de indiv. que vivem em regiões nas quais mais de 90% dos                         indígenas tomaram a 1a dose da vacina. (coluna 2=população                                                           .indígena)
+
+pB <- nB/totalPI # proporção P(B)
+
+print(round(pB,4))
+
+# Interpretando o resultado
+cat("A probabilidade de um selecionar um indígena em uma das regiões com mais de 10 mil habitantes indígenas é de", round(pB*100,2),"%\n")
+```
+
+# União dos eventos, $A \cup B$
+
+# A: População indígena maior que 10 mil habitantes;
+
+# B: Mais de 90% da população indígena vacinada com 1ª dose.
+
+#### $A \cup B$ : evento que corresponde viver em uma região em que mais de 90% da população indígena foi vacinada com a 1a dose da vacina OU viver em uma região com mais de 10 indígenas.
+
+```{r}
+AuB <- x[x[,2]>10000 | x[,4]> 0.90, c(1,2,4)] #pegando as colunas 1, 2 e 4, e                                                      restringindo às condições                                                          estabelecidas pelos eventos A e B
+
+
+#AuB <- x[x[,2]>10000 | x[,4]> 0.90,]  # elementos favoráveis para a ocorrência de                                           AUB
+
+print(AuB)
+```
+
+```{r}
+#Cálculo pela prob classica n(AUB)/n
+
+
+#nrow(AuB) #núm de linhas 
+
+
+nAuB <- sum(AuB[,2]) #n(AUB)_ total de indiv. que estão em A ou em B.
+
+print(nAuB)
+```
+
+# Interseção dos eventos
+
+# A: População indígena maior que 10 mil habitantes
+
+# B: Mais de 90% da população indígena vacinada com 1ª dose.
+
+#### $A \cap B$ : evento que corresponde viver em uma região em que mais de 90% da população indígena foi vacinada com a 1a dose da vacina E viver em uma região com mais de 10 indígenas.
+
+```{r}
+AiB <- x[x[,2]>10000 & x[,4]> 0.90, c(1,2,4)] 
+
+print(AiB)  # elementos favoráveis para a ocorrência do evento "A inter B".
+```
+
+```{r}
+#nrow(AiB)
+
+nAiB <- sum(AiB[,2])  # nº de indiv. que estão na interseção de A e B
+
+print(nAiB)
+```
+
+# Cálculo da Probabilidade de A união B, $P(A \cup B)$ , e de A interseção B, $P(A \cap B)$.
+
+```{r}
+pAuB=nAuB/totalPI    #P(AUB)=P(A) + P(B) - P(A inter B), pois A e B não são                                                                            disjuntos
+
+print(round(pAuB,4))
+
+
+cat("***A probabilidade de um selecionar um indígena em uma das regiões com mais de 10 mil habitantes indígenas OU que vivem em uma região em que mais de 90% da população indígena foi vacinada com a 1a dose da vacina é de", round(pAuB*100,2),"%\n")
+```
+
+```{r}
+pAiB=nAiB/totalPI
+
+print(round(pAiB,4)) #P(A inter B)
+
+
+# Interpretando os resultados
+
+cat("***A probabilidade de um selecionar um indígena em uma das regiões com mais de 10 mil habitantes indígenas E que vivem em uma região em que mais de 90% da população indígena foi vacinada com a 1a dose da vacina é de", round(pAiB*100,2),"%\n")
+```
+
+# Cálculo da Probabilidade de V união K, $P(A \cup B)$, sendo V e K disjuntos
+
+#### V : evento que corresponde viver na região Pernambuco
+
+```{r}
+V <- x[which(x[, 1] == "Pernambuco"),] # obtendo o total de indivíduos de cada                                                 coluna que vivem em Pernambuco.
+print(V)
+```
+
+*Calculando P(V):*
+
+```{r}
+Vsum <- sum(V[2])  #não é necessário o sum, pois V[2] já nos indica o total de                         indivíduos que vivem em pernambuco. Contudo, vamos precisar                          mais à frente.
+print(Vsum)
+pV <- Vsum/totalPI #P(V) pela prob. clássica
+print(pV)
+```
+
+#### K : evento que corresponde viver na região Manaus
+
+```{r}
+K <- x[which(x[, 1] == "Manaus"),] # obtendo os dados da linha Manaus
+K
+```
+
+*Calculando P(K):*
+
+```{r}
+Ksum <- sum(K[2])  # total de indígenas que vivem em Manaus
+Ksum
+pK <- Ksum/totalPI  # P(K)
+pK
+```
+
+*W : evento que corresponde viver na região Pernambuco (V) ou Manaus
+(K)*
+
+```{r}
+W <- rbind(V,K) #juntando as linhas Pernambuco e Manaus
+W
+```
+
+*Calculando P(W) pela prob. clássica para comparação com P(V) + P(K)*
+
+```{r}
+Wsum <- sum(W[2]) #nº total das duas regiões , n(VUK)
+Wsum
+pW <- Wsum/totalPI  #P(W) = P(VUK)/n
+pW
+pV+pK   # fazendo a verificação que P(VUK) = P(V)+P(K)
+```
+
+*Calculando P(V) usando a função "ou"*
+
+Obs.: para não confundir, vamos chamar atribuir a notação z para a
+variável V.
+
+```{r}
+z <- x[x[, 1] == "Pernambuco" | x[, 1] == "Manaus",]  #P(VUK)
+z
+```
+
+*P(z): probabilidade de viver em pernambuco OU manaus*
+
+```{r}
+zsum <- sum(z[2])
+zsum
+pz <- zsum/totalPI #prob. clássica
+pz
+```
+
+*Calculando P(z1) usando a função "e"*
+
+Obs.: para não confundir, vamos chamar atribuir a notação z1 para a
+variável W.
+
+```{r}
+z1 <- x[x[, 1] == "Pernambuco" & x[, 1] == "Manaus",] # P(V inter K)
+z1
+```
+
+*P(z1): probabilidade de viver em pernambuco E manaus*
+
+```{r}
+z1sum <- sum(z1[2]) #conjunto vazio
+z1sum
+pz1 <- z1sum/totalPI
+pz1
+```
+
+Vamos agora calcular *a probabilidade de um selecionar aleatoriamente um
+indivíduo que vive em uma das regiões com mais de 10 mil habitantes
+indígenas, mas não vive em uma região onde mais de 90% da população
+indígena foi vacinada com a 1a dose da vacina.*
+
+# Cálculo da probabilidade de A-B (diferença entre dois eventos): $P(A-B)=P(A)-P(A \cap B)$.
+
+```{r}
+p_dif<- pA-pAiB  #probabilidade da diferença P(A - B) 
+
+print(round(p_dif,3))
+```
+
+*Importante:* Vale ressaltar que existem cenários diferenciados para os
+eventos A e B como, por exemplo, quando o evento B está todo contido no
+evento A.
+
+# Verificando a validade da propriedade $P(A \cup B)=P(A)+P(B)-P(A \cap B)$.
+
+```{r}
+
+Pcup <- pA + pB - pAiB
+
+print(round(Pcup,3))
+
+round(Pcup-pAuB,3)  # obtendo a diferença entre P(AUB) obtido pela prob. clássica e                         a obtida pela fórmula P(AUB) = P(A) + P(B) - P(A inter B)
+```
+
+# Verificando se os eventos A e B são independentes
+
+Vamos verificar se os eventos viver em uma região em que mais de 90% da
+população indígena foi vacinada com a 1a dose da vacina (A) e viver em
+uma região com mais de 10 indígenas (B) são independentes, ou seja, se
+$P(A \cap B)=P(A) \times P(B)$.
+
+```{r}
+Pvezes <- pA * pB   # obtendo a P(A inter B) = P(A) x P(B)
+
+print(round(Pvezes,3))
+
+if(round(pAiB, 3) == round(Pvezes, 3)){print("A e B são independentes")} else{print("A e B não são independentes")}
+#round(Pvezes - pAiB,3)
+```
+
+# Eventos complementares
+
+## $\bar{A}$ \_ complementar de A : População indígena viver em regiões com uma quantidade de habitantes indígenas MENOR OU IGUAL a 10 mil habitantes
+
+Vamos obter a $P(\bar{A})$ a partir dos elementos de A complementar.
+
+```{r}
+#CA <- x[x[,2]<10000 | x[,2]==10000, c(1,2)]
+CA <- x[x[,2]<10000 | x[,2]==10000,]  # elementos de A complementar
+print(CA)
+```
+
+```{r}
+nrow(CA) # quantidade de regiões com número de habitantes menor ou igual a 10 mil.
+
+nCA <- sum(CA[,2]) # quantidade indígenas que vivem numa região com população indigena menor que ou igual a 10mil habitantes
+
+print(nCA,3)
+
+pCA=nCA/totalPI # probablidade de um índigena pertencer a uma região com população indigena menor que ou igual a 10mil habitantes  P(A complementar) = n(CA)/n
+
+print(round(pCA,3))
+```
+
+# Verificando fórmula $P(\bar{A})=1-P(A)$
+
+```{r}
+
+pCA2=1-pA # probabilidade do complementar de A igual 1 menos a probabilidade de A
+
+print(round(pCA2,3))   # pCA2 = pCA
+print(round(pCA,3))
+```
+
+# Teorema de Bayes - Probabilidade condicional
+
+## C: Populaçao indígena de 5 a 17 anos que tomou a primeira dose
+
+```{r}
+C <- x[x[,8], c(1,2,8)] #nº de elementos das colunas 1, 2, 8
+print(C)
+```
+
+## Probabilidade de C
+
+```{r}
+nC <- sum(C[,3]) # total de idígenas entre 5 e 17 anos que tomaram a primeira dose da vacina
+
+print(nC)
+
+pC <- nC/totalPI # probabilidade de um indigena sorteado ao acaso tenha entre 5 e 17 anos
+
+print(round(pC,3)) 
+```
+
+### P(C\|A) - probabilidade de selecionar indiv. entre 5 e 17 anos que tomou a primeira dose dado que vive numa região com população indígena maior que 10 mil habitantes
+
+####  \$P(C\|A) = \\frac{P(A \\cap C)}{A}\$
+
+# $P(C|A)=\frac{P(A \cap C)}{C}$
+
+#### Interseção C e A:
+
+```{r}
+#CiA <- C[C[,2]>10.000,c(1,2,3)]
+CiA <- C[C[,2]>10.000,]   # nº total de A inter C
+
+print(CiA)
+```
+
+## Probabilidade da interseção C inter A
+
+```{r}
+
+nCiA <- sum(C[C[,2]>10.000,2])  #n(A inter C)
+
+print(nCiA)
+
+pCiA <- nCiA/totalPI  #P(A inter C)
+
+print(round(pCiA,3))
+```
+
+# Teorema de Bayes
+
+## Fórmula: $P(C|A)=\dfrac{P(C\cap A)}{P(A)}$
+
+```{r}
+pCdA <- pCiA/pA
+
+print(round(pCdA,3))
+```

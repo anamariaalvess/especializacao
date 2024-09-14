@@ -1,0 +1,51 @@
+---
+title: "mtcars"
+output: html_document
+date: "2024-05-24"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r cars}
+summary(cars)
+```
+
+```{r}
+mtcars
+```
+
+```{r}
+rm(list=ls())
+```
+
+```{r}
+install.packages('sqldf')
+library('sqldf')
+```
+
+```{r}
+cyls = sqldf::sqldf("select * from mtcars where cyl = '6'")
+```
+
+```{r}
+cyls
+```
+
+
+```{r}
+vs = sqldf::sqldf("select * from mtcars where vs = 0")
+```
+
+```{r}
+vs
+```
+
+```{r}
+cars = sqldf("select * from mtcars")
+```
+
+```{r}
+cars
+```

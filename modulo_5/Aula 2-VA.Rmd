@@ -1,0 +1,266 @@
+---
+title: "Untitled"
+author: "Renata"
+date: "2024-08-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+---
+title: "Aula prática 2 - RMD"
+author: "Renata Vasconcelos"
+date: "17/08/2024"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Variáveis Aleatórias
+
+## Exemplo 1: Seja X a variável aleatória que representa os possíveis resultados no "Lançamento de um dado".
+
+1.  Descreva $X$;
+
+2.  Simule 10 lançamentos do dado e armazene os resultados em uma variável;
+
+3.  Calcule a frequência relativa para cada valor de $X$;
+
+4.  Plote um gráfico de barras para visualizar a distribuição de $X$;
+
+*Solução*
+
+### 1. Descrevendo $X$
+
+```{r}
+X=c(1,2,3,4,5,6)
+print(X)
+```
+
+### 2. Para simular os lançamentos vamos usar a função sample()
+
+```{r}
+set.seed(123) # Gerador de números aleatórios
+lancamentos <- sample(1:6, size =10, replace =TRUE)
+print(lancamentos)
+```
+
+### 3. Calculando a frequência relativa de cada elemento de $X$.
+
+```{r}
+fr <- table(lancamentos)/length(lancamentos)
+print(fr)
+soma <- sum(fr)
+print(soma)
+```
+
+### 4. Construindo o gráfico de barras
+
+```{r}
+barplot(fr, main ="Distribuição de Frequências Relativas de X",
+        xlab ="Valor de X", ylab ="Frequência Relativa", col ="lightblue")
+```
+
+## Exemplo 2. Seja X a soma das faces de três dados, determinar a distribuição de probabilidade de X.
+
+```{r}
+# Definindo todas as combinações possíveis de resultados ao lançar dois dados
+dados1 <- 1:6
+dados2 <- 1:6
+dados3 <- 1:6
+resultados <- expand.grid(dados1, dados2, dados3)# Calculando a soma das faces dos dados para cada combinação
+somas <- rowSums(resultados)# Calculando a distribuição de probabilidade da soma (X)
+distribuicao <- table(somas)/length(somas)
+distribuicao <- as.data.frame(distribuicao)
+colnames(distribuicao)<-c("Soma","Probabilidade")# Exibindo a tabela de distribuição de probabilidade
+print(distribuicao)# Plotando o gráfico de barras da distribuição de probabilidade
+```
+
+### Construindo o gráfico de X
+
+```{r}
+barplot(distribuicao$Probabilidade, names.arg = distribuicao$Soma,
+        main ="Distribuição de Probabilidade da Soma de Dois Dados",
+        xlab ="Soma das Faces (X)", ylab ="Probabilidade",
+        col ="lightblue", border ="black")
+```
+
+# Esperança Matemática
+
+# Exemplo 3: Uma seguradora paga R\$ 30000 em caso de acidente de carro e cobra uma taxa de R\$ 1000. Sabe-se que a probabilidade de que um carro sofra acidente é de 3%. Quanto espera a seguradora ganhar por carro segurado?
+
+*Solução*
+
+Para calcular a esperança matemática $E(X)$ dos ganhos da seguradora por carro segurado, precisamos considerar os dois possíveis resultados:
+
+-   O carro não sofre acidente: A seguradora ganha R\$ 1000 (a taxa cobrada).
+
+-   O carro sofre acidente: A seguradora paga R\$ 30000 e perde a taxa cobrada, resultando em um prejuízo de R\$ 29000.
+
+-   A probabilidade de que um carro não sofra acidente é de 97% e a probabilidade de que sofra é de 3%
+
+```{r}
+# Definindo os valores e as probabilidades
+ganho_sem_acidente <- 1000
+perda_com_acidente <--29000
+
+prob_sem_acidente <- 0.97
+prob_com_acidente <- 0.03
+
+# Calculando a esperança de X
+
+# $E(X)= \sum x_i p(x_i)==x_1 *p(x_1)+ x_2 * p(x_2)$
+
+esperanca <-(ganho_sem_acidente * prob_sem_acidente)+(perda_com_acidente * prob_com_acidente)
+
+esperanca
+```
+
+O valor de E(X) representa o ganho médio por carro segurado, considerando tanto os casos em que há acidentes quanto os casos em que não há. Se o valor de E(X) for positivo, a seguradora espera lucrar em média por cada carro segurado. Se for negativo, a seguradora espera ter uma perda média por carro segurado.
+
+# Variálvel aleatória contínua
+
+## Exemplo 1. Vamos determinar a função de distribuição acumulada, a esperança e a variância da função de densidade de probabilidade $f(x)=2x$ com $0<x<1$.
+
+### 1. Gráfico de $f(x)$
+
+```{r}
+# Definindo a função de densidade de probabilidade
+f_x <-function(x){return(2* x)}# Plotando o gráfico da função de densidade
+curve(f_x, from =0, to =1, col ="blue", lwd =2,
+      main ="Função de Distribuição de Probabilidade f(x) = 2x",
+      xlab ="x", ylab ="f(x)")
+```
+
+### 2. Função de Distribuição Acumulada
+
+A Função de distribuição acumulada é dada por $F(x)=\int f(x)dx=x^2$
+
+```{r}
+# Definindo a função de distribuição acumulada
+F_x <-function(x){return(x^2)}# Plotando o gráfico da função de distribuição acumulada
+curve(F_x, from =0, to =1, col ="red", lwd =2,
+      main ="Função de Distribuição Acumulada F(x)",
+      xlab ="x", ylab ="F(x)")
+```
+
+### 3. Esperança e Variância
+
+A esperança de $X$ é dada por $E(X)=\int_0^1 xf(x)dx$ e a variância de $X$ é dada por $E(X^2)-(X)^2$
+
+```{r}
+# Calculando a esperança E(X)
+E_X <- integrate(function(x){ x * f_x(x)}, lower =0, upper =1)$value
+
+# Calculando E(X^2)
+E_X2 <- integrate(function(x){ x^2* f_x(x)}, lower =0, upper =1)$value
+
+# Calculando a variância Var(X)
+Var_X <- E_X2 - E_X^2 # Exibindo os resultados
+E_X
+Var_X
+
+```
+
+# Distribuição Normal
+
+## Exercício 1. Distribuição da Altura em uma População:
+
+Suponha que a altura de uma população de 1000 pessoas seja distribuída normalmente com uma média de 170 cm e um desvio padrão de 10 cm. Defina a variável aleatória $X$ como a altura de uma pessoa escolhida aleatoriamente dessa população.
+
+1.  Simule a altura de 1000 pessoas dessa população e armazene os resultados em uma variável.
+
+2.  Calcule a média e o desvio padrão das alturas simuladas.
+
+3.  Plote um histograma para visualizar a distribuição das alturas.
+
+4.  Calcule a probabilidade de uma pessoa ter mais de 180 cm de altura.
+
+*Solução*
+
+### 1. Vamos usar a função rnorm() para gerar uma amostra de alturas de uma distribuição normal.
+
+```{r}
+set.seed(123)# Para garantir a reprodutibilidade
+alturas <- rnorm(1000, mean =170, sd =10)
+head(alturas)# Mostra as primeiras alturas simuladas
+```
+
+### 2. Usaremos as funções mean() e sd() para calcular a média e o desvio padrão das alturas simuladas:
+
+```{r}
+media_alturas <- mean(alturas)
+
+desvio_padrao_alturas <- sd(alturas)
+
+print(media_alturas)
+
+print(desvio_padrao_alturas)
+```
+
+### 3. Vamos usar a função hist() para visualizar a distribuição das alturas:
+
+```{r}
+hist(alturas, main ="Histograma das Alturas na População",
+     xlab ="Altura (cm)", col ="lightblue", border ="black")
+```
+
+### 4. Podemos calcular essa probabilidade usando a função pnorm()
+
+```{r}
+probabilidade_mais_180 <- 1 - pnorm(180, mean =170, sd =10)
+
+probabilidade_mais_180
+```
+
+```{r}
+x <- data.frame(cancer_colon)
+x
+```
+
+```{r}
+# Criando o histograma com os parâmetros especificados
+hist(cancer_colon$IDADE, 
+     main="Distribuição da Idade dos Pacientes",
+     xlab="Idade",
+     ylab="Frequência",
+     col="lightblue",
+     border="black",
+     probability=TRUE) # Configurando para densidade
+
+# Adicionando a linha de contorno
+lines(density(cancer_colon$IDADE), col="red", lwd=2)
+```
+
+# Dados reais
+
+```{r}
+# Calculando a probabilidade
+prob_60 <- mean(cancer_colon$IDADE > 60)
+prob_60
+
+# Interpretando o resultado
+cat("A probabilidade de um paciente ter mais de 60 anos é de", prob_60 * 100, "%\n")
+```
+
+```{r}
+# Contagem de frequências
+table(cancer_colon$SEXO)
+
+# Calculando a proporção de cada sexo
+prop.table(table(cancer_colon$SEXO))
+```
+
+```{r}
+# Calculando a média da idade
+media_idade <- mean(cancer_colon$IDADE)
+media_idade
+
+cat("A média esperada da idade dos pacientes é", media_idade, "anos.\n")
+```

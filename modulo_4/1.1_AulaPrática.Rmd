@@ -1,0 +1,372 @@
+---
+title: 'Estatística descritiva para \textit{Data Science}'
+subtitle: '1.1 - Aula Prática: Análise bidimensional - tabelas'
+author: "Profa. Dra. Amanda Buosi Gazon Milani"
+date: "2024-08-03"
+output: pdf_document
+header-includes:
+   - \usepackage{array}
+   - \usepackage{longtable}
+   - \usepackage[brazil]{babel}
+---
+
+## Conjunto de dados - Nascidos Vivos 2024 (DataSUS)
+
+O conjunto de dados que será utilizado nesta disciplina foi obtido no site do OpenDataSUS, foi tratado e consiste da base de informações sobre nascidos vivos 2024 (parcial).
+
+
+\vspace{0.5cm}
+
+Inicialmente vamos importar (carregar) os dados no R, utilizando os códigos a seguir.  
+
+\vspace{0.2cm}
+```{r}
+setwd <- "C:\\Users\\AmandaBGM\\Google Drive\\UFG\\Especialização_FEN_IME\\2024\\Scripts"
+
+# 2 opções de importação (.csv com separador ponto-e-vígula):
+
+# dados <- read.csv2(file = "Dataframe_AulaAmanda.csv",  header = TRUE)
+# ou:
+dados <- read.csv(file = "Dataframe_AulaAmanda.csv", sep=';', header = TRUE)
+
+head(dados)
+dim(dados)
+```
+
+\vspace{0.5cm}
+
+## Análise bidimensional - Tabelas
+
+\vspace{0.1cm}
+
+Podemos realizar tabelas bidimensionais no R.
+
+\vspace{0.1cm}
+
+### Qualitativa x Qualitativa
+
+\vspace{0.5cm}
+
+Primeiramente, vamos construir tabelas bidimensionais para duas variáveis qualitativas. A maneira mais simples de realizar esta tarefa é utilizar a função \texttt{table(...)} aplicada às duas variáveis desejadas, separando-as por vírgulas nos parâmetros da função.
+
+\vspace{0.5cm}
+
+```{r}
+# Tabela bidimensional: Estado civil da mãe x Tipo de parto
+
+# Tabela cruzada:
+table(dados$ESTCIVMAE,dados$PARTO)
+
+# Excluindo a categoria Ignorado:
+dados_aux <- dados[((dados$ESTCIVMAE!="Ignorado") & (dados$PARTO!="Ignorado")),]
+
+# Refazendo a tabela cruzada:
+table(dados_aux$ESTCIVMAE,dados_aux$PARTO)
+```
+
+\vspace{0.5cm}
+
+Se quisermos adicionar o totais, podemos utilizar a função \texttt{margin.table(...)} aplicada à tabela construída com a função \texttt{table(...)}.
+
+\vspace{0.5cm}
+
+```{r}
+# Tabela bidimensional: Estado civil da mãe x Tipo de parto
+tab1 <- table(dados_aux$ESTCIVMAE,dados_aux$PARTO)
+tab1
+
+# Tinha de total 
+Linha_Totais <- margin.table(tab1, 2)    # O argumento 2 define a marginal da linha
+Linha_Totais
+
+# Coluna de total 
+Coluna_Totais <- margin.table(tab1, 1)   # O argumento 1 define a marginal da coluna
+Coluna_Totais
+
+# Juntando tudo
+tab_completa <- rbind(cbind(tab1, Coluna_Totais), c(Linha_Totais, sum(Linha_Totais)))
+tab_completa
+
+# Adicionando rótulo faltante
+dimnames(tab_completa)[[1]][6]<-"Linha_Totais" 
+tab_completa 
+```
+\vspace{0.5cm}
+
+A tabela anterior poderia ter sido construída para frequência relativa (proporção ou porcentagem) em vez de frequência absoluta, bastando para tanto utilizar a função \texttt{prop.table(...)} aplicada à primeira tabela construída e o restante seguiria de maneira análoga.
+
+\vspace{0.5cm}
+
+```{r}
+# Tabela bidimensional: Estado civil da mãe x Tipo de parto (frequência relativa)
+tab2 <- round(prop.table(table(dados_aux$ESTCIVMAE,dados_aux$PARTO))*100,1)
+tab2
+
+# Tinha de total 
+Linha_Totais <- margin.table(tab2, 2)    # O argumento 2 define a marginal da linha
+Linha_Totais
+
+# Coluna de total 
+Coluna_Totais <- margin.table(tab2, 1)   # O argumento 1 define a marginal da coluna
+Coluna_Totais
+
+# Juntando tudo
+tab_completa2 <- rbind(cbind(tab2, Coluna_Totais), c(Linha_Totais, sum(Linha_Totais)))
+tab_completa2
+
+# Adicionando rótulo faltante
+dimnames(tab_completa2)[[1]][6]<-"Linha_Totais" 
+tab_completa2
+```
+
+\vspace{0.5cm}
+
+Note que a tabela obtida é a frequência relativa pelo total geral. Entretanto, a frequência relativa para análise bidimensional pode ser calculada também adotando o total por linha ou o total por coluna. Existe um pacote que facilita o processo de construção de tabelas bidimensionais, principalmente para escolha da abordagem de frequência relativa a ser adotada. O pacote é o \texttt{gmodels} e a função deste pacote que utilizaremos é a \texttt{CrossTable(...)}.
+
+
+\vspace{0.5cm}
+
+```{r}
+# install.packages("gmodels")  # Remover o # para instalar, caso necessário
+library(gmodels)               # Habilita o pacote
+
+# Tabela cruzada:
+CrossTable(dados_aux$ESTCIVMAE,dados_aux$PARTO,
+           prop.r=FALSE,    # Se TRUE, então retorna as proporções nas linhas (row)
+           prop.c=FALSE,    # Se TRUE, então retorna as proporções nas colunas (column)
+           prop.t=FALSE,    # Se TRUE, então retorna as proporções em relação ao total (total)
+           prop.chisq=FALSE) # Se TRUE, então retorna a contrib. da casela p/ estat. de Qui-quadrado
+           
+
+# Comparando com a tabela obtida anteriormente:
+tab_completa
+```
+```{r}
+# install.packages("gmodels")  # Remover o # para instalar, caso necessário
+library(gmodels)               # Habilita o pacote
+
+# Tabela cruzada (frequência absoluta):
+CrossTable(dados_aux$ESTCIVMAE,dados_aux$PARTO,
+           prop.r=FALSE,    # Se TRUE, então retorna as proporções nas linhas (row)
+           prop.c=FALSE,    # Se TRUE, então retorna as proporções nas colunas (column)
+           prop.t=FALSE,    # Se TRUE, então retorna as proporções em relação ao total (total)
+           prop.chisq=FALSE) # Se TRUE, então retorna a contrib. da casela p/ estat. de Qui-quadrado
+           
+
+# Comparando com a tabela obtida anteriormente:
+tab_completa
+```
+
+```{r}
+
+# Tabela cruzada (frequência absoluta + relativa - proporção):
+CrossTable(dados_aux$ESTCIVMAE,dados_aux$PARTO,
+           prop.r=FALSE,    # Se TRUE, então retorna as proporções nas linhas (row)
+           prop.c=FALSE,    # Se TRUE, então retorna as proporções nas colunas (column)
+           prop.t=TRUE,     # Se TRUE, então retorna as proporções em relação ao total (total)
+           prop.chisq=FALSE, # Se TRUE, então retorna a contrib. da casela p/ estat. de Qui-quadrado
+           digits = 3 )       # nº de casas decimais para a frequência relativa
+
+
+# Comparando com a tabela obtida anteriormente:
+tab_completa2
+```
+
+
+```{r}
+
+# Tabela cruzada: frequência relativa em relação ao total da coluna (colunas somam 100%):
+CrossTable(dados_aux$ESTCIVMAE,dados_aux$PARTO,
+           prop.r=FALSE,    # Se TRUE, então retorna as proporções nas linhas (row)
+           prop.c=TRUE,    # Se TRUE, então retorna as proporções nas colunas (column)
+           prop.t=FALSE,     # Se TRUE, então retorna as proporções em relação ao total (total)
+           prop.chisq=FALSE, # Se TRUE, então retorna a contrib. da casela p/ estat. de Qui-quadrado
+           digits = 3  )       # nº de casas decimais para a frequência relativa
+
+
+
+```
+
+
+```{r} 
+
+# Tabela cruzada: frequência relativa em relação ao total da linha (linhas somam 100%):
+CrossTable(dados_aux$ESTCIVMAE,dados_aux$PARTO,
+           prop.r=TRUE,    # Se TRUE, então retorna as proporções nas linhas (row)
+           prop.c=FALSE,    # Se TRUE, então retorna as proporções nas colunas (column)
+           prop.t=FALSE,     # Se TRUE, então retorna as proporções em relação ao total (total)
+           prop.chisq=FALSE, # Se TRUE, então retorna a contrib. da casela p/ estat. de Qui-quadrado
+           digits = 3 )       # nº de casas decimais para a frequência relativa
+
+
+
+```
+
+\vspace{0.5cm}
+
+### Quantitativa x Quantitativa
+
+\vspace{0.5cm}
+
+Para construir tabelas bidimensionais para duas variáveis quantitativas, se elas forem contínuas ou tiverem muitos valores distintos observados, ou utilizamos variáveis já categorizadas do conjunto de dados, ou criamos os intervalos de classe. Após essa etapa, procedemos de forma análoga à construção de tabelas para duas variáveis qualitativas.
+
+\vspace{0.5cm}
+
+#### Usando uma variável já categorizada no conjunto de dados: 
+
+\vspace{0.5cm}
+
+Temos como exemplo as variáveis GESTACAO e CONSULTAS.
+
+```{r}
+## Tabela cruzada das 2 variáveis que já vieram categorizadas:
+
+# Tratando as variáveis ordinais:
+dados$GESTACAO <- factor(dados$GESTACAO, 
+                         labels = c("Menos de 22 semanas",
+                                     "22 a 27 semanas",
+                                     "28 a 31 semanas",
+                                     "32 a 36 semanas",
+                                     "37 a 41 semanas",
+                                     "42 semanas e mais",
+                                     "Ignorado"),
+                          ordered = TRUE)
+
+dados$CONSULTAS <- factor(dados$CONSULTAS, 
+                          levels =  c("Nenhuma",
+                                  "de 1 a 3",
+                                  "de 4 a 6",
+                                  "7 e mais",
+                                  "Ignorado"),
+                       ordered=TRUE)
+
+# Excluindo a categoria Ignorado:
+dados2 <- dados[((dados$GESTACAO!="Ignorado") & (dados$CONSULTAS!="Ignorado")),]
+
+CrossTable(dados2$GESTACAO,dados2$CONSULTAS,
+           prop.r=FALSE,    # Se TRUE, então retorna as proporções nas linhas (row)
+           prop.c=FALSE,    # Se TRUE, então retorna as proporções nas colunas (column)
+           prop.t=FALSE,     # Se TRUE, então retorna as proporções em relação ao total (total)
+           prop.chisq=FALSE, # Se TRUE, então retorna a contrib. da casela p/ estat. de Qui-quadrado
+           digits = 3 )       # nº de casas decimais para a frequência relativa
+
+
+```
+\vspace{0.5cm}
+
+Agora vamos categorizar as variáveis que vieram originais (quantitativas), a fim de obter intervalos de classes o fazer tabelas bidimensionais para avaliá-las conjuntamente.
+
+\vspace{0.5cm}
+
+```{r}
+
+# Categorizando a variável - Peso do rn:
+
+nomes_classes <- c('[0,1)','[1,2)','[2,3)','[3,4)','[4,5)','[5,6)','[6,7]')  # rótulos para as classes (em kg)
+
+dados$PESO_c <- cut(dados$PESO,                     ## variável que será categorizada
+                          breaks = seq(0,7000,1000),  ## limites dos intervalos 
+                          right = FALSE,              ## para intervalos fechados à esquerda
+                          include.lowest = TRUE,      ## fechar o último intervalo à direita também  
+                          labels = nomes_classes)     ## adiciona os rótulos das classes
+
+table(dados$PESO_c)
+
+
+#  Categorizando a variável - Idade mãe:
+
+dados$IDADEMAE_c <- cut(dados$IDADEMAE,                      ## variável que será categorizada
+                          breaks = c(0,10,20,30,40,50,60,70),  ## limites dos intervalos 
+                          right = FALSE)                       ## para intervalos fechados à esquerda
+table(dados$IDADEMAE_c)
+
+
+```
+
+\footnotesize
+```{r}
+## Tabela cruzada das 2 variáveis quantitativas (agora já categorizadas):
+
+CrossTable(dados$IDADEMAE_c,dados$PESO_c,
+           prop.r=FALSE,    # Se TRUE, então retorna as proporções nas linhas (row)
+           prop.c=FALSE,    # Se TRUE, então retorna as proporções nas colunas (column)
+           prop.t=FALSE,     # Se TRUE, então retorna as proporções em relação ao total (total)
+           prop.chisq=FALSE, # Se TRUE, então retorna a contrib. da casela p/ estat. de Qui-quadrado
+           digits = 3 )       # nº de casas decimais para a frequência relativa
+
+
+```
+\normalsize
+
+
+\vspace{0.5cm}
+
+### Quantitativa x Quantitativa
+
+\vspace{0.5cm}
+
+Por fim, quando estamos trabalhando com uma variável quantitativa e outra qualitativa conjuntamente, comumente avaliamos medidas resumo da variável quantitativa pelas categorias da qualitativa. Vamos usar como exemplo as variáveis PESO e SEXO.
+
+
+\vspace{0.5cm}
+
+```{r}
+summary(dados$PESO)
+
+table(dados$SEXO)
+
+# Filtrando os ignorados e NA's
+
+dados3 <- dados[((dados$SEXO != "Ignorado, não informado") 
+                & is.na(dados$SEXO) == FALSE 
+                & is.na(dados$PESO) == FALSE),]
+
+summary(dados3$PESO)
+
+table(dados3$SEXO)
+```
+
+
+```{r}
+# Calculando medidas de posição por grupo
+summary.tab3 <- tapply(dados3$PESO,dados3$SEXO,summary)
+summary.tab3
+
+# Calculando variância por grupo
+var.tab3 <- tapply(dados3$PESO,dados3$SEXO,var)
+var.tab3
+
+# Calculando n por grupo
+n.tab3 <- tapply(dados3$PESO,dados3$SEXO,length) 
+n.tab3
+
+# Adicionando totais:
+# Calculando medidas de posição de toda a amostra
+summary.tab3[['Total']] <- summary(dados3$PESO) 
+summary.tab3
+
+# Calculando variância de toda a amostra
+var.tab3[['Total']] <- var(dados3$PESO)  
+var.tab3
+
+# Calculando n
+n.tab3[['Total']] <- length(dados3$PESO)                    
+n.tab3
+
+# Juntando tudo numa só tabela:
+
+# Retirando de uma lista para uma matriz:
+tab3 <- matrix(unlist(summary.tab3), ncol = 6, byrow = TRUE)
+tab3
+
+# Juntando colunas e adicionando rótulos:
+tab3 <-cbind(n.tab3, tab3, sqrt(var.tab3), var.tab3)
+tab3
+dimnames(tab3)<-list(   c("Feminino", "Masculino", "Total"),   # Nomes das categorias 
+                        c("n", "Min.","Q1","Mediana","Média","Q3","Max.","dp(S)","Var(S)"))
+
+# Resultado final:
+tab3
+```
+
+

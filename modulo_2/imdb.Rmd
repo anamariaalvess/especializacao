@@ -1,0 +1,73 @@
+---
+title: "imdb"
+output: html_document
+date: "2024-05-30"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+setwd("/Users/sergio/Documents/especializacao-fen")
+getwd()
+library(RSQLite)
+library(DBI)
+sqlite <- dbDriver("SQLite")
+conexao <- dbConnect(sqlite, "db/imdb.sqlite")
+dbListTables(conexao)
+```
+
+```{r}
+setwd("/Users/sergio/Documents/especializacao-fen")
+getwd()
+library(RSQLite)
+library(DBI)
+conexao <- RSQLite::dbConnect(RSQLite::SQLite(), dbname = "db/imdb.sqlite"
+)
+dbListTables(conexao)
+```
+
+
+```{r}
+setwd("/Users/sergio/Documents/especializacao-fen")
+getwd()
+conexao <- RSQLite::dbConnect(RSQLite::SQLite(), dbname = "db/imdb.sqlite"
+)
+dbListTables(conexao)
+```
+
+```{r}
+imdb_sqlite <- dplyr::tbl(conexao,"imdb")
+imdb_db <- dplyr::collect(imdb_sqlite)
+
+instrucao <- dplyr::sql("SELECT * FROM imdb WHERE ano=2009")
+imdb_select <- dplyr::tbl(conexao, instrucao)
+imdb_db_select <- dplyr::collect(imdb_select)
+```
+
+```{sql}
+--| connection = conexao
+SELECT * FROM imdb;
+```
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

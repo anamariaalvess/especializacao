@@ -1,0 +1,816 @@
+---
+title: 'Estatística descritiva para \textit{Data Science}'
+subtitle: '0.6 - Aula Prática: Visualização de dados através de gráficos'
+author: "Profa. Dra. Amanda Buosi Gazon Milani"
+date: "2024-07-20"
+output: pdf_document
+header-includes:
+   - \usepackage{array}
+   - \usepackage{longtable}
+   - \usepackage[brazil]{babel}
+---
+
+## Conjunto de dados - Nascidos Vivos 2024 (DataSUS)
+
+O conjunto de dados que será utilizado nesta disciplina foi obtido no site do OpenDataSUS, foi tratado e consiste da base de informações sobre nascidos vivos 2024 (parcial).
+
+
+\vspace{0.5cm}
+
+Inicialmente vamos importar (carregar) os dados no R, utilizando os códigos a seguir.  
+
+\vspace{0.2cm}
+```{r}
+setwd <- "C:\\Users\\AmandaBGM\\Google Drive\\UFG\\Especialização_FEN_IME\\2024\\Scripts"
+
+# 2 opções de importação (.csv com separador ponto-e-vígula):
+
+# dados <- read.csv2(file = "Dataframe_AulaAmanda.csv",  header = TRUE)
+# ou:
+dados <- read.csv(file = "Dataframe_AulaAmanda.csv", sep=';', header = TRUE)
+
+head(dados)
+dim(dados)
+```
+
+\vspace{0.5cm}
+
+## Construção de gráficos
+
+\vspace{0.5cm}
+
+A linguagem R é uma ferramenta muito útil e prática para construção de gráficos estatísticos. Vejamos a seguir como construir os gráficos vistos na aula téorica para as variáveis do conjunto de dados de nascidos vivos de 2024. Os gráficos são construídos a partir de uma tabela e, por esse motivo, salvo específicas exceções, a lógica das fuções será construir uma tabela e aplicar a função que constrói o gráfico a esta tabela dos dados.
+
+\vspace{0.5cm}
+
+## Gráfico em barras
+
+\vspace{0.5cm} 
+
+Como vimos, o gráfico em barras pode ser utilizado para variáveis qualitativas e ele pode ser construído no R utilizando a função \texttt{barplot(...)} juntamente com a opção \texttt{(horiz = TRUE)} para habilitar a opção de barras horizontais.
+
+\vspace{0.5cm}
+
+```{r, out.width="75%", fig.align='center'}
+
+# Tabela de frequência absoluta da variável:
+tab.estcivmae1 <-  table(dados$ESTCIVMAE)
+tab.estcivmae1
+
+# Gráfico em barras:
+barplot(tab.estcivmae1, horiz = TRUE)
+
+```
+\vspace{0.5cm}
+
+O gráfico básico sai sem rótulos nos eixos, sem títulos, e nós devemos adicionar essas informações para que o gráfico fique completo.
+
+\vspace{0.5cm}
+
+```{r, out.width="80%", fig.align='center'}
+
+# Gráfico em barras com frequência absoluta:
+barplot(tab.estcivmae1, 
+        horiz = TRUE,
+        main="Estado civil das mães dos nascidos vivos 2024",   ## título do gráfico
+        ylab="Estado civil",                                    ## rótulo do eixo y
+        xlab="Frequência")                                      ## rótulo do eixo x
+
+```
+
+\vspace{0.5cm}
+
+Note que utilizamos a frequência absoluta para construir o gráfico em barras, mas poderíamos adotar uma das frequências relativas (proporção ou porcentagem), bastando para isso, utilizar a tabela de frequência relativa no lugar da tabela de frequência absoluta, ao aplicar a função \texttt{barplot(...)}. Vejamos como ficaria o exemplo adotando a frequência relativa proporção:
+
+\vspace{0.5cm}
+
+```{r, out.width="90%", fig.align='center'}
+
+# Tabela de frequência relativa da variável (proporção):
+tab.estcivmae2 <- prop.table(table(dados$ESTCIVMAE))
+tab.estcivmae2
+
+# Gráfico em barras com frequência relativa (proporção):
+barplot(tab.estcivmae2,
+        horiz = TRUE,                                           ## para gráfico de barras
+        main="Estado civil das mães dos nascidos vivos 2024",   ## título do gráfico
+        ylab="Estado civil",                                    ## rótulo do eixo y
+        xlab="Frequência relativa (proporção)")                 ## rótulo do eixo x
+
+
+```
+\vspace{0.5cm}
+
+e adotando a porcentagem:
+
+\vspace{0.5cm}
+
+```{r, out.width="90%", fig.align='center'}
+
+# Tabela de frequência relativa da variável (porcentagem):
+tab.estcivmae3 <- 100*prop.table(table(dados$ESTCIVMAE))
+tab.estcivmae3
+
+# Gráfico em barras com frequência relativa (porcentagem):
+barplot(tab.estcivmae3,
+        horiz = TRUE,                                           ## para gráfico de barras
+        main="Estado civil das mães dos nascidos vivos 2024",   ## título do gráfico
+        ylab="Estado civil",                                    ## rótulo do eixo y
+        xlab="Porcentagem (%)")                                 ## rótulo do eixo x
+```
+
+\vspace{0.5cm}
+
+Vejamos a seguir que outros parâmetros podem ser configurados, como a cor das barras, os limites do eixo x, dentre outros.
+
+\vspace{0.5cm}
+
+```{r, out.width="80%", fig.align='center'}
+# Ajustando a cor:
+barplot(tab.estcivmae3,
+        horiz = TRUE,                                           ## para gráfico de barras
+        main="Estado civil das mães dos nascidos vivos 2024",   ## título do gráfico
+        ylab="Estado civil",                                    ## rótulo do eixo y
+        xlab="Porcentagem (%)",                                 ## rótulo do eixo x
+        col = 4)                                                ## cor das barras
+```
+
+
+```{r, out.width="80%", fig.align='center'}
+
+tab.estcivmae3 # vamos aumentar até 60% o eixo x para "abraçar" melhor todas as porcentagens
+
+# Ajustando os limites do eixo x:
+barplot(tab.estcivmae3, 
+        horiz = TRUE,                                           ## para gráfico de barras
+        main="Estado civil das mães dos nascidos vivos 2024",   ## título do gráfico
+        ylab="Estado civil",                                    ## rótulo do eixo y
+        xlab="Porcentagem (%)",                                 ## rótulo do eixo x
+        col = 4,                                                ## cor das barras
+        xlim = c(0,60))                                         ## limites do eixo x
+
+```
+
+
+```{r, out.width="80%", fig.align='center'}
+
+# Ajustando os limites do eixo x e mudando os valores impressos no eixo:
+barplot(tab.estcivmae3, 
+        horiz = TRUE,                                           ## para gráfico de barras
+        main="Estado civil das mães dos nascidos vivos 2024",   ## título do gráfico
+        ylab="Estado civil",                                    ## rótulo do eixo y
+        xlab="Porcentagem (%)",                                 ## rótulo do eixo x
+        col = 4,                                                ## cor das barras
+        xlim = c(0,60),                                         ## limites do eixo x
+        xaxp = c(0,60,15))         ## controla eixo x : c(início, fim, qtde de intervalos)
+```
+\vspace{0.5cm}
+
+Um dos principais motivos de se adotar as barras horizontais, além de fácil leitura do eixo e bom enquadramento no texto, é a presença de rótulos extensos. Note que nos gráficos anteriores, nem todos os rótulos estavam sendo impressos, e para resolver este problema, podemos rotacionar estes rótulos, o que inclusive deixará a leitura dos mesmos mais agradável, uma vez que ficará na posição horizontal, que é a orientação padrão dos textos.
+
+\vspace{0.5cm}
+
+
+```{r}
+
+# Rotacionando os rótulos:
+par(mai=c(1,2,1,1))               # aumenta a margem esquerda : c(baixo, esquerda, cima, direita)
+barplot(tab.estcivmae3, 
+        horiz = TRUE,                                           ## para gráfico de barras
+        las = 1,                                                ## para rótulos horizontais
+        main="Estado civil das mães dos nascidos vivos 2024",   ## título do gráfico
+        ylab=" ",                                               ## rótulo do eixo y 
+        xlab="Porcentagem (%)",                                 ## rótulo do eixo x
+        col = 4,                                                ## cor das barras
+        xlim = c(0,60))                                         ## limites do eixo x
+
+
+```
+
+
+\newpage
+
+## Gráfico em colunas
+
+
+\vspace{0.5cm} 
+
+Como vimos, o gráfico em barras pode ser utilizado para variáveis qualitativas e para variáveis quantitativas discretas (com os devidos cuidados). Ele pode ser construído no R utilizando a função \texttt{barplot(...)}.
+
+\vspace{0.5cm}
+
+
+
+
+### Variável qualitativa
+
+\vspace{0.5cm}
+
+```{r}
+# Tabela de frequência absoluta da variável :
+tab.racacor1 <- table(dados$RACACOR)
+tab.racacor1
+
+# Gráfico em colunas utilizando frequência absoluta:
+barplot(tab.racacor1)
+```
+\vspace{0.5cm}
+
+Novamente, o gráfico em barras básico vem sem rótulos nos eixos, sem título e precisamos adicioná-los. Além disso, como o conjunto de dados é relativamente grande, as frequências absolutas ficam nas casas dos milhares e o R utiliza notação científica para apresentar os valores das frequências absolutas no gráfico. Uma alternativa é utilizar outra unidade de medida para a frequência absoluta, por exemplo, a de milhares. Para isso, fazemos a tabela nesta unidade de medida, dividindo as frequências absolutas por 1000 e em seguida executamos o gráfico em colunas.
+
+\vspace{0.5cm}
+
+```{r, out.width="80%", fig.align='center'}
+# Tabela de frequência absoluta da variável (em milhares) :
+tab.racacor1.2 <- table(dados$RACACOR)/1000
+tab.racacor1.2
+
+# Gráfico em colunas utilizando frequência absoluta (em milhares):
+barplot(tab.racacor1.2,
+        main="Raça ou cor dos nascidos vivos 2024",   ## título do gráfico
+        xlab="Raça ou cor",                           ## rótulo do eixo x
+        ylab="Frequência (em milhares)")              ## rótulo do eixo y
+
+```
+
+\vspace{0.5cm}
+
+Outra maneira é ajustar as opções do R para que não apareça notação científica:
+
+\vspace{0.5cm}
+
+```{r}
+# ajustando para valor grande, para que os números não fiquem em notação científica:
+options(scipen = 999)
+
+# Gráfico em colunas utilizando frequência absoluta:
+barplot(tab.racacor1,
+        main="Raça ou cor dos nascidos vivos 2024",   ## título do gráfico
+        xlab="Raça ou cor",                           ## rótulo do eixo x
+        ylab="Frequência")                            ## rótulo do eixo y
+
+# para voltar as opções ao normal:
+# options(scipen = 0)
+
+```
+
+
+
+\vspace{0.5cm}
+
+Ou podemos adotar a frequência relativa (proporção ou porcentagem) para executar o gráfico em colunas. Por exemplo, para a frequência relativa porcentagem:
+
+\vspace{0.5cm}
+
+```{r, out.width="75%", fig.align='center'}
+# Tabela de frequência relativa da variável (porcentagem):
+tab.racacor3 <- 100*prop.table(table(dados$RACACOR))
+tab.racacor3
+
+# Gráfico em colunas para a frequência relativa (porcentagem):
+barplot(tab.racacor3,
+        main="Raça ou cor dos nascidos vivos 2024",   ## título do gráfico
+        xlab="Raça ou cor",                           ## rótulo do eixo x
+        ylab="Porcentagem (%)")                       ## rótulo do eixo y
+
+
+```
+
+```{r, out.width="75%", fig.align='center'}
+tab.racacor3  # vamos aumentar até 60% o eixo x para "abraçar" melhor todas as porcentagens
+
+# Gráfico em colunas alterando a cor das barras e os limites do eixo:
+barplot(tab.racacor3,
+        main="Raça ou cor dos nascidos vivos 2024",   ## título do gráfico
+        xlab="Raça ou cor",                           ## rótulo do eixo x
+        ylab="Porcentagem (%)",                       ## rótulo do eixo y
+        col = 4,                                      ## cor das barras
+        ylim = c(0,60))                               ## limites do eixo y
+
+
+```
+\vspace{0.5cm}
+
+### Variável quantitativa discreta
+
+\vspace{0.5cm}
+
+Para variáveis quantitativas discretas, podemos executar o gráfico em colunas, desde que respeitando o caráter numérico da variável, isto é, se a variável tiver "buracos", no sentido de valores que não tiverem ocorrências, o ideal é que o gráfico em colunas também tenha esse representação. Veremos que o gráfico isso não ocorre automaticamente, porque em geral as tabelas não costumam vir com a frequência zerada para os valores em que não houve ocorrência. Sendo assim, as tabelas precisam ser adaptadas para que então o gráfico fique correto. Vamos mostrar primeiro como ficaria um gráfico feito sem o devido cuidado e, posteriormente, como adaptar a tabela e fazer o gráfico de forma correta.
+
+
+\vspace{0.5cm}
+
+```{r}
+
+# Tabela de frequência absoluta: 
+table(dados$QTDPARTCES)
+
+# Tabela de frequência relativa (porcentagem) - arrendondado para 4 casas decimais:
+tab.qtdpartces3 <- round(100*prop.table(table(dados$QTDPARTCES)), 4)
+tab.qtdpartces3
+
+barplot(tab.qtdpartces3,
+        main="Quantidade de partos cesárea das mães dos nascidos vivos 2024",   ## título do gráfico
+        xlab="Quantidade de partos cesárea",          ## rótulo do eixo x
+        ylab="Porcentagem (%)",                       ## rótulo do eixo y
+        col = 4,                                      ## cor das colunas
+        ylim = c(0,70))                               ## limites do eixo y
+
+```
+\vspace{0.5cm}
+
+
+
+Como já vimos na aula teórica, pelo tipo de variável (quantitativa), o ideal é que o eixo x seja respeitado, mesmo para valores que não apresentaram ocorrências no conjunto de dados. Nestas situações, até podemos usar o gráfico de colunas, mas precisamos adaptar (completar) a tabela de frequências, para que a função \texttt{barplot} execute o gráfico corretamente.
+
+\vspace{0.5cm}
+
+```{r}
+#Para melhor visualização do processo, vamos considerar apenas os valores menores ou iguais a 10, 
+# pois na base temos poucos valores maiores que 10 (mas deve ser feito para todos os valores):
+
+table(dados$QTDPARTCES)
+
+table(dados$QTDPARTCES>10)
+
+
+# Criando a tabela de frequências
+tab.qtdpartces <- table(dados$QTDPARTCES[dados$QTDPARTCES<=10])
+tab.qtdpartces
+
+# Convertendo a tabela para um vetor para adicionar os valores sem ocorrências
+frequencias <- as.vector(tab.qtdpartces)      #vetor com as frequências
+frequencias
+nomes <- as.numeric(names(tab.qtdpartces))    #vetor com os valores que a variável assume (capturados pela função names())
+nomes
+
+# Incluindo os valores sem ocorrência com frequência zero
+todos_nomes <- 0:10
+todas_frequencias <- rep(0, length(todos_nomes))            #começa com todas as frequências nulas
+todas_frequencias[todos_nomes %in% nomes] <- frequencias    #substitui as frequências existentes
+
+# Criando uma tabela de frequências completa
+tabela_completa <- setNames(todas_frequencias, todos_nomes)
+
+# Exibindo a tabela de frequências completa
+print(tabela_completa)
+
+# Criando o gráfico de colunas
+barplot(100*prop.table(tabela_completa),
+        main="Quantidade de partos cesárea das mães dos nascidos vivos 2024",   ## título do gráfico
+        xlab="Quantidade de partos cesárea",          ## rótulo do eixo x
+        ylab="Porcentagem (%)",                       ## rótulo do eixo y
+        col = 4,                                      ## cor das colunas
+        ylim = c(0,70))                               ## limites do eixo y
+
+
+```
+
+\vspace{0.5cm}
+
+## Gráfico em setores
+
+O gráfico de setores, também conhecido como gráfico de pizza, é um gráfico utilizado para variáveis qualitativas e pode ser obtido no R utilizando a função \texttt{pie(...)}. Tanto a frequência absoluta quanto a relativa (proporção ou porcentagem) podem ser adotadas para construir o gráfico.
+
+
+\vspace{0.5cm}
+
+
+```{r, out.width="80%", fig.align='center'}
+# Tabela de frequência absoluta:
+tab.tpinduz <- table(dados$STTRABPART)
+tab.tpinduz
+
+#Gráfico de pizza:
+pie(tab.tpinduz)
+
+```
+\vspace{0.5cm}
+
+Podemos adicionar título e mudar as cores dos setores do gráfico:
+
+\vspace{0.5cm}
+
+```{r, out.width="80%", fig.align='center'}
+
+# Adicionando título e cores:   
+pie(tab.tpinduz, 
+    main = "Trabalho de parto induzido?",  # Título do gráfico
+    col = c(2,4,5))                        # cores dos setores
+
+```
+
+\vspace{0.5cm}
+
+Além disso, para o gráfico ficar mais completo, podemos adicionar como rótulos, as frequências (absolutas ou relativas) dos setores. Podemos fazer isso de duas formas: 1) deixar somente as porcentagens como rótulos e construir uma legenda para os nomes das categorias ou 2) concatenar nomes e frequências das categorias e colocar tudo como rótulo. Vejamos como fazer as duas opções a seguir.
+
+\vspace{0.5cm}
+
+```{r}
+# Opção 1: Adicionando as frequências como rótulos e nomes das categorias como legenda
+
+# Salvando as porcentagens em uma variável:
+porc.tpinduz <- round(100*prop.table(table(dados$STTRABPART)),1)
+porc.tpinduz
+
+# Criando os rótulos: valor porcentagem + símbolo % :
+rotulos1.tpinduz<-paste(porc.tpinduz,"%",sep="")
+rotulos1.tpinduz
+
+# Adicionando rótulos aos setores e legenda ao gráfico:   
+pie(porc.tpinduz, 
+    main = "Trabalho de parto induzido?",  # Título do gráfico
+    col = c(2,4,5),                        # cores dos setores
+    labels = rotulos1.tpinduz)             # rótulos dos setores (porcentagens)
+legend(1,1, names(porc.tpinduz), col = c(2,4,5), pch=15)  #note que para a legenda usamos as mesmas cores que para o gráfico
+
+
+
+
+# Opção 2: Adicionando as tanto nomes das categorias quanto frequências como rótulos:
+
+
+# Criando os rótulos: nomes das categorias + parênteses + valor porcentagem + símbolo % :
+rotulos2.tpinduz<-paste(names(porc.tpinduz)," (",porc.tpinduz,"%)",sep="")
+rotulos2.tpinduz
+
+# Adicionando rótulos aos setores: 
+pie(porc.tpinduz, 
+    main = "Trabalho de parto induzido?",  # Título do gráfico
+    col = c(2,4,5),                        # cores dos setores
+    labels = rotulos2.tpinduz)             # rótulos dos setores (nomes e porcentagens)
+
+
+
+
+```
+
+
+\vspace{0.5cm}
+
+Além de escolher manualmente as cores, podemos usar paletas de cores prontas, de pacotes específicos do R. Por exemplo, o pacote \texttt{RColorBrewer} trás várias opções de paletas de cores e basta você selecionar uma paleta que os setores dos gráficos serão coloridos automaticamente com suas cores. As opções de paletas podem ser encontradas em \url{https://r-graph-gallery.com/38-rcolorbrewers-palettes.html}.
+
+
+\vspace{0.5cm}
+
+```{r}
+#install.packages("RColorBrewer")   # remover o # para instalar, caso necessário
+library(RColorBrewer)               # habilita o pacote
+
+# Escolhendo uma paleta e salvando em cores.esp (no caso 3 cores da paleta "Paired"):
+cores.especiais <- brewer.pal(3, "Paired")     
+
+pie(porc.tpinduz, 
+    main = "Trabalho de parto induzido?",  # Título do gráfico
+    col = cores.especiais,                 # cores dos setores pacote RColorBrewer
+    labels = rotulos2.tpinduz)             # rótulos dos setores (labels e porcentagens)
+
+
+
+```
+
+\vspace{0.5cm}
+
+## Gráfico de dispersão unidimensional
+
+\vspace{0.5cm}
+
+O gráfico de dispersão unidimensional é utilizado para variáveis quantitativas discretas e construído no software R através da função \texttt{plot(...)}. Temos duas opções de gráfico de dispersão unidimensional: ou construímos ele com segmentos de retas para cada valor observado com altura até correspondente à frequência, ou com pontos para cada valor observado, na respectiva altura. Vejamos como construir as duas opções.
+
+\vspace{0.5cm}
+
+```{r}
+
+ table(dados$APGAR1)
+ 
+# Tabela de frequência absoluta (em milhares)      
+tab.apgar1 = table(dados$APGAR1[dados$APGAR1<=10])/1000  ## excluindo o 99 (código de valor ignorado)
+tab.apgar1
+
+# Opção 1: Segmentos até a altura da frequência
+plot(tab.apgar1,
+     main="Apgar no 1º minuto após o nascimento", 
+     xlab="Apgar no 1º minuto", 
+     ylab = "Frequência (em milhares)",  
+     pch=19)
+
+
+# Opção 2: Só os pontos na altura da frequência
+
+valores_apgar1 = as.vector(labels(tab.apgar1)[[1]])
+freq_apgar1 = as.vector(tab.apgar1)
+
+plot(valores_apgar1, freq_apgar1,
+     main="Apgar no 1º minuto após o nascimento", 
+     xlab="Apgar no 1º minuto", 
+     ylab = "Frequência (em milhares)",  
+     pch=19)
+
+
+
+```
+
+\vspace{0.5cm}
+
+## Histograma
+
+\vspace{0.5cm}
+
+O histograma é um gráfico muito importante para visualização das variáveis quantitativas. Ele é feito para variáveis com intervalos de classe (inclusive pode ser feito adotando intervalos de classe de tamanho 1 e, portanto, pode ser feito para variáveis discretas). Sua construção, diferente das vistas até agora, não consiste em aplicar a função a uma tabela, mas sim direto à variável em questão e a função utilizada é a \texttt{hist(...)} .
+
+\vspace{0.5cm}
+
+
+### Exemplo 1: Variável "peso" 
+
+\vspace{0.5cm}
+
+O histograma, por definição, é um gráfico com área igual a 1 e que contém no eixo y a densidade de frequência. Entretanto, é comum encontrarmos histogramas utilizando a frequência (absoluta ou relativa). O próprio R contrói, como default, o histograma utilizando a frequência absoluta.
+
+\vspace{0.5cm}
+
+```{r, out.width="80%", fig.align='center'}
+# Histograma com frequência absoluta
+hist(dados$PESO)  
+```
+\vspace{0.5cm}
+
+Para mudar para densidade de frequência, precisamos alterarar no \texttt{hist(...)} o parâmetro \texttt{freq = FALSE}.
+
+\vspace{0.5cm}
+
+```{r, out.width="80%", fig.align='center'}
+# Histograma com densidade de frequência
+hist(dados$PESO, 
+     freq = FALSE)  ## para densidade de frequências
+```
+
+\vspace{0.5cm}
+
+O histograma pode ser formatado, mudando o título, rótulos dos eixos (até porque eles vêm em inglês), alterando os eixos, adicionando cores às barras, etc.
+
+\vspace{0.5cm}
+
+```{r, out.width="80%", fig.align='center'}
+
+# Adicionando título e rótulos dos eixos (histograma com frequências):
+hist(dados$PESO, 
+     main="Histograma do peso ao nascer dos nascidos vivos em 2024",  ## título
+     xlab="Peso (em gramas)",                                         ## rótulo do eixo x
+     ylab = "Frequências")                                            ## rótulo do eixo y
+
+# Adicionando título e rótulos dos eixos (histograma com densidade de frequências):
+hist(dados$PESO, 
+     freq = FALSE,                                                    ## para densidade de frequências
+     main="Histograma do peso ao nascer dos nascidos vivos em 2024",  ## título
+     xlab="Peso (em gramas)",                                         ## rótulo do eixo x
+     ylab = "Densidade de frequências")                               ## rótulo do eixo y
+
+# Escolhendo a cor das barras:
+hist(dados$PESO, 
+     freq = FALSE,                                                    ## para densidade de frequências
+     main="Histograma do peso ao nascer dos nascidos vivos em 2024",  ## título
+     xlab="Peso (em gramas)",                                         ## rótulo do eixo x
+     ylab = "Densidade de frequências",                               ## rótulo do eixo y
+     col='darkblue')                                                  ## usa a cor roxa nas barras
+
+# Escolhendo o número de classes do histograma:
+hist(dados$PESO, 
+     freq = FALSE,                                                    ## para densidade de frequências
+     nclass = 6,                                                      ## Nº de classes
+     main="Histograma do peso ao nascer dos nascidos vivos em 2024",  ## título
+     xlab="Peso (em gramas)",                                         ## rótulo do eixo x
+     ylab = "Densidade de frequências",                               ## rótulo do eixo y
+     col='purple')                                                    ## usa a cor roxa nas barras
+
+# Escolhendo as quebras dos intervalos de classes do histograma:
+hist(dados$PESO, 
+     freq = FALSE,                                                    ## para densidade de frequências
+     breaks = seq(0,7000,1000),                                       ## Quebras das classes
+     right = F,                                                       ## p/ interv. fechados à esquerda
+     main="Histograma do peso ao nascer dos nascidos vivos em 2024",  ## título
+     xlab="Peso (em gramas)",                                         ## rótulo do eixo x
+     ylab = "Densidade de frequências",                               ## rótulo do eixo y
+ #    xlim=c(0,8000),                                                 ## limites do eixo x
+ #    ylim=c(0,0.001),                                                ## limites do eixo y
+     col=4)                                                           ## cor das barras
+
+
+
+
+```
+
+\vspace{0.5cm}
+
+### Exemplo 2: Variável "Semanas de gestação"
+
+\vspace{0.5cm}
+
+```{r, out.width="80%", fig.align='center'}
+
+# Histograma com frequência absoluta
+hist(dados$SEMAGESTAC, 
+     main="Histograma de semanas de gestação",             ## título
+     xlab="Semanas de gestação",                           ## rótulo do eixo x
+     ylab = "Frequências")                                 ## rótulo do eixo y
+
+# Histograma com densidade de frequência
+hist(dados$SEMAGESTAC, 
+     freq = FALSE,                                         ## para densidade de frequências
+     main="Histograma de semanas de gestação",             ## título
+     xlab="Semanas de gestação",                           ## rótulo do eixo x
+     ylab = "Densidade de frequências")                    ## rótulo do eixo y
+
+# Escolhendo o número de classes do histograma:
+hist(dados$SEMAGESTAC, 
+     freq = FALSE,                                        ## para densidade de frequências
+     nclass = 6,                                          ## Nº de classes
+     main="Histograma de semanas de gestação",            ## título
+     xlab="Semanas de gestação",                          ## rótulo do eixo x
+     ylab = "Densidade de frequências",                   ## rótulo do eixo y
+     col=4)                                               ## usa a cor azul nas barras
+```
+
+
+```{r, out.width="75%", fig.align='center'}
+
+summary(dados$SEMAGESTAC)
+
+# Escolhendo as quebras dos intervalos de classes do histograma:
+hist(dados$SEMAGESTAC, 
+     freq = FALSE,                                        ## para densidade de frequências
+     breaks = seq(19,45,2),                               ## Quebras das classes
+     right = F,                                           ## para intervalos fechados à esquerda
+     main="Histograma de semanas de gestação",            ## título
+     xlab="Semanas de gestação",                          ## rótulo do eixo x
+     ylab="Densidade de frequências",                     ## rótulo do eixo y
+     col=4,                                               ## cor das barras
+     xlim=c(18,46),                                       ## limites do eixo x
+     ylim=c(0,0.25))                                      ## limites do eixo y
+     
+
+
+# Escolhendo as quebras dos intervalos de classes do histograma e controla o eixo x (opção 1):
+hist(dados$SEMAGESTAC, 
+     freq = FALSE,                                        ## para densidade de frequências
+     breaks = seq(19,45,2),                               ## Quebras das classes
+     right = F,                                           ## para intervalos fechados à esquerda
+     main="Histograma de semanas de gestação",            ## título
+     xlab="Semanas de gestação",                          ## rótulo do eixo x
+     ylab="Densidade de frequências",                     ## rótulo do eixo y
+     col=4,                                               ## cor das barras
+     xlim=c(18,46),                                       ## limites do eixo x
+     ylim=c(0,0.25),                                      ## limites do eixo y
+     xaxp = c(19,45,13))                                  ## controla eixo x : c(início, fim, qtde de intervalos) 
+
+
+
+# Escolhendo as quebras dos intervalos de classes do histograma e controla o eixo x (opção 2):
+hist(dados$SEMAGESTAC, 
+     freq = FALSE,                              ## para densidade de frequências
+     breaks = seq(19,45,2),                     ## Quebras das classes
+     right = F,                                 ## para intervalos fechados à esquerda
+     main="Histograma de semanas de gestação",  ## título
+     xlab="Semanas de gestação",                ## rótulo do eixo x
+     ylab="Densidade de frequências",           ## rótulo do eixo y
+     col=4,                                     ## cor das barras
+     xlim=c(18,46),                             ## limites do eixo x
+     ylim=c(0,0.25),                            ## limites do eixo y
+#    yaxt="n",                                  # para não imprimir valores do eixo y
+     xaxt="n")                                  # para não imprimir valores do eixo x
+#    axis(2, at=y)                              # para adicionar valores desejados no eixo y
+#    axis(2, at=y, las=2)                       # para adicionar valores eixo y e rotacionar labels do eixo y
+     axis(1, at=seq(19,45,2))                   # para adicionar valores desejados no eixo x
+
+
+```
+\vspace{0.5cm}
+
+## Gráfico de Ogiva (Polígono de frequências acumuladas)
+
+\vspace{0.5cm}
+
+O gráfico de ogiva pode ser utilizado para variáveis quantitativas e para construí-lo vamos utilizar o pacote \texttt{fdth}. Este pacote, através de sua função \texttt{fdt(...)} será muito útil para a construção de intervalos de classes e da tabela de frequência acumulada e, portanto, da construção do gráfico. Após a construção da tabela, basta aplicar a função \texttt{plot(...)}, utilizando a opção \texttt{type = 'cfp'}, de polígono de frequência acumulada (em inglês, \textit{cumulative frequency polygon}).
+
+\vspace{0.5cm}
+
+
+```{r, warning=FALSE}
+#install.packages("fdth")   # remover o # para rodar e instalar, caso necessário
+library(fdth)               # habilitando o pacote
+
+
+# Construindo a tabela com intervalos de classes arbitrários:
+tabela.pesos <- fdt(dados$PESO, na.rm = TRUE)
+tabela.pesos
+
+
+# Gráfico de ogiva: usa o pacote fdth e função fdt() para tabela juntamente com
+# o plot() e type='cfp' 
+
+
+# Construindo a tabela com intervalos de classes a partir de início, fim e amplitude:
+tabela.pesos = fdt(dados$PESO, na.rm = TRUE, start=0, end=7000, h=1000)   # h = amplitude das classes
+tabela.pesos
+
+
+# Gráfico de ogiva (polígono de frequência acumulada): usa o plot() com type='cfp' 
+plot(tabela.pesos,                                             ## tabela contruída com a função fdt()
+     type='cfp',                                                  ## cfp: cumulative frequency polygon 
+     xlab="Peso (em gramas)",                                     ## rótulo do eixo x
+     ylab = "Frequência",                                         ## rótulo do eixo y
+     main = "Ogiva - Peso ao nascer dos nascidos vivos em 2024",  ## título
+     col=4,                                                       ## cor da linha
+     lwd=2)                                                       ## espessura da linha
+
+
+
+```
+
+\vspace{0.5cm}
+
+## Polígono de frequências 
+
+
+\vspace{0.5cm}
+
+O polígono de frequências é um gráfico de linhas que pode ser utilizado para variáveis quantitativas e para construí-lo vamos utilizar a tabela fornecida pela função \texttt{fdt(...)} do pacote \texttt{fdth}. Após a construção da tabela, basta aplicar a função \texttt{plot(...)}, utilizando a opção \texttt{type = 'fp'}, de polígono de frequências  (em inglês, \textit{frequency polygon}).
+
+\vspace{0.5cm}
+
+
+
+```{r}
+# install.packages("fdth")   # remover o # para rodar e instalar, caso necessário
+# library(fdth)               # habilitando o pacote
+
+# Construindo a tabela com intervalos de classes a partir de início, fim e amplitude:
+tabela.pesos = fdt(dados$PESO, na.rm = TRUE, start=0, end=7000, h=1000)   # h = amplitude das classes
+tabela.pesos
+
+# Polígono de frequência: usa o pacote fdth e função fdt() para tabela juntamente com
+# o plot() e type='fp' 
+
+plot(tabela.pesos,                                            ## tabela contruída com a função fdt() 
+     type='fp',                                                   ## fp: frequency polygon 
+     xlab="Peso (em gramas)",                                     ## rótulo do eixo x
+     ylab = "Frequência",                                         ## rótulo do eixo y
+     main = "Polígono de frequências - Peso ao nascer dos nascidos vivos em 2024",  ## título
+     col=4,                                                       ## cor da linha
+     lwd=2)                                                       ## espessura da linha
+
+```
+
+## Exportando gráficos
+
+\vspace{0.5cm}
+
+Quando fazemos gráficos no software R e temos o objetivo de utilizá-los em um trabalho, relatório, artigo científico, precisamos salvá-lo, exportá-lo. Podemos realizar essa tarefa utilizando a opção Export -> Save As da própria janela do RStudio, por exemplo, ou executar um código para realizar a exportação, como a seguir.
+
+Como exemplo, vamos exportar o histograma da variável semanas de gestação.
+
+\vspace{0.5cm}
+
+```{r}
+
+## Inicie com o comando de salvar o gráfico em um arquivo com o formato desejado:
+
+png("meu_grafico.png")     # formato png
+#pdf("meu_grafico.pdf")    # formato pdf
+#jpeg("meu_grafico.jpeg")  # formato jpeg
+#tiff("meu_grafico.tiff")  # formato tiff
+#svg("meu_grafico.svg")    # formato svg
+
+
+# Execute o gráfico
+
+hist(dados$SEMAGESTAC, 
+     freq = FALSE,                                        ## para densidade de frequências
+     breaks = seq(19,45,2),                               ## Quebras das classes
+     right = F,                                           ## para intervalos fechados à esquerda
+     main="Histograma de semanas de gestação",            ## título
+     xlab="Semanas de gestação",                          ## rótulo do eixo x
+     ylab="Densidade de frequências",                     ## rótulo do eixo y
+     col=4,                                               ## cor das barras
+     xlim=c(18,46),                                       ## limites do eixo x
+     ylim=c(0,0.25),                                      ## limites do eixo y
+     xaxp = c(19,45,13))                    ## controla eixo x : c(início, fim, qtde de intervalos) 
+
+# Dê o comando de encerrar o processo:
+dev.off()
+
+
+```
+
+
+\vspace{0.5cm}
+
+\textbf{Observação:} O arquivo exportado será salvo na pasta definida em \texttt{setwd}. Se você não definiu uma pasta na sessão ou quer conferir qual pasta está definida, basta usar o comando \texttt{getwd()} que o caminho da pasta onde o arquivo será salvo será exibido.
+
+\vspace{0.5cm}
+
+```{r}
+getwd()
+```
+
+

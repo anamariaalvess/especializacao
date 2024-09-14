@@ -1,0 +1,120 @@
+---
+title: "Utilitários"
+author: "Ana M. Alves"
+date: "`r Sys.Date()`"
+output: pdf_document
+header-includes:
+   - \usepackage{array}
+   - \usepackage{longtable}
+   - \usepackage[brazil]{babel}
+---
+
+```{r}
+setwd <- "/Users/anamaria/especializacao/modulo_4"
+df.nv24 <- read.csv("DNOPEN24.csv", sep = ";")
+head(df.nv24)
+dim(df.nv24) # quantidade de linhas e colunas
+```
+
+```{r}
+is.data.frame(df.nv24)
+```
+```{r}
+vars_selecionadas <- c('LOCNASC', 'IDADEMAE', 'ESTCIVMAE', 'QTDFILVIVO', 'QTDFILMORT',
+'GESTACAO', 'GRAVIDEZ', 'PARTO', 'CONSULTAS', 'DTNASC',
+'SEXO', 'APGAR1', 'APGAR5', 'RACACOR', 'PESO',
+'IDANOMAL', 'CODUFNATU', 'ESCMAE2010', 'RACACORMAE', 'QTDGESTANT',
+'QTDPARTNOR', 'QTDPARTCES', 'IDADEPAI', 'SEMAGESTAC', 'CONSPRENAT',
+'STTRABPART', 'STCESPARTO', 'TPNASCASSI')
+
+
+df <- df.nv24[ ,vars_selecionadas]
+dim(df) 
+```
+
+```{r}
+table(df$LOCNASC)
+df$LOCNASC <- factor(df$LOCNASC, levels = c(1,2,3,4,5,9),
+                            labels = c("Hospital",
+                                       "Outro Estab Saúde",
+                                       "Domicílio",
+                                       "Aldeia Indígena",                                       
+                                       "Outros",
+                                       "Ignorado"),
+                            ordered = FALSE)
+table(df$LOCNASC)
+
+```
+
+```{r}
+table(df$ESTCIVMAE)
+df$ESTCIVMAE <- factor(df$ESTCIVMAE, levels = c(1,2,3,4,5,9),
+                       labels = c("Solteira",
+                                  "Casada",
+                                  "Viúva",
+                                  "Separada judicialmente",
+                                  "União consensual",
+                                  "Ignorado"),
+                       ordered = FALSE)
+table(df$ESTCIVMAE)
+```
+
+```{r}
+table(df$GESTACAO)
+
+df$GESTACAO <- factor(df$GESTACAO, levels = c(1,2,3,4,5,6,9), 
+                          labels = c("Menos de 22 semanas",
+                                     "22 a 27 semanas",
+                                     "28 a 31 semanas",
+                                     "32 a 36 semanas",
+                                     "37 a 41 semanas",
+                                     "42 semanas e mais",
+                                     "Ignorado"),
+                          ordered = TRUE)
+table(df$GESTACAO)
+```
+
+```{r}
+table(df$GRAVIDEZ)
+df$GRAVIDEZ <- factor(df$GRAVIDEZ, levels= c(1,2,3,9),
+                      labels = c("Única",
+                                 "Dupla",
+                                 "Tripla e mais",
+                                 "Ignorado"),
+                      ordered = TRUE)
+table(df$GRAVIDEZ)
+```
+
+```{r}
+table(df$CONSULTAS) #Obs.: Essa variável já veio categorizada no dataframe
+table(df$CONSPRENAT)
+
+# Reproduzindo os mesmos intervalos de classes da variável CONSULTAS:
+df$CONSPRENAT_cat <- cut(df$CONSPRENAT, breaks=c(-0.01,0,3,6,98,99))
+table(df$CONSPRENAT_cat)
+
+# Podemos ainda adicionar os rótulos das classes:
+df$CONSPRENAT_cat <- cut(df$CONSPRENAT, breaks=c(-0.01,0,3,6,98,99), 
+                         labels = c("Nenhuma", "1 a 3", "4 a 6", "7 ou mais","Ignorado"), 
+                         ordered = TRUE)
+table(df$CONSPRENAT_cat)
+```
+
+```{r}
+library(lubridate)
+df$DTNASC <- dmy(df$DTNASC)
+head(df$DTNASC)
+```
+
+```{r}
+df$MES.NASC <- month(df$DTNASC)
+head(df$MES.NASC)
+```
+
+```{r}
+df$MES.NASC <- factor(df$MES.NASC, levels = 1:5, # 1:12,
+labels = c("Jan", "Fev", "Mar", "Abr", "Mai"),
+# , "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"),
+ordered = TRUE)
+table(df$MES.NASC)
+```

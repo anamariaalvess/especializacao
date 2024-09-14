@@ -1,0 +1,587 @@
+---
+title: 'Estatística descritiva para \textit{Data Science}'
+subtitle: '0.2 - Aula Prática: Obtendo e tratando a base de dados'
+author: "Profa. Dra. Amanda Buosi Gazon Milani"
+date: "2024-07-19"
+output: pdf_document
+header-includes:
+   - \usepackage{array}
+   - \usepackage{longtable}
+   - \usepackage[brazil]{babel}
+---
+
+## Conjunto de dados - Nascidos Vivos 2024 (DataSUS)
+
+O conjunto de dados que será utilizado nesta disciplina foi obtido no site do OpenDataSUS e consiste da   
+base de informações sobre nascidos vivos 2024 (parcial). Esse conjunto de dados foi obtido pelo link 
+\texttt{https://opendatasus.saude.gov.br/dataset/sistema-de-informacao-sobre-nascidos-vivos-sinasc} (acesso e download em 08/07/2024), onde também encontramos seu respectivo dicionário de dados. O arquivo DNOPEN24.csv está disponível na plataforma do curso.
+
+\vspace{0.5cm}
+
+Inicialmente vamos importar (carregar) os dados no R, utilizando os códigos a seguir.  
+
+\vspace{0.2cm}
+
+```{r}
+setwd <- "C:\\Users\\AmandaBGM\\Google Drive\\UFG\\Especialização_FEN_IME\\2024\\Scripts"
+df.nv24 <- read.csv("DNOPEN24.csv", sep = ";")
+head(df.nv24)
+dim(df.nv24)
+```
+
+\vspace{0.2cm}
+
+```{r}
+# Verificando se é um dataframe
+is.data.frame(df.nv24)
+
+# Caso não seja (apagar # para rodar:)
+#df.nv24 <- as.data.frame(df.nv24)
+```
+
+\vspace{0.2cm}
+
+Note que o conjunto de dados contém 779.927 observações e 62 variáveis. A descrição completa deste conjunto de dados pode ser obtida no dicionário no site do OpenDataSUS e a seguir encontramos o detalhamento de parte das variáveis, que utilizaremos na disciplina. São elas:
+
+\vspace{0.2cm}
+
+\begin{center}
+    \begin{longtable}{l|l|l}
+        \caption{Variáveis do conjunto de dados}\\
+        \hline
+        \textbf{Nome da variável} & \textbf{Descrição} & \textbf{Níveis} \\
+        \hline
+        \endfirsthead
+        \multicolumn{3}{c}%
+        {\tablename\ \thetable\ -- \textit{Continuação da tabela}} \\
+        \hline
+        \textbf{Nome da variável} & \textbf{Descrição} & \textbf{Níveis}\\
+        \hline
+        \endhead
+        \hline \multicolumn{3}{r}{\textit{Continua na próxima página}} \\
+        \endfoot
+        \hline \multicolumn{3}{r}{\textit{Fim da tabela}} \\
+        \endlastfoot
+  \hline
+     LOCNASC       &  Local de ocorrência do nascimento                     &  1: Hospital \\
+                   &                                                        &  2: Outro Estab Saúde \\
+                   &                                                        &  3: Domicílio \\
+                   &                                                        &  4: Aldeia Indígena  \\                   
+                   &                                                        &  5: Outros \\
+                   &                                                        &  9: Ignorado \\
+  \hline
+     IDADEMAE      &  Idade da mãe em anos                                  & \\                    
+  \hline
+     ESTCIVMAE     &  Estado civil da mãe                                   &  1: Solteira \\
+                   &                                                        &  2: Casada \\
+                   &                                                        &  3: Viúva \\
+                   &                                                        &  4: Separada judicialmente \\
+                   &                                                        &  5: União consensual \\
+                   &                                                        &  9: Ignorado \\
+  \hline
+     QTDFILVIVO    &  Número de filhos vivos                                &  \\
+  \hline
+     QTDFILMORT    &  Número de filhos mortos                               &  \\
+  \hline
+     GESTACAO      &  Semanas de gestação, conforme classificação           &  1: Menos de 22 semanas \\
+                   &                                                        &  2: 22 a 27 semanas \\
+                   &                                                        &  3: 28 a 31 semanas \\
+                   &                                                        &  4: 32 a 36 semanas \\
+                   &                                                        &  5: 37 a 41 semanas \\
+                   &                                                        &  6: 42 semanas e mais \\
+                   &                                                        &  9: Ignorado \\
+  \hline
+     GRAVIDEZ      &  Tipo de gravidez, conforme classificação              &  1: Única \\
+                   &                                                        &  2: Dupla \\
+                   &                                                        &  3: Tripla e mais \\
+                   &                                                        &  9: Ignorado \\
+  \hline
+     PARTO         &  Tipo de parto                                         &  1: Vaginal \\
+                   &                                                        &  2: Cesáreo \\
+                   &                                                        &  9: Ignorado \\
+  \hline
+     CONSULTAS     &  Número de consultas pré-natal, conforme classificação &  1: Nenhuma \\
+                   &                                                        &  2: de 1 a 3 \\
+                   &                                                        &  3: de 4 a 6 \\
+                   &                                                        &  4: 7 e mais \\
+                   &                                                        &  9: Ignorado \\
+  \hline
+     DTNASC        &  Data do nascimento, no formato ddmmaaaa               &  \\
+  \hline
+     SEXO          &  Sexo                                                  &  0: Ignorado, não informado \\
+                   &                                                        &  1: Masculino \\
+                   &                                                        &  2: Feminino \\
+  \hline
+     APGAR1        &  Apgar no primeiro minuto, 00 a 10                     &  \\
+  \hline
+     APGAR5        &  Apgar no quinto minuto, 00 a 10                       &  \\
+  \hline
+     RACACOR       &  Raça/cor                                              &  1: Branca \\
+                   &                                                        &  2: Preta \\
+                   &                                                        &  3: Amarela \\
+                   &                                                        &  4: Parda \\
+                   &                                                        &  5: Indígena \\
+  \hline
+     PESO          &  Peso ao nascer, em gramas                             &  \\
+
+  \hline
+     IDANOMAL      &  Anomalia congênita                                    &  1: Sim \\
+                   &                                                        &  2: Não \\
+                   &                                                        &  9: Ignorado \\
+  \hline
+     CODUFNATU     &  Código da UF de naturalidade da mãe                   &  Tabela do IBGE* \\
+  \hline
+     ESCMAE2010    &  Escolaridade da mãe - 2010                            &  0: Sem escolaridade \\
+                   &                                                        &  1: Fundamental I (1ª a 4ª série)\\
+                   &                                                        &  2: Fundamental II (5ª a 8ª série) \\
+                   &                                                        &  3: Médio (antigo 2º Grau) \\
+                   &                                                        &  4: Superior incompleto \\
+                   &                                                        &  5: Superior completo \\
+                   &                                                        &  9: Ignorado \\
+  \hline
+     RACACORMAE    &  Raça/cor da mãe                                       &  1: Branca \\
+                   &                                                        &  2: Preta \\
+                   &                                                        &  3: Amarela \\
+                   &                                                        &  4: Parda \\
+                   &                                                        &  5: Indígena \\
+  \hline
+     QTDGESTANT    &  Número de gestações anteriores                        &  \\
+  \hline
+     QTDPARTNOR    &  Número de partos vaginais                             &  \\
+  \hline
+     QTDPARTCES    &  Número de partos cesáreos                             &  \\
+  \hline
+     IDADEPAI      &  Idade do pai, em anos                                 &  \\
+  \hline
+     SEMANAGESTAC  &  Número de semanas de gestação                         &  \\
+  \hline
+     CONSPRENAT    &  Número de consultas pré-natal                         &  \\
+  \hline
+     STTRABPART    &  Trabalho de parto induzido?                           &  1: Sim \\
+                   &                                                        &  2: Não \\
+                   &                                                        &  3: Não se aplica \\
+                   &                                                        &  9: Ignorado \\
+  \hline
+     STCESPARTO    &  Cesárea ocorreu antes do trabalho de parto iniciar?   &  1: Sim \\
+                   &                                                        &  2: Não \\
+                   &                                                        &  3: Não se aplica \\
+                   &                                                        &  9: Ignorado \\
+  \hline
+     TPNASCASSI    &  Nascimento foi assistido por?                         &  1: Médico \\
+                   &                                                        &  2: Enfermeira/obstetriz \\
+                   &                                                        &  3: Parteira \\
+                   &                                                        &  4: Outros \\
+                   &                                                        &  9: Ignorado \\
+\hline
+    \end{longtable}
+    \footnotesize{* A tabela de códigos UF do IBGE pode ser encontrada em https://www.ibge.gov.br/explica/codigos-dos-municipios.php}
+\end{center}
+
+
+
+\vspace{0.5cm}
+
+## Selecionando algumas variáveis de interesse para construção do dataframe a ser usado na aula
+
+A seguir, vamos construir um novo dataframe, contendo somente as variáveis descritas anteriormente. Para isso, construimos um vetor auxiliar contendo as variáveis desejadas e, em seguida, definimos o novo dataframe (df) contendo apenas estas variáveis.
+
+\newpage
+
+```{r}
+vars_selecionadas <- c('LOCNASC', 'IDADEMAE', 'ESTCIVMAE', 'QTDFILVIVO', 'QTDFILMORT',
+'GESTACAO', 'GRAVIDEZ', 'PARTO', 'CONSULTAS', 'DTNASC',
+'SEXO', 'APGAR1', 'APGAR5', 'RACACOR', 'PESO',
+'IDANOMAL', 'CODUFNATU', 'ESCMAE2010', 'RACACORMAE', 'QTDGESTANT',
+'QTDPARTNOR', 'QTDPARTCES', 'IDADEPAI', 'SEMAGESTAC', 'CONSPRENAT',
+'STTRABPART', 'STCESPARTO', 'TPNASCASSI')
+
+
+df <- df.nv24[ ,vars_selecionadas]
+dim(df) 
+```
+
+\vspace{0.2cm}
+
+O dataframe \texttt{df} contém as 779.927 observações e as 28 variáveis definidas na Tabela 1. Entretanto, a base vem com os códigos (números) dos níveis das variáveis e, para trabalharmos corretamente com ela, precisamos primeiramente tratar tais variáveis, pois não se tratam de variáveis numéricas, e sim categóricas, cujos fatores estão representados por números. A seguir, faremos o tratamento necessário na base de dados.
+
+
+## Transformando as variáveis categóricas em fatores e adicionando os respectivos labels
+
+\vspace{0.5cm}
+
+### $\bullet$ LOCALNASC (Local de ocorrência do nascimento)
+```{r}
+table(df$LOCNASC)
+df$LOCNASC <- factor(df$LOCNASC, levels = c(1,2,3,4,5,9),
+                            labels = c("Hospital",
+                                       "Outro Estab Saúde",
+                                       "Domicílio",
+                                       "Aldeia Indígena",                                       
+                                       "Outros",
+                                       "Ignorado"),
+                            ordered = FALSE)
+table(df$LOCNASC)
+
+```
+
+\vspace{0.5cm}
+
+### $\bullet$ ESTCIVMAE (Estado civil da mãe)
+```{r}
+table(df$ESTCIVMAE)
+df$ESTCIVMAE <- factor(df$ESTCIVMAE, levels = c(1,2,3,4,5,9),
+                       labels = c("Solteira",
+                                  "Casada",
+                                  "Viúva",
+                                  "Separada judicialmente",
+                                  "União consensual",
+                                  "Ignorado"),
+                       ordered = FALSE)
+table(df$ESTCIVMAE)
+```
+
+\vspace{0.75cm}
+
+### $\bullet$ GESTACAO (Semanas de gestação)
+```{r}
+table(df$GESTACAO)
+
+df$GESTACAO <- factor(df$GESTACAO, levels = c(1,2,3,4,5,6,9), 
+                          labels = c("Menos de 22 semanas",
+                                     "22 a 27 semanas",
+                                     "28 a 31 semanas",
+                                     "32 a 36 semanas",
+                                     "37 a 41 semanas",
+                                     "42 semanas e mais",
+                                     "Ignorado"),
+                          ordered = TRUE)
+table(df$GESTACAO)
+```
+
+\vspace{0.75cm}
+\newpage
+
+### $\bullet$ GRAVIDEZ (Tipo de gravidez)
+```{r}
+table(df$GRAVIDEZ)
+df$GRAVIDEZ <- factor(df$GRAVIDEZ, levels= c(1,2,3,9),
+                      labels = c("Única",
+                                 "Dupla",
+                                 "Tripla e mais",
+                                 "Ignorado"),
+                      ordered = TRUE)
+table(df$GRAVIDEZ)
+```
+
+
+```{r, echo=FALSE}
+#table(df$PARTO)
+df$PARTO <- factor(df$PARTO, levels = c(1,2,9),
+                   labels = c("Vaginal",
+                              "Cesáreo",
+                              "Ignorado"),
+                   ordered = FALSE)
+#table(df$PARTO)
+```
+
+\vspace{0.5cm}
+
+### $\bullet$ CONSULTAS (Número de consultas de pré-natal)
+```{r}
+table(df$CONSULTAS)
+df$CONSULTAS <- factor(df$CONSULTAS, levels = c(1,2,3,4,9),
+                       labels = c("Nenhuma",
+                                  "de 1 a 3",
+                                  "de 4 a 6",
+                                  "7 e mais",
+                                  "Ignorado"),
+                       ordered=TRUE)
+table(df$CONSULTAS)
+```
+
+\vspace{0.5cm}
+
+### $\bullet$  SEXO (Sexo)
+```{r}
+table(df$SEXO)
+df$SEXO <- factor(df$SEXO, levels = c(0,1,2),
+                  labels = c("Ignorado, não informado",
+                             "Masculino",
+                             "Feminino"),
+                  ordered = FALSE)
+
+table(df$SEXO)
+```
+
+\vspace{0.5cm}
+
+### $\bullet$ RACACOR (Raça/Cor)
+```{r}
+table(df$RACACOR)
+df$RACACOR <- factor(df$RACACOR, levels = c(1,2,3,4,5),
+                     labels = c("Branca",
+                                "Preta",
+                                "Amarela",
+                                "Parda",
+                                "Indígena"),
+                     ordered = FALSE)
+table(df$RACACOR)
+```
+
+
+```{r, echo=FALSE}
+#table(df$IDANOMAL)
+df$IDANOMAL <- factor(df$IDANOMAL, levels = c(1,2,9),
+                      labels = c("Sim",
+                                 "Não",
+                                 "Ignorado"),
+                      ordered = FALSE)
+#table(df$IDANOMAL)
+```
+
+
+```{r, echo=FALSE}
+#table(df$CODUFNATU)
+df$CODUFNATU <- factor(df$CODUFNATU, levels = c(11:17,21:29,31:33,35,41:43,50:53,'nu'),
+                       labels = c('RO', 'AC', 'AM', 'RR', 'PA', 'AP', 'TO',
+                                  'MA', 'PI', 'CE', 'RN','PB', 'PE', 'AL', 'SE', 'BA',
+                                  'MG', 'ES', 'RJ', 'SP',
+                                  'PR', 'SC', 'RS',
+                                  'MS', 'MT', 'GO', 'DF',
+                                  'Ignorado'))
+#table(df$CODUFNATU)
+```
+
+
+```{r, echo=FALSE}
+#table(df$ESCMAE2010)
+df$ESCMAE2010 <- factor(df$ESCMAE2010, levels = c(0,1,2,3,4,5,9),
+                        labels = c("Sem escolaridade",
+                                   "Fundamental I (1ª a 4ª série)",
+                                   "Fundamental II (5ª a 8ª série)",
+                                   "Médio (antigo 2º grau)",
+                                   "Superior incompleto",
+                                   "Superior completo",
+                                   "Ignorado"),
+                        ordered = TRUE)
+#table(df$ESCMAE2010)
+```
+
+
+```{r, echo=FALSE}
+#table(df$RACACORMAE)
+df$RACACORMAE <- factor(df$RACACORMAE, levels = c(1,2,3,4,5),
+                       labels = c("Branca",
+                                 "Preta",
+                                 "Amarela",
+                                 "Parda",
+                                 "Indígena"),
+                       ordered = FALSE)
+#table(df$RACACORMAE)
+```
+
+
+```{r, echo=FALSE}
+#table(df$STTRABPART)
+df$STTRABPART <- factor(df$STTRABPART, levels = c(1,2,9),
+                        labels = c("Sim",
+                                   "Não",
+                                   "Ignorado"))
+#table(df$STTRABPART)
+```
+
+
+```{r, echo=FALSE}
+#table(df$STCESPARTO)
+df$STCESPARTO <- factor(df$STCESPARTO, levels = c(1,2,3,9),
+                        labels = c("Sim",
+                                   "Não",
+                                   "Não se aplica",
+                                   "Ignorado"))
+#table(df$STCESPARTO)
+```
+
+
+```{r, echo=FALSE}
+#table(df$TPNASCASSI)
+df$TPNASCASSI <- factor(df$TPNASCASSI, levels = c(1,2,3,4,9),
+                        labels = c("Médico",
+                                   "Enfermeira/obstetriz",
+                                   "Parteira",
+                                   "Outros",
+                                   "Ignorado"))
+#table(df$TPNASCASSI)
+```
+
+\vspace{2cm}
+
+## Exercício:
+
+Continue o processo de formatação das seguintes variáveis categóricas, transformando-as em fator e adicionando os respectivos labels, de acordo com o descrito na Tabela 1:
+
+\vspace{0.5cm}
+
+$\bullet$ PARTO (Tipo de parto)
+
+$\bullet$ IDANOMAL (Anomalia congênita)
+
+$\bullet$ CODUFNATU (Código UF de naturalidade da mãe - Código UF do IBGE)
+
+$\bullet$ ESCMAE2010 (Escolaridade da mãe - 2010)
+
+$\bullet$ RACACORMAE (Raça/cor da mãe)
+
+$\bullet$ STTRABPART (Trabalho parto induzido?)
+
+$\bullet$ STCESPARTO (Cesárea ocorreu antes do trabalho de parto iniciar?)
+
+$\bullet$ TPNASCASSI (Nascimento foi assistido por...)
+
+
+
+\vspace{1cm}
+
+## Formatando variável de data
+
+\vspace{0.5cm}
+
+### $\bullet$ DTNASC (Data do nascimento) 
+
+\vspace{0.2cm}
+
+\textbf{Observação:} A variável DTNASC veio como número inteiro, no formato ddmmaaaa, e o padrão em programação é aaaa-mm-dd. Vamos utilizar o pacote \texttt{lubridate} para transformá-la no formato adequado.
+
+\vspace{0.2cm}
+
+```{r, warning=FALSE}
+# install.packages("lubridate")  # Remover o # para instalar, caso necessário
+library(lubridate)
+
+df$DTNASC <- dmy(df$DTNASC)
+head(df$DTNASC)
+```
+
+
+
+\vspace{1cm}
+
+
+## Criando novas variáveis 
+
+\vspace{1cm}
+
+### $\bullet$ Criando a variável MES.NASC (mês de nascimento) a partir da variável DTNASC (Data de nascimento):
+```{r}
+df$MES.NASC <- month(df$DTNASC)
+head(df$MES.NASC)
+
+## Adicionando os labels das categorias da variável:
+df$MES.NASC <- factor(df$MES.NASC, levels = 1:5, # 1:12,
+                      labels = c("Jan", "Fev", "Mar", "Abr", "Mai"), 
+                      # , "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"),
+                      ordered = TRUE)
+table(df$MES.NASC)
+
+```
+
+
+\vspace{1cm}
+
+### $\bullet$  Criando SEMAGESTAC_cat a partir de SEMAGESTAC p/ comparar com a variável GESTACAO:
+```{r}
+table(df$GESTACAO) #Obs.: Essa variável já veio categorizada no dataframe
+table(df$SEMAGESTAC)
+
+# Reproduzindo os mesmos intervalos de classes da variável GESTACAO:
+df$SEMAGESTAC_cat <- cut(df$SEMAGESTAC, breaks=c(0,21,27,31,36,41,50) )
+table(df$SEMAGESTAC_cat)
+
+# Podemos ainda adicionar os rótulos das classes:
+df$SEMAGESTAC_cat <- cut(df$SEMAGESTAC, breaks=c(0,21,27,31,36,41,50),
+                         labels = c("Menos de 22 semanas",
+                                    "22 a 27 semanas",
+                                    "28 a 31 semanas",
+                                    "32 a 36 semanas",
+                                    "37 a 41 semanas",
+                                    "42 semanas e mais"),
+                         ordered = TRUE)
+table(df$SEMAGESTAC_cat)
+```
+
+\vspace{1cm}
+
+
+
+\vspace{1cm}
+
+### $\bullet$  Criando CONSPRENAT_cat a partir de CONSPRENAT p/ comparar com a variável CONSULTAS:
+```{r}
+table(df$CONSULTAS) #Obs.: Essa variável já veio categorizada no dataframe
+table(df$CONSPRENAT)
+
+# Reproduzindo os mesmos intervalos de classes da variável CONSULTAS:
+df$CONSPRENAT_cat <- cut(df$CONSPRENAT, breaks=c(-0.01,0,3,6,98,99))
+table(df$CONSPRENAT_cat)
+
+# Podemos ainda adicionar os rótulos das classes:
+df$CONSPRENAT_cat <- cut(df$CONSPRENAT, breaks=c(-0.01,0,3,6,98,99), 
+                         labels = c("Nenhuma", "1 a 3", "4 a 6", "7 ou mais","Ignorado"), 
+                         ordered = TRUE)
+table(df$CONSPRENAT_cat)
+```
+
+\vspace{0.5cm}
+
+Obs.: Podemos observar uma certa insconsistência entre as duas variáveis.
+
+
+\vspace{1.8cm}
+
+## Versão final do dataframe
+
+\vspace{0.5cm}
+
+Conferindo o dataframe final, temos:
+```{r}
+str(df)
+```
+
+
+
+\vspace{1cm}
+
+## Exportando a base final
+
+\vspace{0.5cm}
+
+Essa será a base que utilizaremos para as análises da disciplina. Vamos exportá-la em um arquivo csv (Dataframe_AulaAmanda.csv), que está disponível na plataforma do curso.
+
+\vspace{0.5cm}
+
+```{r}
+setwd <- "C:\\Users\\AmandaBGM\\Google Drive\\UFG\\Especialização_FEN_IME\\2024\\Scripts"
+write.csv2(df, "Dataframe_AulaAmanda.csv", row.names = F)
+```
+
+\vspace{1cm}
+
+Podemos importar para conferir se a exportação ocorreu com sucesso:
+
+\vspace{0.5cm}
+
+```{r}
+setwd <- "C:\\Users\\AmandaBGM\\Google Drive\\UFG\\Especialização_FEN_IME\\2024\\Scripts"
+
+# 2 opções de importação (.csv com separador ponto-e-vígula):
+
+# dados <- read.csv2(file = "Dataframe_AulaAmanda.csv",  header = TRUE)
+# ou:
+dados <- read.csv(file = "Dataframe_AulaAmanda.csv", sep=';', header = TRUE)
+
+head(dados)
+dim(dados)
+```
+
+
+
+

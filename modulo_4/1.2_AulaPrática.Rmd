@@ -1,0 +1,369 @@
+---
+title: 'Estatística descritiva para \textit{Data Science}'
+subtitle: '1.2 - Aula Prática: Análise bidimensional - gráficos'
+author: "Profa. Dra. Amanda Buosi Gazon Milani"
+date: "2024-08-03"
+output: pdf_document
+header-includes:
+   - \usepackage{array}
+   - \usepackage{longtable}
+   - \usepackage[brazil]{babel}
+---
+
+## Conjunto de dados - Nascidos Vivos 2024 (DataSUS)
+
+O conjunto de dados que será utilizado nesta disciplina foi obtido no site do OpenDataSUS, foi tratado e consiste da base de informações sobre nascidos vivos 2024 (parcial).
+
+
+\vspace{0.5cm}
+
+Inicialmente vamos importar (carregar) os dados no R, utilizando os códigos a seguir.  
+
+\vspace{0.2cm}
+```{r}
+setwd <- "C:\\Users\\AmandaBGM\\Google Drive\\UFG\\Especialização_FEN_IME\\2024\\Scripts"
+
+# 2 opções de importação (.csv com separador ponto-e-vígula):
+
+# dados <- read.csv2(file = "Dataframe_AulaAmanda.csv",  header = TRUE)
+# ou:
+dados <- read.csv(file = "Dataframe_AulaAmanda.csv", sep=';', header = TRUE)
+
+head(dados)
+dim(dados)
+```
+
+\vspace{0.5cm}
+
+## Análise bidimensional - Gráficos
+
+\vspace{0.5cm}
+
+Vamos utilizar o R para construir gráficos bidimensionais.
+
+\vspace{0.5cm}
+
+### Qualitativa x Qualitativa
+
+\vspace{0.5cm}
+
+Como vimos, quando estamos trabalhando com duas variáveis qualitativas, podemos construir gráficos de colunas bidimensionais. Assim como no caso unidimensional, o gráfico de colunas é construído a partir de uma tabela, neste caso, a tabela cruzada. Ele pode ser apresentado de duas formas: colunas empilhadas ou colunas justapostas.
+
+\vspace{0.5cm}
+
+```{r}
+# Tabela bidimensional: Estado civil da mãe x Tipo de parto
+
+# Excluindo a categoria Ignorado:
+dados_aux <- dados[((dados$ESTCIVMAE!="Ignorado") & (dados$PARTO!="Ignorado")),]
+
+# Tabela:
+tab1 <- table(dados_aux$PARTO, dados_aux$ESTCIVMAE)
+tab1
+```
+
+```{r}
+## Gráfico em colunas empilhadas
+
+## Gráfico de colunas bidimensional: Estado civil da mãe x Tipo de parto
+
+plot(tab1, 
+     main = "Estado civil da mãe x Tipo de parto",   # Título
+     col=c(4, 5, 6, 7, 8),                           # cores das categorias eixo y
+     las=1,                                          # rotaciona rótulos eixo y
+     xlab = "Tipo de parto",                         # rótulo do eixo x
+     ylab = "Estado civil da mãe" )                  # rótulo do eixo y
+
+```
+
+
+Podemos adicionar uma coluna de totais, para comparar a distribuição marginal no gráfico de colunas empilhadas.
+
+
+```{r}
+tab1
+
+# Coluna de total 
+Total <-  margin.table(tab1,2)   # O argumento 1 define a marginal da coluna
+Total
+
+# Juntando tudo
+tab2 <-rbind(tab1, Total)
+tab1
+tab2
+
+## Obtendo frequência relativa pelo total da coluna
+
+tab_final <- 100*tab2/rowSums(tab2)
+tab_final
+
+
+
+```
+
+E o gráfico fica assim:
+
+```{r}
+## Gráfico em colunas empilhadas
+
+## Gráfico de colunas bidimensional: Estado civil da mãe x Tipo de parto
+barplot(t(tab_final), 
+     main = "Estado civil da mãe x Tipo de parto",   # Título
+     col=c(4, 5, 6, 7, 8),                           # cores das categorias eixo y
+     las=1,                                          # rotaciona rótulos eixo y
+     xlab = "Tipo de parto")                         # rótulo do eixo x
+```
+
+```{r}
+## Gráfico em colunas empilhadas
+
+## Gráfico de colunas bidimensional: Estado civil da mãe x Tipo de parto
+barplot(t(tab_final), 
+     main = "Estado civil da mãe x Tipo de parto",   # Título
+     col=c(4, 5, 6, 7, 8),                           # cores das categorias eixo y
+     ylab = "Porcentagem (%)",
+     xlim = c(0,6),
+     legend = T,                                     # adicional legenda
+     args.legend = list(x = "right", 
+                        bty = "n", 
+                        title = "Estado civil da mãe"))  # parâmetros da legenda
+
+```
+
+Ou podemos utilizar o gráfico de barras justapostas, para evidenciar as diferenças nas frequências.
+
+```{r}
+## Gráfico em colunas justapostas
+
+## Gráfico de colunas bidimensional: Estado civil da mãe x Tipo de parto
+options(scipen = 999)
+
+barplot(tab1, 
+        beside = TRUE,                                   # barras justapostas
+        legend = TRUE,                                   # habilita legenda
+        main = "Estado civil da mãe x Tipo de parto",    # Título
+        col=c(4, 5),                                     # cores das categorias eixo y
+        ylab = "Frequência",                             # rótulo do eixo y
+        xlab = "Estado civil da mãe",                    # rótulo do eixo x
+        ylim = c(0,250000))
+
+
+```
+Caso queira adicinar as porcentagens acima de cada coluna, podemos proceder da seguinte maneira:
+```{r}
+## Gráfico em colunas justapostas
+
+## Gráfico de colunas bidimensional: Estado civil da mãe x Tipo de parto
+tab2 <- 100*prop.table(tab1)
+
+b <- barplot(tab2, 
+        beside = TRUE,                                   # barras justapostas
+        legend = TRUE,                                   # habilita legenda
+        main = "Estado civil da mãe x Tipo de parto",    # Título
+        col=c(4, 5 ),                                    # cores das categorias eixo y
+        ylab = "Porcentagem (%)",                        # rótulo do eixo y
+        xlab = "Estado civil da mãe",                    # rótulo do eixo x
+        ylim = c(0,32))
+text(x = b, y=tab2 + 1.2, labels=paste0(round(tab2, 1), "%"), cex =0.7)
+
+```
+Como alguns rótulos não estão sendo exibidos, fazer o gráfico de barras horizontais justapostas.
+
+```{r}
+## Gráfico em barras justapostas
+
+## Gráfico de barras bidimensional: Estado civil da mãe x Tipo de parto
+
+par(mai=c(1,2,1,1))  # aumenta a margem esquerda                                
+b <- barplot(tab2, 
+        beside = T,                                     # barras justapostas
+        horiz = TRUE,                                   # Gráfico em barras (rótulos grandes)
+        legend = TRUE, 
+        main = "Estado civil da mãe x Tipo de parto",   # Título
+        col=c(4, 5),                                    # cores das categorias eixo y
+        las=1,                                          # rotaciona rótulos eixo y
+        xlab = "Porcentagem(%)",                            # rótulo do eixo x
+        ylab = " " ,                                    # rótulo do eixo y
+        xlim = c(0,32))
+text(y = b, x=tab2 + 1.5, labels=paste0(round(tab2, 1), "%"), cex =0.7)
+
+par(mai=c(1,1,1,1)) # volta ao normal
+
+
+```
+
+
+
+
+
+\vspace{0.5cm}
+
+### Quantitativa x Quantitativa
+
+\vspace{0.5cm}
+
+Para construir o gráfico de dispersão de duas variáveis quantitativas, utilizamos a função \texttt{plot(...)} aplicada diretamente ao conjunto de dados (pares de dados) - e não à uma tabela resumo!
+
+```{r, eval=FALSE}
+## Gráfico de dispersão: Peso do RN x Idade da mãe
+
+dados_aux <- dados[dados$IDADEMAE<99,]
+
+plot(dados_aux$PESO, dados_aux$IDADEMAE,
+     main = "Gráfico de dispersão: Peso do RN x Idade da mãe",   # Título
+     xlab = "Peso do RN (gramas)",                               # rótulo do eixo x
+     ylab = "Idade da mãe (anos)")                               # rótulo do eixo y
+```
+
+Como nosso conjunto de dados é muito grande, o gráfico de dispersão fica com muitos pontos (e a figura gerada um arquivo muito grande, portanto foi omitido no pdf gerado). Apenas para visualização, vamos obter o mesmo gráfico (e os demais exemplos), mas para uma pequena parte do conjunto, mais especificamente, para os casos em que a gravidez foi de três ou mais bebês (filtrando pela variável GRAVIDEZ na categoria "Tripla e mais").
+
+```{r, echo= FALSE}
+## Gráfico de dispersão: Peso do RN x Idade da mãe
+
+dados_aux <- dados[dados$IDADEMAE<99 & dados$GRAVIDEZ=='Tripla e mais',]
+dim(dados_aux)
+
+plot(dados_aux$PESO, dados_aux$IDADEMAE,
+     main = "Gráfico de dispersão: Peso do RN x Idade da mãe",   # Título
+     xlab = "Peso do RN (gramas)",                               # rótulo do eixo x
+     ylab = "Idade da mãe (anos)")                               # rótulo do eixo y
+```
+
+Vamos fazer mais um exemplo, já no conjunto de dados filtrado, para gerar um gráfico com menos pontos.
+
+```{r}
+## Gráfico de dispersão: Idade da mãe x Idade do pai
+
+dados_aux <- dados[(dados$IDADEMAE<99 
+                    & dados$IDADEPAI<99) 
+                    & dados$GRAVIDEZ=='Tripla e mais',]
+
+plot(dados_aux$IDADEMAE, dados_aux$IDADEPAI,
+     main = "Gráfico de dispersão:  Idade da mãe x Idade do pai",  # Título
+     xlab = "Idade da mãe (anos)",                                 # rótulo do eixo x
+     ylab = "Idade do pai (anos)")                                 # rótulo do eixo y
+```
+
+
+
+\vspace{0.5cm}
+
+### Qualitativa x Quantitativa
+
+\vspace{0.5cm}
+
+Por fim, para construir gráficos para duas variáveis sendo uma delas qualitativa e a outra quantitativa, utilizamos gráficos como histogramas e box-plots comparativos, construídos para a variável quantitativa, para cada nível ou categoria da variável qualitativa.
+
+```{r}
+## Peso e Sexo do RN:
+
+# Filtrando os ignorados e NA's
+
+dados2 <- dados[(dados$SEXO != "Ignorado, não informado") 
+                & is.na(dados$SEXO) == FALSE & is.na(dados$PESO) == FALSE,]
+
+```
+
+
+```{r}
+## Box-plot comparativo: Peso x Sexo
+
+boxplot((dados2$PESO/1000)~dados2$SEXO, 
+        main="Boxplot Comparativo: Peso x Sexo",     # Título
+        xlab = "Sexo",                               # rótulo do eixo x
+        ylab = "Peso do RN (kg)",                    # rótulo do eixo y
+        col=c(6,4))                                  # cores das caixas
+
+```
+
+```{r}
+## Box-plot comparativo: Peso x Sexo
+
+boxplot((dados2$PESO/1000)~dados2$SEXO, 
+        main="Boxplot Comparativo: Peso x Sexo",     # Título
+        xlab = "Sexo",                               # rótulo do eixo x
+        ylab = "Peso do RN (kg)",                    # rótulo do eixo y
+        col=c(6,4),                                  # cores das caixas
+        boxwex = 0.2)                                # largura das caixas
+
+```
+
+```{r}
+## Box-plot comparativo: Peso x Sexo
+
+boxplot((dados2$PESO/1000)~dados2$SEXO, 
+        horizontal = TRUE,                           # rotaciona o gráfico
+        main="Boxplot Comparativo: Peso x Sexo",     # Título
+        ylab = "Sexo",                               # rótulo do eixo y
+        xlab = "Peso do RN (kg)",                    # rótulo do eixo x
+        col=c(6,4))                                  # cores das caixas
+ 
+```
+
+```{r}
+## Box-plot comparativo: Peso x Sexo
+
+boxplot((dados2$PESO/1000)~dados2$SEXO, 
+        horizontal = TRUE,                           # rotaciona o gráfico
+        main="Boxplot Comparativo: Peso x Sexo",     # Título
+        ylab = "Sexo",                               # rótulo do eixo y
+        xlab = "Peso do RN (kg)",                    # rótulo do eixo x
+        col=c(6,4),                                  # cores das caixas
+        boxwex = 0.5)                                # largura das caixas
+```
+```{r}
+## Histograma comparativo: Peso x Sexo
+
+#install.packages("lattice")    # Remover o # para instalar, caso necessário
+library(lattice)                # Habilita o pacote
+
+
+
+histogram(~PESO/1000 | SEXO , dados2,      ## ~var_quantit | var_qualit , dataframe
+          type="density",                  # para histograma com densidade de frequências
+          breaks = seq(0,7,1),             # intervalos de classes
+          right = FALSE,                   # para intervalos de classes fechados à esquerda
+          xlim = c(0,7),                                    # limites eixo x
+          main = 'Histograma comparativo: Peso x Sexo',     # Título
+          ylab = 'Densidade',                               # rótulo eixo y
+          xlab = 'Peso (kg)',                                 # rótulo eix x
+          between = list(x = 2, y = 2),                     # cria espaços entre os gráficos
+         # index.cond = list(c(2,3,1)),                     # se precisar reordenar gráficos
+          layout = c(2,1),                                  # disposição dos gráficos
+          scales = list(alternating = F,      # alternating = F faz aparecer eixo em todos os gráficos
+                        x = list( at=seq(0,7,1))))     # controla os ticks do eixo x
+
+```
+Na visualização de dados, podemos explorar ao máximo as variáveis presentes no conjunto de dados.
+
+## Bônus: gráfico com visualização de três variáveis
+
+```{r}
+## Peso e Sexo do RN:
+
+# Filtrando os ignorados e NA's (novamente filtrando para três ou mais bebês)
+
+dados3 <- dados[(dados$SEXO != "Ignorado, não informado") 
+                & is.na(dados$SEXO) == FALSE & is.na(dados$PESO) == FALSE
+                & dados$IDADEMAE<99 
+                & dados$GRAVIDEZ=='Tripla e mais',]
+
+```
+
+```{r}
+xyplot(PESO/1000 ~ IDADEMAE | SEXO, dados3,   ## var_quant y ~  var_quant x | var_quali , dataframe
+       main = "Diagrama de dispersão por sexo do RN",
+       ylab = 'Peso do RN (kg)',
+       xlab = 'Idade da mãe (anos)',
+       pch = 19,
+       between = list(x = 2, y = 2),
+     #  index.cond = list(c(2,3,1)),
+       xlim = c(5,65),
+       layout = c(2,1),
+       scales = list(alternating = F,  
+                     x = list( at=seq(5,65,5)),
+                     y = list( at=seq(0,7,1))))
+
+```
+
+

@@ -1,0 +1,173 @@
+---
+title: "Curso de Especialização em Data Science e Estatística Aplicada\nMódulo I - Introdução à programação\n\nAtividade Avaliativa"
+author: "Prof. Dr. Fabrizzio Soares"
+date: "2024-05-10"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{=html}
+<style>body {text-align: justify}</style>
+```
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Instruções
+
+- O desenvolvimento desta atividade deve ser realizada de forma individual. 
+
+- Deve-se completar o arquivo Rmd enviado na atividade. 
+
+- É necessário devolver o arquivo em Rmd e em pdf. 
+
+- Valor da atividade: 10 pontos. 
+
+**Data disponível: 09/05/2024**
+
+**Data máxima para entrega: 31/05/2024**
+
+
+# Atividade
+
+Nesta atividade avaliativa, desenvolveremos um pequeno projeto para analisar dados do **Sinan** (*Sistema de Informação de Agravos de Notificação*) do Ministério da Saúde.
+
+## Sobre o Sinan
+
+O Sistema de Informação de Agravos de Notificação (Sinan) é alimentado, pela notificação e investigação de casos de doenças e agravos que constam da lista nacional de doenças de notificação compulsória (Portaria GM/MS no. 217, de 1 de março de 2023), mas é facultado a estados e municípios incluir outros problemas de saúde importantes em sua região. Sua utilização efetiva permite a realização do diagnóstico da ocorrência de um evento na população, podendo fornecer subsídios para explicações dos agravos de notificação compulsória, além de indicar riscos aos quais as pessoas estão sujeitas, contribuindo assim, para a identificação da realidade epidemiológica de determinada área geográfica. O seu uso sistemático, de forma descentralizada, contribui para a democratização da informação, permitindo que todos os profissionais de saúde tenham acesso à informação e as tornem disponíveis para a comunidade. É, portanto, um instrumento relevante para auxiliar o planejamento da saúde, definir prioridades de intervenção, além de permitir que seja avaliado o impacto das intervenções. Fonte: [Portal SINAN](http://portalsinan.saude.gov.br/) - <http://portalsinan.saude.gov.br/>.
+
+## Sobre os dados
+
+Para esta atividade, foram coletados dados de Febre de Chikungunya dos estados de Goiás, do Maranhão e do Brasil.
+
+Os dados podem ser baixados da página do [SINAN](https://datasus.saude.gov.br/acesso-a-informacao/doencas-e-agravos-de-notificacao-de-2007-em-diante-sinan/) <https://datasus.saude.gov.br/acesso-a-informacao/doencas-e-agravos-de-notificacao-de-2007-em-diante-sinan/>, onde é possível escolher a Doenças e Agravos de Notificação, e a área geográfica de abrangência.
+
+![](img/sinan1.png)
+![](img/sinan2.png)
+
+
+Uma vez escolhido a doença e a área geográfica de abrangência, na próxima página são escolhidos os dados de interesse.
+
+![](img/sinan3.png)
+
+Foram escolhidos para análise, como linha, o ano de notificação, e como coluna, a faixa etária. Foram escolhidos todos os períodos disponíveis de 2017 a 2024. 
+
+Os dados podem ser visualizados em formato com tabela com bordas e podem ser baixados em formato CSV.
+
+![](img/sinan6.png)
+
+Você pode escolher também em colunas separadas por ponto e vírgula (;).
+
+![](img/sinan4.png)
+
+Com o objetivo de simplificar essa tarefa, os dados foram coletados e foram organizados em forma de vetores.
+
+![](img/sinan5.png)
+
+Foram descartadas os nomes de colunas, porém o nome das linhas (anos) foram mantidos para auxiliar na reorganização dos dados durante a extração. A linha e a coluna de totais também foi descartada.
+
+As colunas dos dados são apresentados na Tabela 1.
+
+\newpage
+
+|Coluna | Descrição|
+|---------|----------|
+|1 | "Ano notificação"|
+|2 |"Em branco/IGN"|
+|3 |"<1 Ano"|
+|4 |"1-4"|
+|5 |"5-9"|
+|6 |"10-14"|
+|7 |"15-19"|
+|8 |"20-39"|
+|9 |"40-59"|
+|10 |"60-64"|
+|11 |"65-69"|
+|12 |"70-79"|
+|13 |"80 e +"|
+: Faixas de idades.
+
+A seguir, estão os dados de Goiás,
+
+```{r dados_goias, echo=TRUE}
+
+dados_goias <- c(2017,NA,23,15,27,35,55,
+                269,238,29,17,18,5,
+               2018,NA,8,6,24,30,46,
+                221,165,19,12,12,3,
+               2019,NA,4,11,14,30,29,
+                148,106,13,7,17,3,
+               2020,NA,18,6,16,11,16,
+                115,71,13,6,5,3,
+               2021,3,22,15,32,38,51,
+                367,372,50,34,37,14,
+               2022,NA,60,107,180,258,289,
+                1929,2476,389,332,342,101,
+               2023,1,35,80,130,187,269,
+                1445,1369,222,170,181,61,
+               2024,1,43,125,240,328,491,
+                2477,2799,508,429,535,244)
+
+```
+do Maranhão
+```{r dados_maranhao, echo=TRUE}
+
+dados_maranhao <- c(2017,NA,159,179,402,581,775,
+                      3063,1863,305,250,305,117,
+                    2018,NA,44,30,37,40,84,
+                      365,251,32,25,51,15,
+                    2019,NA,33,66,79,112,88,
+                      360,186,24,16,21,4,
+                    2020,NA,26,18,28,27,23,
+                      75,40,6,2,5,2,
+                    2021,1,28,33,29,20,19,
+                      69,55,8,9,5,3,
+                    2022,5,154,144,245,275,235,
+                      1183,915,129,96,105,32,
+                    2023,1,78,120,267,302,260,
+                      1453,1266,207,159,203,81,
+                    2024,NA,28,75,89,85,101,
+                      480,335,51,39,43,15)
+
+```
+e do Brasil
+```{r dados_brasil, echo=TRUE}
+dados_brasil <- c(2017,66,3346,4976,9930,13999,18984,
+                    91150,69186,11401,9123,10826,4704,
+                  2018,27,1715,2514,4376,6060,8301,
+                    41701,36162,6306,4705,5176,1722,
+                  2019,91,2226,3528,6741,9016,11645,
+                    62033,54629,10042,7678,7975,2895,
+                  2020,55,1820,1874,3757,4724,5577,
+                    36982,33253,4878,3573,3972,1606,
+                  2021,89,1789,3329,5554,6430,7189,
+                    45081,40969,6212,4791,5482,2060,
+                  2022,99,3723,6918,12126,15108,16824,
+                    96867,83007,12675,9670,12032,4873,
+                  2023,74,2352,5684,10986,14309,16772,
+                    85526,73568,12268,9817,11524,4894,
+                  2024,53,1850,5064,9715,12573,15512,
+                    72253,66695,12289,9881,11574,4680)
+
+```
+
+## Desenvolva e/ou responda os itens abaixo.
+
+Item 1. Montar as 3 matrizes dos dados de Goiás, Maranhão e Brasil, respectivamente, em que, as colunas conterão os dados de faixa etária, descartando-se a coluna "Ano notificacao", e "Em branco/IGN".
+
+Item 2. Desenvolver comandos e gerar vetores de totais por ano, e por faixa etária para cada conjunto de dado. Assim, serão gerados 6 vetores  (2 para cada área geográfica). 
+
+Item 3. Desenvolver comandos para concatenar os vetores de totais por ano nas matrizes de dados, para que os dados passem a ter uma coluna de totais por ano (*lembra da função cbind?*). 
+
+Item 4. Desenvolver comandos para concatenar os vetores de totais por faixa etária para formar uma matriz em que as linhas são as áreas geográficas (**Goiás, Maranhão e Brasil**).
+
+Item 5. Desenvolver comandos e para dar nome às linhas e colunas das matrizes de dados (*lembra das funções rownames e colnames?*), em que as linhas e colunas representarão o ano de notificação e faixa etária, respectivamente (*Não se esqueça da coluna de totais!*).
+
+Item 6. Agora é hora de analisar. Utilizando as operações de vetores/matrizes (sum, colSums, rowSums, max, min, entre outros), desenvolva um script para responder às seguintes perguntas:
+
+- Qual é o percentual do Brasil para cada faixa etária em Goiás e no Maranhão?
+- Qual é a faixa etária com o maior número de casos em Goiás, Maranhão e no Brasil?
+- Qual é o ano com o maior número casos em Goiás, Maranhão e no Brasil?
+
+Estes resultados podem ser exibidos de forma individual ou organizados em forma de tabela.
+

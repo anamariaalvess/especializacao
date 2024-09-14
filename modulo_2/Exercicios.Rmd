@@ -1,0 +1,48 @@
+---
+title: "Banco de Dados: Exercícios"
+author: "Prof. Dr. Sergio T. Carvalho"
+date: "30/05/2024"
+output: pdf_document
+---
+
+## Exercícios
+## Importação e manipulação de dados de BD no R
+
+1. Na ferramenta SQLite IDE, crie e execute os scripts do BD disponíveis em https://docs.google.com/document/d/1_ebLMDXezQl8xBTJn7a9LKbeIsNTbvIEYxSeqMuZbhc/edit?usp=drive_link OK
+
+2. Na ferramenta SQLite IDE, insira linhas em todas as tabelas do BD criado. OK
+
+3. Na ferramenta SQLite, gere o BD na forma de um arquivo e armazene-o em uma pasta/diretório no seu computador. ok
+
+4. No R, faça a conexão com o BD usando o arquivo gerado no enunciado 3. ok
+
+5. No R, construa três consultas SQL selecionando diretamente do BD linhas das tabelas utilizando a cláusula WHERE. ok
+
+6. No R, faça a importação das tabelas para data frames. ok
+
+7. No R, faça consultas utilizando select() do pacote dplyr nos objetos tibble correspondentes aos data frames gerados no enunciado 6. ok
+
+8.(opcional) Realize o mesmo processo (enunciados 2 até 7) para o BD "Animais de uma Fazenda", disponível em https://drive.google.com/file/d/1manYTl1tuIXJYyc0jsub7sGmrS4AuGgD/view?usp=drive_link (páginas 22 a 25, apostila de SQllite). ok
+
+9.(opcional) Realize o mesmo processo (enunciados 2 até 7) para o BD cujo modelo está disponível no slide 37 disponível em https://drive.google.com/file/d/1DcMGlIaxX4qhcYUZtfwrpOM5A3tm4_mr/view?usp=drive_link (foto tirada)  Ok
+
+10. Considere o BD descrito em https://docs.google.com/document/d/1aeXm28RG-LOCD8nKd9ivhtImiTymc5mU1a_PFHvs19Y/edit. Realize o mesmo processo (enunciados 2 até 7) para este BD. Além disso,  execute as dez operações propostas(que estão nos exercícios de integridade) e discuta as restrições de integridade violadas por cada operação (se houver alguma, dada uma operação ela viola alguma coisa?), e as diferentes maneiras de lidar com essas restrições. ok
+
+11. Considere os data sets imdb disponíveis em https://drive.google.com/drive/folders/1CkVbB02B1Rltl2FiEtgzxRxHN4nnqLGE?usp=drive_link. Quais as diferenças entre imdb.csv, imdb.sqlite e imdb.rds?  OK 
+#rds é uma forma binário de salvar o db, dá para recuperar. olhar mensagem do grupo.
+
+12. Qual dos 3 imdb (csv, sqlite, rds), você consegue abrir e manipular na ferramenta SQLite IDE? Por quê? ok
+
+13. Quais dos 3 imdb (csv, sqlite, rds), você consegue importar para o R e trabalhar como data frames ou mesmo tibbles? Escreva os scripts necessários para realizar a importação de cada um deles. Mostre ainda instruções de manipulação dos data frames e tibbles resultantes da importação. ok
+
+14. Considere o data set Melanoma.xlsx disponível em https://drive.google.com/drive/folders/1CkVbB02B1Rltl2FiEtgzxRxHN4nnqLGE?usp=drive_link. a) Faça a importação do data set para o R; b) realize operações de manipulação do data frame e do tibble; e c) faça consultas usando SQL. ok
+
+15. Considere o data set imdb.csv disponível em https://drive.google.com/drive/folders/1CkVbB02B1Rltl2FiEtgzxRxHN4nnqLGE?usp=drive_link. a) Faça a importação do data set para o R; b) realize operações de manipulação do data frame e do tibble; e c) faça consultas usando SQL. ok
+
+16. Considere o data set cancer_cerebro.csv disponível em https://drive.google.com/drive/folders/1CkVbB02B1Rltl2FiEtgzxRxHN4nnqLGE?usp=drive_link. a) Faça a importação do data set para o R; b) realize operações de manipulação do data frame e do tibble; e c) faça consultas usando SQL. ok
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+

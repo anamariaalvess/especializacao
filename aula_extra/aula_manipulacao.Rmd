@@ -1,0 +1,415 @@
+---
+title: "Aplicações práticas da manipulação de dados em linguagem R"
+author: "Prof. Dr. Eder Angelo Milani"
+date: "25/07/2024"
+output: pdf_document
+header-includes:
+   - \usepackage{array}
+---
+
+# O conjunto de dados 
+
+Nesta aula, utilizaremos um conjunto de dados real que apresenta uma grande quantidade de observações, para ilustrar como manipular de forma eficiente grandes conjuntos de dados. 
+
+Os dados são do Sistema de Informação sobre Mortalidade (SIM), do Ministério da Saúde. Este sistema, criado pelo Ministério da Saúde em 1975, analisa dados de mortalidade no Brasil, o que auxilia nas políticas públicas do país. A fonte de dados do SIM é a Declaração de Óbito (DO) que apresenta diversas variáveis para análise (por exemplo: idade, sexo e causa de óbito).
+
+Os dados são públicos e estão disponíveis no [site](https://opendatasus.saude.gov.br/dataset/sim). O formato da base é em csv. Vamos utilizar o conjunto de dados do ano de 2022. Este conjunto está disponível para download na Plataforma Moodle Ipê, ou vocês podem fazer o download diretamente pelo site.
+
+A seguir, vamos trabalhar alguns comandos para manipulação de conjunto de dados em linguagem R, utilizando também alguns conceitos trabalhados nas disciplinas iniciais do Curso.
+
+```{r}
+# vamos verificar diretorio
+getwd()
+
+# se precisar mudar o diretorio usar o comando setwd
+# setwd("G:\\Meu Drive\\UFG\\Especializacao\\Aula manipulacao")
+
+dataset <- read.csv("DO22OPEN.csv")
+
+# verificando o tamanho da base 
+dim(dataset)
+
+#head(dataset)
+```
+
+
+Acho que algo deu errado, pois não era bem esse o conjunto de dados que estava esperando. Vamos abrir o conjunto de dados em um bloco de notas para ver como é o conjunto de dados.  
+
+
+Note que os valores/atributos estão separados por ``;'', com isso precisamos usar o comando *read.csv2* para fazer a leitura correta do conjunto de dados, ou usar o *read.csv* com *sep=";"*. A seguir também é calculado algumas informações sobre o conjunto de dados. 
+
+
+```{r}
+# agora usando read.csv2
+dataset <- read.csv2("DO22OPEN.csv")
+
+# usando read.csv2
+#dataset <- read.csv("DO22OPEN.csv", sep = ";")
+
+dim(dataset)
+
+#head(dataset)
+
+```
+
+
+Agora sim! Conjunto de dados carregado. A seguir verificaremos como estão definidas as variáveis de interesse. Note os tipos de variáveis! 
+
+```{r}
+# vamos usar o comando str
+str(dataset)
+```
+
+
+Note que são muitas as variáveis, vamos nos concentrar em algumas variáveis, para exemplificar o tratamento dos dados. As variáveis escolhidas estão detalhadas na Tabela 1. O dicionário pode ser acessoado [aqui](https://pcdas.icict.fiocruz.br/conjunto-de-dados/sistema-de-informacao-sobre-mortalidade-declaracao-de-obitos-fetais-sim-dofet/dicionario-de-variaveis/).
+
+
+\begin{table}[ht]
+\caption{Variáveis que serão manipuladas}
+\centering
+\begin{tabular}{>{\raggedright}p{3cm}|>{\raggedright}p{4cm}|>{\raggedright\arraybackslash}p{7cm}}
+  \hline
+  Nome da variável & Descrição & Níveis \\
+  \hline
+  TIPOBITO   &   Tipo do óbitode    &  1 – óbito fetal \\
+             &                      &  2 - óbito não fetal \\
+  \hline
+  DTOBITO    & Data do óbito        & ddmmaaaa\\
+  \hline
+  HORAOBITO  & Horário do óbito     & hhmm \\
+  \hline
+  DTNASC     & Data do nascimento   & ddmmaaaa\\
+  \hline
+  SEXO      & Sexo                  & 0 - Ignorado\\
+            &                       & 1 – Masculino\\
+            &                       & 2 – Feminino\\
+  \hline
+  ESC       & Escolaridade em anos  & 1 – Nenhuma\\
+            &                       & 2 – De 1 a 3 anos\\
+            &                       & 3 – De 4 a 7 anos\\
+            &                       & 4 – De 8 a 11 anos\\
+            &                       & 5 – 12 anos e mais\\
+            &                       & 9 – Ignorado\\
+  \hline
+  ESC2010   & Escolaridade 2010     & 0 – Sem escolaridade\\
+            &                       & 1 – Fundamental I (1ª a 4ª série)\\
+            &                       & 2 – Fundamental II (5ª a 8ª série)\\
+            &                       & 3 – Médio (antigo 2º Grau)\\
+            &                       & 4 – Superior incompleto\\
+            &                       & 5 – Superior completo\\
+            &                       & 9 – Ignorado\\
+\hline
+  RACACOR   & Raça/Cor              & 1 – Branca\\
+            &                       & 2 – Preta\\
+            &                       & 3 – Amarela\\
+            &                       & 4 – Pardo\\
+            &                       & 5 – Indígina \\
+\hline
+\end{tabular}
+\end{table}
+
+
+Agora preciso tomar uma descisão, se vou trabalhar no conjunto de dados, ou vou criar variáveis virtuais e então trabalhar nelas. Ou seja, vou usar *attach* ou não? Aqui eu não vou usar as variáveis virtuais. 
+
+A estratégia que vou seguir é filtrar o conjunto de dados nas variáveis que vou trabalhar, mas vou salvar em um outro *data.frame*. 
+
+
+```{r}
+#install.packages("dplyr")
+
+# ja faz um bom tempo que instalou o pacote? Se sim, atualize o pacote
+# update.packages("dplyr") 
+library(dplyr)  
+
+# selecionando apenas as variaveis de interesse 
+dados_filtrados <- select(dataset, TIPOBITO, DTOBITO, DTNASC, HORAOBITO, SEXO, ESC, ESC2010, RACACOR) 
+
+# verificando a dimensao do conjunto de dados
+dim(dados_filtrados) 
+
+# visao geral do banco 
+glimpse(dados_filtrados) # funcao similar aos str mas do pacote dplyer 
+
+# como lidar com os NA's?
+# excluir todas as linhas que tem pelo menos um NA
+dados_filtrados2 <- dados_filtrados %>% na.omit()
+
+# verificando a dimensao do conjunto de dados sem NA
+dim(dados_filtrados2) 
+
+# quantas linhas foram excluídas? 
+dim(dados_filtrados)[1] - dim(dados_filtrados2)[1]
+
+# vou seguir a analise com o conjunto de dados COM os NA's
+```
+
+
+Agora com o conjunto de dados filtrado, vamos formatar as variáveis de interesse. 
+
+
+
+```{r}
+
+# modificando a variavel "Tipo de obito"
+
+#head(dados_filtrados$TIPOBITO)
+
+dados_filtrados$TIPOBITO <-  factor(dados_filtrados$TIPOBITO, levels = c(1, 2), 
+                                     labels = c("Fetal", "Nao fetal"))
+
+is.factor(dados_filtrados$TIPOBITO)
+
+table(dados_filtrados$TIPOBITO)
+
+table(dados_filtrados$TIPOBITO, useNA = "always")
+
+# observe que todos os preenchimentos sao iguais a 2, 
+# logo nao agrega informacao ao conjunto de dados
+# vamos excluir essa variavel do conjunto de dados
+
+dados_filtrados$TIPOBITO <- NULL
+
+dim(dados_filtrados)
+
+
+
+# modificando a variavel "Data do obito"
+
+# para trabalhar com datas, vamos utilizar o package lubridata
+#install.packages("lubridate")
+library(lubridate)
+
+#head(dados_filtrados$DTOBITO)
+dados_filtrados$DTOBITO <- dados_filtrados$DTOBITO %>% dmy()
+
+class(dados_filtrados$DTOBITO)
+
+#head(dados_filtrados$DTOBITO)  
+
+# quantidade de obitos por mes 
+dados_filtrados$DTOBITO %>% month() %>% table() %>% prop.table()
+
+# mas quantos Na's tenho na variavel? 
+dados_filtrados$DTOBITO %>% is.na() %>% sum()
+
+
+
+# modificando a variavel "Data do nascimento"
+
+#head(dados_filtrados$DTNASC)
+dados_filtrados$DTNASC <- dados_filtrados$DTNASC %>% dmy()
+ 
+class(dados_filtrados$DTNASC)
+
+#head(dados_filtrados$DTNASC)  
+
+# quantidade de nascimento por mes 
+dados_filtrados$DTNASC %>% month() %>% table() %>% prop.table()
+
+# mas quantos Na's tenho na variavel? 
+dados_filtrados$DTNASC %>% is.na() %>% sum()
+
+
+
+
+# criando uma variavel idade no dia do obito
+
+# tentativa 1
+idade <- difftime(dados_filtrados$DTOBITO, dados_filtrados$DTNASC, units = "days")
+# head(idade)
+
+idade <- round(as.numeric(idade/365))
+# head(idade)
+# sera que esta certo?? Vamos conferir 
+
+dados_filtrados$DTNASC[1]
+dados_filtrados$DTOBITO[1]
+
+# algo de errado aqui!!! Esquecemos de algo??? Simmmm
+
+
+
+intervalo <- interval(dados_filtrados$DTNASC, dados_filtrados$DTOBITO)
+# head(intervalo)
+# intervalo[1]
+
+idade <- time_length(intervalo, "years")
+# head(idade)
+
+dados_filtrados$IDADE <- floor(idade) # pegar o maior interior menor que o numero
+#head(dados_filtrados$IDADE)
+
+summary(dados_filtrados$IDADE)
+
+# Como assim idade de -3171 e de 131 anos???
+
+# qual linha esta o valo -3171
+posicao <- which(dados_filtrados$IDADE == -3171)
+posicao
+
+dados_filtrados$IDADE[posicao]
+dados_filtrados$DTNASC[posicao]
+dados_filtrados$DTOBITO[posicao]
+
+# table(dados_filtrados$IDADE)
+
+# idade de 120, 121, 122, 123 e 131 anos??
+
+# substituir as idades < 0 e idades > 120 por NA's
+
+posicao <- which(dados_filtrados$IDADE == -3171 | dados_filtrados$IDADE > 120)
+
+dados_filtrados$IDADE[posicao] <- NA
+
+summary(dados_filtrados$IDADE)
+
+
+# agora quero criar uma variavel idade categoria ordinal usando os seguintes intervalos
+# 0-9 anos
+# 10-19 anos
+# 20-39 anos
+# 40-49 anos
+# 50-59 anos
+# >=60 anos
+
+
+idade_cat <- cut(dados_filtrados$IDADE, breaks = c(0, 10, 20, 40, 50, 60, 121), right = FALSE) 
+table(idade_cat)
+
+dados_filtrados$IDADE_CAT <- cut(dados_filtrados$IDADE, breaks = c(0, 10, 20, 40, 50, 60, 121), 
+                 right = FALSE, labels= c("0-9", "10-19", "20-39", "40-49", "50-59", ">=60") ) 
+
+table(dados_filtrados$IDADE_CAT)
+
+
+# visualizacao do conjunto de dados apos a criacao das variaveis idade
+
+str(dados_filtrados)
+
+
+
+# modificando a variavel "Hora do obito"
+# head(dados_filtrados$HORAOBITO)
+
+# tentativa de modificar o formato
+hm(dados_filtrados$HORAOBITO[1])
+
+# note que nao funcionou pq nao esta no formato HH:MM
+# veja um exemplo
+
+hm("10:30")
+
+# vamos usar o pacote stringr para tratar a variavel hora do obito
+#install.packages("stringr")
+library(stringr)
+
+# padronizar a escrita do numero sempre com 4 casas, mesmo se comecar por 0 
+dados_filtrados$HORAOBITO <- sprintf('%04d', dados_filtrados$HORAOBITO) 
+#head(dados_filtrados$HORAOBITO)
+
+# mudar a variavel para string
+dados_filtrados$HORAOBITO <- dados_filtrados$HORAOBITO %>% as.character()
+#head(dados_filtrados$HORAOBITO)
+
+# incluir o : entre a hora e o minuto
+dados_filtrados$HORAOBITO <- paste0(str_sub(dados_filtrados$HORAOBITO, 1, 2),
+                                     ":", str_sub(dados_filtrados$HORAOBITO, 3, 4)) 
+#head(dados_filtrados$HORAOBITO)                                              
+
+# se morre mais antes ou depois do almoco? 
+round(100*prop.table( table( ifelse( dados_filtrados$HORAOBITO < 12, "Antes das 12h", "Depois das 12h") ) ) ,2)
+
+
+
+
+# modificando a variavel SEXO
+# head(dados_filtrados$SEXO)
+dados_filtrados$SEXO <- factor(dados_filtrados$SEXO, levels = c(0, 1, 2), 
+                                labels = c("Indefinido", "Masculino", "Feminino"))
+head(dados_filtrados$SEXO)
+
+prop.table( table(dados_filtrados$SEXO) )
+
+# quero saber a quantidade de NA's
+table(dados_filtrados$SEXO, useNA = "always")
+
+
+
+
+# modificando a variavel ESC - escolaridade 
+# head(dados_filtrados$ESC)
+dados_filtrados$ESC <-  factor(dados_filtrados$ESC, 
+                                labels = c("Nenhuma", "de 1 a 3 anos", "de 4 a 7 anos",
+                                           "de 8 a 11 anos" , " de 12 anos e mais", "Ignorado"), 
+                                ordered = T)
+
+#head(dados_filtrados$ESC)
+class(dados_filtrados$ESC)
+
+
+
+
+# modificando a variavel ESC2010 - escolaridade 
+#head(dados_filtrados$ESC2010)
+dados_filtrados$ESC2010 <-  factor(dados_filtrados$ESC2010, 
+labels = c("Sem escolaridade", "Fundamental I (1ª a 4ª série)", 
+           "Fundamental II (5ª a 8ª série)", "Médio (antigo 2º Grau)", 
+           "Superior incompleto", "Superior completo", "Ignorado"), 
+ordered = T)
+
+class(dados_filtrados$ESC2010)
+
+table(dados_filtrados$ESC2010)
+
+
+# quero mudar o nome das variaveis de escolaridade 
+
+dados_filtrados <- dados_filtrados %>% 
+                rename("ESCOLARIDADE" = "ESC", "ESCOLARIDADE_GRAUS" = "ESC2010")
+
+
+
+
+# modificando a variavel RACA/COR
+# head(dados_filtrados$RACACOR)
+dados_filtrados$RACACOR <-  factor(dados_filtrados$RACACOR, 
+                                levels = c(1, 2, 3, 4, 5),   
+                                labels = c("Branca", "Preta", "Amarela",
+                                           "Parda" , "indigina"))
+
+
+table(dados_filtrados$RACACOR)
+
+round(100*prop.table(table(dados_filtrados$RACACOR)), 2)
+
+
+# visualizacao do conjunto de dados apos manipulacao
+
+str(dados_filtrados)
+
+
+
+# usando a função group_by
+
+
+df_summary <- dados_filtrados %>%
+  group_by(SEXO) %>%
+  summarise(
+    Minimo = min(IDADE, na.rm = TRUE),
+    Media_Idade = round(mean(IDADE, na.rm = TRUE)),
+    Mediana = median(IDADE, na.rm = TRUE),
+    Maximo = max(IDADE, na.rm = TRUE),
+    Contagem = n()
+  )
+
+View(df_summary)
+
+
+# exportando o conjunto de dados manipulado no formato csv
+
+write.csv2(dados_filtrados, "Dados_SIM_2022.csv", row.names = F)
+
+```
+
+
+

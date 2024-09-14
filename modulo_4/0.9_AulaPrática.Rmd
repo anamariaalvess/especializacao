@@ -1,0 +1,242 @@
+---
+title: 'Estatística descritiva para \textit{Data Science}'
+subtitle: '0.9 - Aula Prática: Medidas separatrizes e box-plot'
+author: "Profa. Dra. Amanda Buosi Gazon Milani"
+date: "2024-08-02"
+output: pdf_document
+header-includes:
+   - \usepackage{array}
+   - \usepackage{longtable}
+   - \usepackage[brazil]{babel}
+---
+
+## Conjunto de dados - Nascidos Vivos 2024 (DataSUS)
+
+O conjunto de dados que será utilizado nesta disciplina foi obtido no site do OpenDataSUS, foi tratado e consiste da base de informações sobre nascidos vivos 2024 (parcial).
+
+
+\vspace{0.5cm}
+
+Inicialmente vamos importar (carregar) os dados no R, utilizando os códigos a seguir.  
+
+\vspace{0.2cm}
+```{r}
+setwd <- "C:\\Users\\AmandaBGM\\Google Drive\\UFG\\Especialização_FEN_IME\\2024\\Scripts"
+
+# 2 opções de importação (.csv com separador ponto-e-vígula):
+
+# dados <- read.csv2(file = "Dataframe_AulaAmanda.csv",  header = TRUE)
+# ou:
+dados <- read.csv(file = "Dataframe_AulaAmanda.csv", sep=';', header = TRUE)
+
+head(dados)
+dim(dados)
+```
+
+\vspace{0.5cm}
+
+## Medidas separatrizes
+
+\vspace{0.5cm}
+
+
+### Quantis e percentis
+
+\vspace{0.5cm}
+
+
+As medidas separatrizes como quartis e percentis podem ser calculadas para variáveis quantitativas. Como vimos, todas as medidas separatrizes podem ser identificadas com um percentil e esta mesma lógica ocorre no R. A função que calcula  o percentil é \texttt{quantile(...)} e para a qual deve ser associado no parâmetro \texttt{probs=...} o respectivo valor do percentil a ser calculado, em proporção. Por exemplo, se queremos calcular o percentil $P_{27}$, devemos utilizar \texttt{probs=0.27}. Como nosso conjunto de dados tem valores ausentes, é preciso habilitar o parâmetro \texttt{na.rm = TRUE} para que os valores NA's da variável sejam desconsiderados e o percentil seja calculado (neste caso, o valor total será o de observações preenchidas!)
+
+\vspace{0.5cm}
+
+#### Quartis:
+
+\vspace{0.5cm}
+
+Vamos calcular a seguir os três quartis $Q_1$, $Q_2$ e $Q_3$ para a variável PESO.
+
+\vspace{0.5cm}
+
+```{r}
+### PESO:
+
+# Q_1 = P_25:
+quantile(dados$PESO, na.rm = TRUE, probs = 0.25)
+
+# Q_2 = P_50:
+quantile(dados$PESO, na.rm = TRUE, probs = 0.5)
+# Conferindo com a mediana:
+median(dados$PESO, na.rm = TRUE)
+
+# Q_3 = P_75:
+quantile(dados$PESO, na.rm = TRUE, probs = 0.75)
+
+```
+\vspace{0.5cm}
+
+#### Alguns percentis:
+
+\vspace{0.5cm}
+
+Vamos calcular a seguir alguns percentis  para a variável PESO.
+
+\vspace{0.5cm}
+
+```{r}
+### PESO:
+
+# P_10:
+quantile(dados$PESO, na.rm = TRUE, probs = 0.10)
+
+# P_82:
+quantile(dados$PESO, na.rm = TRUE, probs = 0.82)
+
+```
+
+\vspace{0.5cm}
+
+\textbf{Observação:} Se usarmos a função \texttt{quantile(...)} e não escolhermos nenhum percentil específico para ser exibido (não usarmos o parâmetro \texttt{probs=}), o resultado será 5 valores: mínimo, $Q_1$, $Q_2$, $Q_3$ e máximo. Vejamos na variável PESO.
+
+\vspace{0.5cm}
+
+
+```{r}
+### PESO:
+
+quantile(dados$PESO, na.rm = TRUE)
+
+```
+
+
+\vspace{0.5cm}
+
+### Resumo: Summary(...)
+
+\vspace{0.5cm}
+
+Retomando a função \texttt{summary(...)}, agora já vimos como calcular separadamente todas as medidas contidas na sua saída. O uso desta função é muito prático, pois seu resultado contém informações relavantes para uma análise da variável em questão e sua execução é muito simples.
+
+\vspace{0.5cm}
+
+```{r}
+## PESO
+
+summary(dados$PESO)
+
+```
+
+
+\newpage
+## Outliers
+
+\vspace{0.5cm}
+
+
+Podemos verificar se existem valores discrepantes em uma variável do conjunto de dados. Tomando como exemplo a variável PESO.
+
+\vspace{0.5cm}
+
+```{r}
+Q1 = as.numeric(quantile(dados$PESO, na.rm = TRUE, probs = 0.25))
+Q1
+
+Q2 = as.numeric(quantile(dados$PESO, na.rm = TRUE, probs = 0.5))
+Q2
+
+Q3 = as.numeric(quantile(dados$PESO, na.rm = TRUE, probs = 0.75))
+Q3
+
+DI = Q3 - Q1
+DI
+
+limite_inferior = Q1 - 1.5*DI
+limite_inferior
+
+limite_superior = Q3 + 1.5*DI
+limite_superior
+
+```
+
+\vspace{0.5cm}
+
+Vamos agora verificar no conjunto de dados se existem (e quantos) pesos considerados outliers. Iniciemos verificando se existem valores menores que o limite inferior calculado:
+
+\vspace{0.5cm}
+
+```{r}
+table(dados$PESO<limite_inferior)
+```
+
+\vspace{0.5cm}
+
+Portanto existem 23.659 valores discrepantes na parte inferior da distribuição, outliers (valores muito pequenos). Agora, vamos verificar se existem valores maiores que o limite superior calculado:
+
+\vspace{0.5cm}
+
+```{r}
+table(dados$PESO>limite_superior)
+```
+
+\vspace{0.5cm}
+
+Existem 4.484 outliers na parte superior da distribuição (valores muito grandes).
+
+
+\vspace{0.5cm}
+
+## Box-plot
+
+\vspace{0.5cm}
+
+Uma forma prática de verificar a existência de outliers, bem como visualizar algumas informações resumo dos dados graficamente, é o diagrama box-plot. Ele pode ser obtido utilizando a função \texttt{boxplot(...)}.
+
+\vspace{0.5cm}
+
+```{r, out.width="80%", fig.align='center'}
+boxplot(dados$PESO)
+```
+
+\vspace{0.5cm}
+
+Como já esperado, a variável peso possui muitos outliers, o que trás uma distorção, esmagamento no diagrama box-plot. Vamos fazer o box-plot para os dados das idades das mães (já excluindo os valores 99).
+
+\vspace{0.5cm}
+
+
+```{r, out.width="80%", fig.align='center'}
+boxplot(dados$IDADEMAE[dados$IDADEMAE<99])
+```
+
+\vspace{0.5cm}
+
+Podemos ver que existem vários outliers na parte superior da distribuição. Além disso, a mediana está mais próxima de $Q_1$, indicando uma assimetria positiva (cauda para direita).
+
+Assim como os demais gráficos do R, o boxplot permite ajustes tais como adição de título, alteração na cor, etc.
+
+\vspace{0.5cm}
+
+```{r, out.width="80%", fig.align='center'}
+boxplot(dados$IDADEMAE[dados$IDADEMAE<99], 
+        main='Idade da mãe',                  ## título do gráfico
+        ylab='Idade (anos)',                  ## rótulo do eixo y
+        col = 4)                              ## cor da caixa
+                          
+```
+
+```{r, out.width="80%", fig.align='center'}
+boxplot(dados$IDADEMAE[dados$IDADEMAE<99], 
+        main='Idade da mãe',                  ## título do gráfico
+        ylab='Idade (anos)',                  ## rótulo do eixo y
+        col = 4,                              ## cor da caixa
+        border = 3)                           ## cor das bordas
+                          
+```
+```{r, out.width="90%", fig.align='center'}
+boxplot(dados$IDADEMAE[dados$IDADEMAE<99], 
+        main='Idade da mãe',                  ## título do gráfico
+        xlab='Idade (anos)',                  ## rótulo do eixo x
+        col = 4,                              ## cor da caixa
+        horizontal = TRUE)                    ## para box-plot horizontal
+                          
+```
+

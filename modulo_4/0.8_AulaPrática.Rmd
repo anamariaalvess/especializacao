@@ -1,0 +1,337 @@
+---
+title: 'Estatística descritiva para \textit{Data Science}'
+subtitle: '0.8 - Aula Prática: Medidas de tendência central e de dispersão'
+author: "Profa. Dra. Amanda Buosi Gazon Milani"
+date: "2024-08-02"
+output: pdf_document
+header-includes:
+   - \usepackage{array}
+   - \usepackage{longtable}
+   - \usepackage[brazil]{babel}
+---
+
+## Conjunto de dados - Nascidos Vivos 2024 (DataSUS)
+
+O conjunto de dados que será utilizado nesta disciplina foi obtido no site do OpenDataSUS, foi tratado e consiste da base de informações sobre nascidos vivos 2024 (parcial).
+
+
+\vspace{0.5cm}
+
+Inicialmente vamos importar (carregar) os dados no R, utilizando os códigos a seguir.  
+
+\vspace{0.2cm}
+```{r}
+setwd <- "C:\\Users\\AmandaBGM\\Google Drive\\UFG\\Especialização_FEN_IME\\2024\\Scripts"
+
+# 2 opções de importação (.csv com separador ponto-e-vígula):
+
+# dados <- read.csv2(file = "Dataframe_AulaAmanda.csv",  header = TRUE)
+# ou:
+dados <- read.csv(file = "Dataframe_AulaAmanda.csv", sep=';', header = TRUE)
+
+head(dados)
+dim(dados)
+```
+
+\vspace{0.5cm}
+
+## Medidas de tendência central
+
+\vspace{0.5cm}
+
+A linguagem R é uma ferramenta muito útil e prática para obtenção de medidas resumo. 
+
+\vspace{0.5cm}
+
+### Média
+
+\vspace{0.5cm}
+
+
+A média pode ser avaliada para variáveis quantitativas que, no nosso conjunto de dados são: IDADEMAE, QTDFILMORT, APGAR1, APGAR5, PESO, QTDGESTANT, QTDPARTNOR, QTDPARTCES, IDADEPAI, SEMAGESTAC, CONSPRENAT.
+
+A função que calcula a média é \texttt{mean(...)}. Como nosso conjunto de dados tem valores ausentes, é preciso habilitar o parâmetro \texttt{na.rm = TRUE} para que os valores NA's da variável sejam desconsiderados e a média seja calculada (neste caso, o valor total será o de observações preenchidas!)
+
+```{r}
+mean(dados$IDADEMAE, na.rm = TRUE)
+
+mean(dados$IDADEPAI, na.rm = TRUE)
+
+mean(dados$PESO, na.rm = TRUE)
+
+mean(dados$SEMAGESTAC, na.rm = TRUE)
+
+mean(dados$CONSPRENAT, na.rm = TRUE)
+
+```
+\vspace{0.5cm}
+
+### Mediana
+
+\vspace{0.5cm}
+
+A mediana também pode ser avaliada para variáveis quantitativas. A função que calcula a mediana é \texttt{median(...)}. Como nosso conjunto de dados tem valores ausentes, é preciso habilitar o parâmetro \texttt{na.rm = TRUE} para que os valores NA's da variável sejam desconsiderados e a mediana seja calculada (neste caso, o valor total será o de observações preenchidas!)
+
+```{r}
+median(dados$IDADEMAE, na.rm = TRUE)
+
+median(dados$IDADEPAI, na.rm = TRUE)
+
+median(dados$PESO, na.rm = TRUE)
+
+median(dados$SEMAGESTAC, na.rm = TRUE)
+
+median(dados$CONSPRENAT, na.rm = TRUE)
+
+```
+\vspace{0.5cm}
+
+### Moda
+
+\vspace{0.5cm}
+
+A moda pode ser avaliada tanto para variáveis qualitativas quanto quantitativas. A função que calcula a moda é \texttt{mfv(...)} do pacote \texttt{modeest}. Como nosso conjunto de dados tem valores ausentes, é preciso habilitar o parâmetro \texttt{na\_rm = TRUE} para que os valores NA's da variável sejam desconsiderados e a moda seja calculada corretamente (neste caso, o valor total será o de observações preenchidas!)
+
+```{r}
+#install.packages("modeest")    # remover o # para instalar, caso necessário
+library(modeest)                # habilita o pacote
+
+#### Quantitativas: ####
+
+## IDADEMAE:
+
+# Obtendo a moda (função mfv - most frequent value)
+mfv(dados$IDADEMAE, na_rm = TRUE)
+
+# Conferindo pela tabela de frequências:
+sort(round(100*prop.table(table(dados$IDADEMAE)),2) , decreasing = T)
+
+
+
+## IDADEPAI:
+
+# Obtendo a moda (função mfv - most frequent value)
+mfv(dados$IDADEPAI, na_rm = TRUE)
+
+# Conferindo pela tabela de frequências:
+sort(round(100*prop.table(table(dados$IDADEPAI)),2) , decreasing = T)
+
+```
+
+```{r}
+#### Qualitativas: ####
+
+## ESTCIVMAE:
+
+# Obtendo a moda (função mfv - most frequent value)
+mfv(dados$ESTCIVMAE, na_rm = TRUE)
+
+# Conferindo pela tabela de frequências:
+sort(round(100*prop.table(table(dados$ESTCIVMAE)),2), decreasing = T)
+
+
+## SEXO:
+
+# Obtendo a moda (função mfv - most frequent value)
+mfv(dados$SEXO, na_rm = TRUE)
+
+# Conferindo pela tabela de frequências:
+sort(round(100*prop.table(table(dados$SEXO)),2), decreasing = T)
+
+
+```
+
+\vspace{0.5cm}
+
+## Medidas de dispersão
+
+\vspace{0.5cm}
+
+As medidas de dispersão das variáveis quantitativas podem ser facilmente obtidas utilizando a linguagem R como ferramenta.
+
+
+\vspace{0.5cm}
+
+### Mínimo e máximo
+
+\vspace{0.5cm}
+
+O R possui o mínimo e máximo programados nas funções \texttt{min(...)} e \texttt{max(...)}, respectivamente. Novamente, como nosso conjunto de dados tem valores ausentes, é preciso habilitar o parâmetro \texttt{na.rm = TRUE} para que os valores NA's da variável sejam desconsiderados e os valores mínimo e máximo sejam calculados corretamente.
+
+```{r}
+
+## IDADEMAE
+
+# Mínimo:
+min(dados$IDADEMAE, na.rm = TRUE)
+
+# Máximo:
+max(dados$IDADEMAE, na.rm = TRUE)
+
+```
+
+Note que a idade máxima obtida foi 99 mas, como sabemos, este valor costuma ser usado como código para informação ausente. Vamos restringir os dados (para valores menores que 99) e calcular novamente o máximo:
+```{r}
+
+## IDADEMAE
+
+# Máximo:
+max(dados$IDADEMAE[dados$IDADEMAE<99], na.rm = TRUE)
+```
+```{r}
+
+## PESO
+
+# Mínimo:
+min(dados$PESO, na.rm = TRUE)
+
+# Máximo:
+max(dados$PESO, na.rm = TRUE)
+
+```
+Outra forma de obter os valores do mínimo e do máximo é através da função \texttt{range(...)} que já fornece simultaneamente os dois valores. Aqui também necessitamos utilizar o parâmetro \texttt{na.rm = TRUE} para que os valores NA's da variável sejam desconsiderados e os valores mínimo e máximo sejam calculados corretamente.
+
+```{r}
+## PESO
+
+range(dados$PESO, na.rm = TRUE)
+
+```
+
+
+
+\vspace{0.5cm}
+
+### Amplitude
+
+\vspace{0.5cm}
+
+
+Como vimos, a amplitude é a diferença entre o valor máximo e o valor mínimo da amostra. Assim, podemos obter a amplitude de algumas formas. Vamos usar a variável PESO como exemplo.
+
+```{r}
+### Opção 1: Amplitude = max(...) - min(...)
+
+Amplitude = max(dados$PESO, na.rm = TRUE) -  min(dados$PESO, na.rm = TRUE)
+Amplitude
+
+```
+
+```{r}
+### Opção 2: Amplitude = range(...)[2] - range(...)[1]
+
+Amplitude = range(dados$PESO, na.rm = TRUE)[2] -  range(dados$PESO, na.rm = TRUE)[1]
+Amplitude
+
+```
+
+```{r}
+### Opção 3: Amplitude = diff(range(...))
+
+Amplitude = diff(range(dados$PESO, na.rm = TRUE))
+Amplitude
+
+```
+
+
+\vspace{0.5cm}
+
+### Variância amostral
+
+\vspace{0.5cm}
+
+
+Como vimos, a variância amostral é uma medida de dispersão que avalia os desvios em relação à média amostral. A variância amostral pode ser calculada no R utilizando a função \texttt{var(...)}.
+
+```{r}
+var(dados$IDADEMAE, na.rm = TRUE)
+
+var(dados$IDADEPAI, na.rm = TRUE)
+
+var(dados$PESO, na.rm = TRUE)
+
+var(dados$SEMAGESTAC, na.rm = TRUE)
+
+var(dados$CONSPRENAT, na.rm = TRUE)
+
+```
+
+\vspace{0.5cm}
+
+### Desvio padrão amostral
+
+\vspace{0.5cm}
+
+
+Como vimos, o desvio padrão amostral é obtido extraindo a raiz quadrada (positiva) da variância. O desvio padrão amostral pode ser calculado no R utilizando a função \texttt{sd(...)}.
+
+```{r}
+sd(dados$IDADEMAE, na.rm = TRUE)
+
+## Conferindo:
+sqrt(var(dados$IDADEMAE, na.rm = TRUE))   ## raiz quadrada da variância 
+
+sd(dados$IDADEPAI, na.rm = TRUE)
+
+sd(dados$PESO, na.rm = TRUE)
+
+sd(dados$SEMAGESTAC, na.rm = TRUE)
+
+sd(dados$CONSPRENAT, na.rm = TRUE)
+
+```
+
+\vspace{0.5cm}
+
+### Coeficiente de variação
+
+\vspace{0.5cm}
+
+
+Como vimos, o coeficiente de variação é uma medida de dispersão relativa e é obtido dividindo o desvio padrão pela média e multiplicando por 100, para que o valor fique em porcentagem. Não há uma função específica para o cálculo do coeficiente de variação no R, mas ele pode ser facilmente calculado, como vemos a seguir: 
+
+```{r}
+
+## PESO
+
+# Calculando o coeficiente de variação:
+CV = ( sd(dados$PESO, na.rm = TRUE) / mean(dados$PESO, na.rm = TRUE) )*100                  
+CV
+
+
+## IDADEMAE
+
+# Calculando o coeficiente de variação:
+CV = ( sd(dados$IDADEMAE, na.rm = TRUE) / mean(dados$IDADEMAE, na.rm = TRUE) )*100                  
+CV
+
+
+## IDADEPAI
+
+# Calculando o coeficiente de variação:
+CV = ( sd(dados$IDADEPAI, na.rm = TRUE) / mean(dados$IDADEPAI, na.rm = TRUE) )*100                  
+CV
+
+
+```
+\vspace{0.5cm}
+
+### Resumo: Summary(...)
+
+\vspace{0.5cm}
+
+Uma função muito usada para obtenção de medidas resumo é a função \texttt{summary(...)}. Algumas das medidas vistas até aqui estão contidas na saída desta função.
+
+
+```{r}
+## PESO
+
+summary(dados$PESO)
+
+```
+
+E as demais medidas contidas na saída do summary serão vistas na próxima aula prática.
+
+
+
+

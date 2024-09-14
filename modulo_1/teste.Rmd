@@ -1,0 +1,17 @@
+---
+title: "Usando Markdown"
+author: "Ana M. Alves"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Sobre Markdown
+
+- **Markdown** é uma linguagem simples de marcação originalmente criada por [Jhon Gruber^[1]](https://pt.wikipedia.org/w/index.php?title=John_Gruber&action=edit&redlink=1) e [Aron Swartz^[2]](https://pt.wikipedia.org/wiki/Aaron_Swartz).
+- Markdown converte seu texto para [HTML](https://pt.wikipedia.org/wiki/HTML) válido.
+- Markdown é frequentemente usado para formatar aquivos [README](https://pt.wikipedia.org/wiki/Readme), para escrever mensagens em fóruns de discussão
+online e para criar [rich text](https://pt.wikipedia.org/wiki/Rich_Text_Format) usando um editor de texto simples.

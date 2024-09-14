@@ -1,0 +1,39 @@
+---
+title: "mtcars_DBI".
+output: html_document
+date: "2024-05-30"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(DBI)
+# Create an ephemeral in-memory RSQLite database
+con <- dbConnect(RSQLite::SQLite(), dbname = ":memory:")
+
+dbListTables(con) #função para listar as tabelas
+dbWriteTable(con, "mtcars", mtcars) #criando uma tabela no banco de dados;aqu
+dbListTables(con)
+
+dbListFields(con, "mtcars") # lista as colunas das tabelas
+dbReadTable(con, "mtcars") # ler a tabela e coloca na memória
+
+# You can fetch all results:
+res <- dbSendQuery(con, "SELECT * FROM mtcars WHERE cyl = 4")
+dbFetch(res)
+dbClearResult(res)
+
+# Or a chunk at a time
+res <- dbSendQuery(con, "SELECT * FROM mtcars WHERE cyl = 4") # Enviar uma query para o banco de dadosn
+while(!dbHasCompleted(res)){
+  chunk <- dbFetch(res, n = 5)
+  print(nrow(chunk))
+}
+dbClearResult(res)
+
+dbDisconnect(con)
+
+```
+

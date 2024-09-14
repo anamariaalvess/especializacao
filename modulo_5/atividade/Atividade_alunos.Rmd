@@ -1,0 +1,94 @@
+---
+title: "Curso de Especialização em *Data Science* e Estatística Aplicada \n\n 
+Módulo II - Análise Estatística para *Data Science* \n\n Atividade Avaliativa"
+author: "Profa. Dra. Renata Vasconcelos"
+date: "06/09/2024"
+output: pdf_document
+---
+
+
+# Instruções
+
+- O desenvolvimento desta atividade deve ser realizada de forma individual. 
+
+- Deve-se completar o arquivo Rmd enviado na atividade. 
+
+- É necessário devolver o arquivo em Rmd e em pdf. 
+
+- Valor da atividade: 10 pontos. 
+
+**Data disponível: 09/09/2024**
+
+**Data máxima para entrega: 25/10/2024**
+
+**ATIVIDADE**
+
+# Descrição do Banco de Dados 
+
+**População indígena de 3 anos ou mais atendida pelo SASISUS (Subsistema de Atenção à Saúde Indígena do SUS).** 
+
+- Dados atualizados em 14/06/2024
+
+- Os dados apresentados são preliminares e representam o consolidado total de doses aplicadas pelos Distritos Sanitários Especiais Indígenas (DSEI). 
+
+- O banco de dados "dados_saude" disponiblizado nas aulas, traz um conjunto de dados reais sobre a vacinação de covid-19 das populações indigenas de algumas regiões do pais (Distritos sanitários especiais indígenas - DSEI). O conjunto tem 13 covariáveis, que podem ser observadas com detalhes no arquivo disponibilizado nas aulas.
+
+
+# Questão 1
+
+Utilizando os comandos apresentados em aula e o banco de dados *dados_saude* determine os eventos:
+
+  - A: a população indígena da região tem mais que 5000 e menos que 10000 habitantes;
+
+  - B: o percentual (ou proporção) da população indígena que tomou a segunda dose ou dose única é maior que 75\% (ou 0.75) da população;
+
+
+Calcule: $P(A)$, $P(B)$, $P(A\cup B)$ e $P(A\cap B)$.
+
+
+# Questão 2
+
+
+O banco de dados *dados_vacinacao_sp.xls* contém informações sobre a quantidade de vacinas contra COVID-19 aplicadas, diariamente, em 2022, na cidade de São Paulo. Responda: 
+
+(a) obtenha um intervalo de confiança de 90\% para a quantidade média de vacinas contra COVID-19 aplicadas, diariamente, em 2022, na cidade de São Paulo. Interprete o resultado.
+
+
+(b) pode-se afirmar que a quantidade média diária de vacinas contra COVID-19 aplicadas em São Paulo, no ano de 2022, é igual a 30 mil doses, ao nível de significância de 5%?  Ou seja
+
+-- $H_0:$ A média de vacinas aplicadas diariamente em São Paulo em 2022
+é igual a 30 mil
+
+-- $H_1$: A média de vacinas aplicadas diariamente em São Paulo em 2022
+é diferente de 30 mil
+
+
+Interprete o resultado.
+
+# Questão 3
+
+
+O Departamento de Monitoramento e Avaliação (DEMAS) da Secretaria de Informação e Saúde Digital (SEIDIGI) desenvolveu em parceria com o Departamento de Imunização e Doenças Imunopreveníveis (DIMU) da Secretaria de Vigilância em Saúde e Ambiente (SVSA), um painel com dados sobre os imunizantes de COVID-19, [clique aqui](https://infoms.saude.gov.br/extensions/VACINOMETRO_COVID19/VACINOMETRO_COVID19.html) para acessar. 
+
+As seguintes informações foram obtidas em 06/09/2024. 
+
+- Quilombolas vacinados com a primeira dose no Brasil: 604.329
+
+- População quilombola no Brasil: 1.133.106
+
+- Quilombolas vacinados com a primeira dose na região norte: 79.111
+
+- População quilombola na região norte: 154.911
+
+
+
+Responda: 
+
+
+(a) é possível afirmar que a proporção de quilombolas vacinados com a primeira dose na região norte do Brasil é igual à proporção nacional? Considere o nível de significância de 5%. Interprete o resultado. 
+
+
+(b) obtenha um intervalo de confiança de 99\% para a proporção de quilombolas vacinados no Brasil. Interprete o resultado.
+
+
+Obs.: para o cálculo das proporções de quilombolas vacinados na região norte ou no país, utilize 3 casas decimais. 

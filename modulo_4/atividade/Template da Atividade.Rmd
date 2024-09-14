@@ -1,0 +1,426 @@
+---
+title: "Atividade Avaliativa"
+subtitle: "Estatística descritiva para Data Science"
+author: "Ana Maria Alves da Silva"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+```
+
+```{r libraries, echo=FALSE, warning = FALSE, message=FALSE}
+
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+
+```
+
+## Manipulção Preliminar e Tratamento de Dados
+
+*Observação:* Antes de realizar qualquer manipulação nos dados para responder o item solicitado é necessário carregar os dados e realizar a limpeza desses dados que serão utilizados ao longo dessa atividade. Como eles estão em formato csv, iremos utilizar a função _read_csv_. 
+
+1.  Carregando os dados:
+
+```{r}
+setwd <- "/Users/anamaria/especializacao/modulo_4/atividade"
+df <- read.csv("SG_UFGO_16_07_24.csv", sep = ";")
+dim(df)
+```
+2. Verificando se há dados duplicados:
+```{r}
+duplicados <- duplicated(df) 
+ha_duplicados <- any(duplicados)
+print(ha_duplicados)
+```
+3. Note que o conjunto de dados contém 255.647 observações e 64 variáveis e não há dados duplicados. No entanto, após análise dos itens solicitados e de acordo com do dicionário de dados verificamos que precisamos apenas das colunas: 
+
+- profissionalSaude
+- racaCor
+- codigoRecebeuVacina
+- sexo
+- classificacaoFinal
+- idade
+- dataNotificação
+- sintomas
+- evolucaoCaso
+
+Além disso, precisaremos apenas dos dados correspondentes ao ano de 2024 pois ao análisar o conjunto de dados previamente verificamos que há datas de notificação que não correspondem ao ano de 2024.
+
+```{r}
+
+# Filtragem dos dados para apenas considerar o ano de 2024
+library(lubridate)
+library(dplyr)
+df <- df %>% mutate(dataNotificacao = ymd(dataNotificacao))
+df_2024 <- df %>% filter(year(dataNotificacao) == 2024)
+dim(df_2024)
+
+# Filtragem para obtermos apenas as colunas seleciondas com os dados de 2024
+var_selecionadas <- c('profissionalSaude', 'racaCor', 'codigoRecebeuVacina', 
+                      'sexo', 'classificacaoFinal', 'idade', 
+                      'dataNotificacao', 'sintomas', 'evolucaoCaso')
+
+
+df_2 <- df_2024[, var_selecionadas]
+dim(df_2)
+```
+
+Dessa forma, nosso conjunto de dados ficou com 172713 observações e 9 colunas.
+
+4. Visualizando um resumo dos dados:
+```{r , echo=TRUE}
+summary_df <- summary(df_2)
+print(summary_df)
+```
+Note que através do resumo dos dados podemos ver que as colunas codigoRecebeuVacina e idade são númericas e ambas possuem valores ausentes que serão tratados posteriormente. Além disso podemos validar que na coluna dataNotificacao temos apenas dados referente ao ano de 2024 pois a mesma possui valor mínimo de 2024-01-01 e valor máximo de 2024-07-14.
+
+5. Criando os fatores de algumas da variáveis (colunas) categóricas e adicionando os respectivos labels. Para isso, usaremos a função _factor_.
+
+- Profissional da Saúde
+```{r}
+table(df_2$profissionalSaude)
+df_2$profissionalSaude <- factor(df_2$profissionalSaude, levels = c("Não", "Sim"),
+                            labels = c("Não", "Sim"),
+                           ordered = FALSE)
+table(df_2$profissionalSaude)
+```
+
+- Recebeu Vacina
+
+```{r}
+table(df_2$codigoRecebeuVacina)
+df_2$codigoRecebeuVacina <- factor(df_2$codigoRecebeuVacina, levels = c(1, 2, 3),
+                            labels = c("Sim", "Não", "Ignorado"),
+                            ordered = FALSE)
+table(df_2$codigoRecebeuVacina)
+
+```
+- Classificação Final
+```{r}
+table(df_2$classificacaoFinal)
+df_2$classificacaoFinal <- factor(df_2$classificacaoFinal, 
+    levels = c("Confirmado Laboratorial", "Síndrome Gripal Não Especificada", 
+               "Confirmado Clínico-Epidemiológico", "Confirmado por Critério Clínico", 
+               "Confirmado Clínico-Imagem", "Descartado"),
+    labels = c("Confirmado Laboratorial", "Síndrome Gripal Não Especificada", 
+               "Confirmado Clínico-Epidemiológico", "Confirmado por Critério Clínico", 
+               "Confirmado Clínico-Imagem", "Descartado"),
+    ordered = FALSE)
+table(df_2$classificacaoFinal)
+
+```
+- Evolução do Caso
+```{r}
+table(df_2$evolucaoCaso)
+df_2$evolucaoCaso <- factor(df_2$evolucaoCaso, 
+    levels = c("Cancelado", "Ignorado", "Em tratamento domiciliar", 
+               "Internado em UTI", "Internado", "Óbito", "Cura"),
+    labels = c("Cancelado", "Ignorado", "Em tratamento domiciliar", 
+               "Internado em UTI", "Internado", "Óbito", "Cura"),,
+    ordered = FALSE)
+table(df_2$evolucaoCaso)
+
+```
+## Itens - Parte I 
+
+### Item 1 - Faça uma tabela de frequências e responda à seguinte pergunta: Qual a porcentagem dos profissionais da saúde com notificações de suspeita de Covid-19 no ano de 2024 no Estado de Goiás? Utilize duas casas decimais.
+
+*Solução:*
+Para responder essa pergunta, será necessário analisar a quantidade de profissionais da saúde com suspeita de covid em relação a quantidade total de pessoas com suspeita de covid, observe que na construção do nosso dataframe já relizamos a filtragem referente ao dados do ano de 2024 no Estado de Goiás. Para isso, será necessário criarmos tabela de frequência absoluta no R, cuja função utilizada é a _table_ e a tabela de frequência relativa no R, a função utilizada é a _prop.table_ que deve ser aplicada à uma tabela de frequência absoluta.
+
+```{r}
+# Verificando se há valores ausentes:
+tamanho <- length(df_2$profissionalSaude)
+soma <- sum(table(df_2$profissionalSaude))
+print(tamanho - soma)
+
+#Frequencia Absoluta:
+freq_saude <- round(table(df_2$profissionalSaude),4)
+print(freq_saude)
+
+#Frequencia Relativa:
+freq_saude_relativa <- round(prop.table(table(df_2$profissionalSaude)),4)
+print(freq_saude_relativa)
+```
+
+Logo, a porcentagem dos profissionais da saúde com notificações de suspeita de Covid-19 no ano de 2024 no Estado de Goiás é de 1,04%. 
+
+Ps. Optei por fazer o arredondamento com 4 casas decimais para que a porcentagem tivesse 2 casas decimais. Caso usassemos o arredondamento com 2 casa, a porcentagem equivalente seria 1% referente a sim para Recebeu Vacina e 99% para não na variável Recebeu Vacina.
+
+### Item 2 - Faça uma tabela de frequências e responda à seguinte pergunta: Qual é o sexo que apresenta o maior número de notificações de suspeita de Covid-19 no ano de 2024 no Estado de Goiás?
+
+*Solução:*
+
+A solução é similar ao que foi feito no item anterior, no entanto será necessário calcular apenas a tabela de frequência absoluta.
+
+```{r}
+# Verificando se há valores ausentes:
+tamanho_s <- length(df_2$sexo)
+soma_s <- sum(table(df_2$sexo))
+print(tamanho_s - soma_s)
+
+#Frequencia Absoluta:
+freq_sexo <- round(table(df_2$sexo),2)
+print(freq_sexo)
+```
+
+O Sexo com o maior número de notificações de suspeita de Covid-19 no ano de 2024 no Estado de Goiás é o sexo Feminino, com 101776 suspeitas.
+
+### Item 3 - Faça uma tabela de frequências e responda à seguinte pergunta: Qual a raça que apresenta a maior proporção de notificações de suspeita de Covid-19 no ano de 2024 no Estado de Goiás? Utilize quatro casas decimais. 
+*Solução:*
+
+Similarmente ao que foi feito no item 1, será necessário calcular a tabela de frequencia absoluta e relativa referente a coluna racaCor em nosso dataframe mas será necessário realizar um ajuste na função _round_ para termos 4 casas decimais.
+
+```{r}
+# Verificando se há valores ausentes:
+tamanho_s <- length(df_2$racaCor)
+soma_s <- sum(table(df_2$racaCor))
+print(tamanho_s - soma_s)
+
+#Frequencia Absoluta:
+freq_racaCor <- round(table(df_2$racaCor),4)
+print(freq_racaCor)
+
+#Frequencia Relativa:
+freq_racaCor_relativa <- round(prop.table(table(df_2$racaCor)),4)
+print(freq_racaCor_relativa)
+```
+
+Portanto, a Raça que apresenta a maior proporção de notificações de suspeita de Covid-19 no ano de 2024 no Estado de Goiás é a Parda, com 44.47% das suspeitas.
+
+### Item 4 - Faça um gráfico em setores para a variável “recebeu vacina” (codigoRecebeuVacina) das notificações de suspeita de Covid-19 no ano de 2024 no Estado de Goiás. Utilize a frequência relativa em porcentagem. Além disso, responda: Qual é a categoria mais frequente nas notificações? Para o gráfico, adicione os nomes das categorias e as porcentagens como rótulos. Utilize uma casa decimal.
+
+*Solução:* 
+
+Observe que no início desta atividade realizamos algumas limpezas e análises inicias nos dados. Em uma dessas etapas realizamos a categorização das variáveis categoricas e percebemos que a variável “recebeu vacina” não possui informações referente a categoria Ignorado, portanto, para realizar a construção do gráfico de setores, consideraremos apenas os casos no qual os dados são diferentes de ignorados.
+
+Para realizar a construção do gráfico solicitado, usaremos a função _table_ e _round_, já calculando a porcentagem referente a cada categoria e usaremos a função _pie_ para construir o gráfico solicitado.
+
+Para a esssa questão, optei em não exibir o código mas o mesmo se encontra no arquivo markdown que gerou este pdf.
+```{r echo=FALSE, warning = FALSE, message=FALSE, out.width="80%", fig.align='center'}
+# Salvando as porcentagens em uma variável:
+porc_vacina <- round(100*prop.table(table(df_2$codigoRecebeuVacina)),1)
+
+# Removendo a categoria "Ignorado" do vetor porc_vacina
+porc_vacina <- porc_vacina[names(porc_vacina) != "Ignorado"]
+
+# Criando os rótulos: valor porcentagem + símbolo % :
+rotulos1.porc_vacina <- paste(porc_vacina, "%", sep = "")
+
+# Adicionando rótulos aos setores e legenda ao gráfico: 
+library(RColorBrewer)  
+cores.especiais <- brewer.pal(3, "Paired")  
+pie(porc_vacina, 
+    main = "Informações Sobre Vacinados",  
+    col = cores.especiais,                       
+    labels = rotulos1.porc_vacina)                
+legend(1, 1, names(porc_vacina), col = cores.especiais, pch = 15)  
+
+```
+
+Portanto, a categoria sim - que significa que a pessoa recebeu vacina - é a mais frequente, com 86,4% das observações, nos dados de suspeita de Covid-19 no ano de 2024 em Goiás.
+
+### Item 5 - Faça um gráfico em barras para a variável “classificação final” (classificacaoFinal) das notificações de suspeita de Covid-19 no ano de 2024 no Estado de Goiás. Utilize a frequência absoluta (em centenas de notificações). Além disso, analisando o gráfico, responda: Qual é a classificação mais frequente?
+*Solução:*
+
+Usaremos a função _barplot_ para criar esse gráfico. Além disso, também usaremos a função _brewer_ para mudar as cores do gráfico em questão, a função _sort_ para ordenar em ordem decrescente. Optaremos por omitir o código que gerou a imagem.
+
+```{r echo=FALSE, warning = FALSE, message=FALSE, out.width="80%", fig.align='center'}
+
+frequencia_classificacao <- table(df_2$classificacaoFinal)
+
+# Convertendo a frequência para centenas de notificações
+frequencia_centenas <- frequencia_classificacao / 100
+frequencia_centenas <- sort(frequencia_centenas, decreasing = TRUE)
+# Definindo as cores para o gráfico
+cores <- brewer.pal(length(frequencia_centenas), "Paired")
+
+par(mar = c(5, 5, 4, 2) + 0.1)  
+par(oma = c(0, 0, 0, 1))  
+# Criando o gráfico de barras
+barplot(frequencia_centenas,
+        main = "Notificações de Suspeita de Covid-19 em Goiás (2024)",
+        xlab = "Classificação Final",
+        ylab = "Frequência (em centenas de notificações)",
+        col = cores,
+        las = 1,      
+        cex.names = 1 
+)
+
+legend("topright", 
+       #inset = c(-0.3, 0),
+       legend = names(frequencia_classificacao), 
+       fill = cores, 
+       title = "Classificação Final")
+
+
+```
+
+Portanto, a categoria Confirmado Laboratorial  é a mais frequente nos dados de suspeita de Covid-19 no ano de 2024 em Goiás.
+
+
+### Item 6 - Faça um histograma para a idade (em anos) das pessoas que tiveram notificações de suspeita de Covid-19 no ano de 2024 no Estado de Goiás. Utilize a densidade de frequência e classes de amplitude 10 (com a primeira iniciando na idade 0). Além disso, analisando o gráfico, responda: Qual é a faixa etária mais frequente?
+*Solução:* 
+Usaremos a função _hist_ para criar o histograma solicitado, _seq_ para definir os limites das classes e _lines_ para inserir uma linha de desnsidade.
+
+```{r, echo=FALSE, warning = FALSE, message=FALSE, out.width="80%", fig.align='center'}
+idade_max <- max(df_2$idade, na.rm = TRUE)
+
+# Definindo os limites das classes com um valor ligeiramente maior que a idade máxima
+breaks <- seq(0, idade_max + 10, by = 10)
+
+# Criando o histograma com densidade de frequência
+hist(df_2$idade, 
+     breaks = breaks, 
+     freq = FALSE, 
+     main = "Distribuição de Idade das Notificações de Suspeita de Covid-19 em Goiás",
+     xlab = "Idade (em anos)",
+     ylab = "Densidade de Frequência",
+     col = "lightblue",
+     border = "darkblue")
+
+# Adicionando linhas de densidade
+lines(density(df_2$idade, na.rm = TRUE), col = "blue", lwd = 2)
+hist_data <- hist(df_2$idade, breaks = breaks, plot = FALSE)
+idade_mais_frequente <- hist_data$mids[which.max(hist_data$density)]
+cat("A idade mais frequente é" , idade_mais_frequente, "anos.\n")
+```
+## Itens - Parte II
+
+### Item 7 - Faça um sumário com as principais medidas resumo (média, mediana, mínimo, máximo, primeiro e terceiro quartil) da variavél idade. Além disso, calcule o desvio padrão e o coeficiente de variação para a variável idade.
+
+*Solução:*
+
+Inicialmente, podemos obter algumas das principais medidas solicitadas usando a funçao _summary_.
+```{r, warning = FALSE, message=FALSE}
+resumo_idade <- summary(df_2$idade)
+print(resumo_idade)
+```
+
+Observe que há vários valores ausentes, optaremos por omiti-los usando a função _na.omit_.
+```{r, warning = FALSE, message=FALSE}
+
+idade_na <- na.omit(df_2$idade)
+resumo_idade_2 <- summary(idade_na)
+print(resumo_idade_2)
+```
+
+Agora, vamos calcular o desvio padrão e o coeficiente de variação. Para o desvio padrão, utilizaremos a função _sd_, mas poderiamos calcular o desvio padrão através da raiz quadrada da variancia. Optei por realizar um arredondamento de 2 casas decimais.
+
+```{r, warning = FALSE, message=FALSE}
+desvio_idade <- round(sd(idade_na),2)
+cat("Usando a função sd: ",desvio_idade, "\n")
+
+checking_desvio <- round(sqrt(var(idade_na)),2)
+cat("Usando a raiz quadrada da variancia: ",checking_desvio)
+```
+
+Embora não haja uma função específica para o cálculo do coeficiente de variação no R sabemos que o coeficiente de variação é uma medida de dispersão relativa que é obtido dividindo o desvio padrão pela média e multiplicando por 100, para que o valor fique em porcentagem. Vamos fazer esse cálculo.
+```{r, warning = FALSE, message=FALSE}
+cv_idade <- round((desvio_idade / mean(idade_na))*100, 2)
+
+cat("O Coeficiente de Variação é: ", cv_idade,"%.")
+```
+
+### Item 8 - Qual foi o sintoma mais frequente (moda da variável sintoma) registrado entre as notificações de suspeita de Covid-19 no ano de 2024 no Estado de Goiás?
+
+*Solução:* 
+Para obtermos a moda, basta utilizarmos a função _mfv_ do pacote modeest.
+
+```{r, warning = FALSE, message=FALSE}
+library(modeest)  
+moda_sintoma <- mfv(df_2$sintomas, na_rm = TRUE)
+cat("O sintoma mais frequente foi:", moda_sintoma)
+```
+
+### Item 9 - Faça um boxplot da variável idade e responda: existem idades discrepantes (outliers) na amostra?
+
+*Solução:* Utilizaremos a função _boxplot_ e a variável idade desconsiderando os valores ausentes.
+
+```{r, out.width="80%", fig.align='center'}
+boxplot(idade_na,
+        main='Idade',                  
+        ylab='Idade (anos)',                  
+        col = "lightblue",                          
+        border = "darkblue")
+```
+
+O boxplot acima mostra uma distribuição de dados centrada em 30 anos, com a maioria dos dados variando entre 20 e 40 anos. A distribuição parece simétrica pois a mediana está aproximadamente no centro do retângulo (30 anos), e não há sinais de outliers significativos. Observe que os dados estão de acordo com o resumo que fizemos no item 7 dessa atividade.
+
+### Item 10 - Faça uma tabela cruzada para as variáveis “evolução do caso” (evolucaoCaso) e “recebeu vacina” (codigoRecebeuVacina), utilizando frequências relativas pelo total da coluna (utilize 4 casas decimais para a proporção). Exclua valores ausentes (NA’s) e Ignorados de ambas as variáveis. Responda: Do total de pessoas que tomaram vacina, qual a porcentagem de pessoas que foram internadas em UTI? E considerando o total de pessoas que não tomaram vacina, qual porcentagem foram internadas em UTI?
+
+*Solução:* 
+
+Para fazer a tabela cruzada, usaremos a biblioteca gmodels e a função _CrossTable_. Antes, iremos filtrar os dados para remover os Na's e Ignorados. E como queremos o total de pessoas que tomaram vacina, utilizaremos prop.c = TRUE pois retorna a proporção em relação as colunas.
+```{r}
+library(gmodels) 
+dados_filtrados <- subset(df_2, 
+                          !is.na(evolucaoCaso) & !is.na(codigoRecebeuVacina) & 
+                          evolucaoCaso != "Ignorado" & codigoRecebeuVacina != "Ignorado")
+
+# Criar a tabela cruzada com frequências relativas
+CrossTable(dados_filtrados$evolucaoCaso, dados_filtrados$codigoRecebeuVacina,
+           prop.r = FALSE, 
+           prop.t = FALSE, 
+           prop.chisq = FALSE, 
+           prop.c = TRUE, 
+           digits = 4)
+
+```
+Logo, do total de pessoas que tomaram vacina, 0,01% foram internadas em UTI e  considerando o total de pessoas que não tomaram vacina 0,01% foram internadas em UTI. 
+
+### Item 11 - Faça um gráfico de colunas justapostas para as variáveis raça (racaCor) e sexo. Exclua valores ausentes (NA’s) e Ignorados de ambas as variáveis. Utilize a frequência relativa porcentagem para o eixo y do gráfico. Responda: qual a categoria com maior frequência conjunta dentre as notificações de suspeita de Covid-19 no ano de 2024 no Estado de Goiás?
+
+*Solução:* 
+Com base no gráfico abaixo, a categoria com maior frequência conjunta dentre as notificações de suspeita de Covid-19 no ano de 2024 no Estado de Goiás é a Parda.
+
+Para gerar o gráfico filtramos para remover os "Ignorados", usamos a função _table_  e _prop_table_ para gerar as frequencias. Após essas tratativas, usamos a função _barplot_ para criar o  gráfico de colunas justapostas solicitados. Optamos por omitir o código.
+
+```{r echo=FALSE, warning = FALSE, message=FALSE, out.width="80%", fig.align='center'}
+options(scipen = 999)
+#Excluindo a categoria Ignorado:
+dados_aux <- df_2[((df_2$racaCor!="Ignorado") & (df_2$sexo !="Ignorado")),]
+tab1 <- table(dados_aux$sexo, dados_aux$racaCor)
+tab1
+tab2 <- round(100*prop.table(tab1),2)
+tab2
+
+# Criar o gráfico de colunas justapostas
+b <- barplot(tab2, 
+        beside = TRUE,                                 
+        legend = TRUE,                                   
+        col=c("lightblue", "DarkBlue"),    
+        main = "Distribuição por Raça e Sexo",
+        xlab = " ",
+        ylab = "Frequência Relativa (%)",
+        ylim = c(0, max(tab2)+20))
+text(x = b, y=tab2 + 1.2, labels=paste0(round(tab2, 2), "%"), cex =0.7)
+```
+
+### Item 12 - Faça um box-plot comparativo das variáveis idade e sexo e comente a respeito da dispersão e da idade mediana dos dois grupos.
+
+*Solução:*
+
+Optamos por omitir o código que gerou o gráfico abaixo. Fizemos a filtragem dos dados para remover os dados correspondentes a "Ignorados" e utilizamos a função _boxplot_.
+
+```{r echo=FALSE, warning = FALSE, message=FALSE, out.width="80%", fig.align='center'}
+df_12 <- df_2[(df_2$sexo !="Ignorado") 
+                & is.na(df_2$sexo) == FALSE & is.na(df_2$idade) == FALSE,]
+
+# Criar o box-plot comparativo
+boxplot((df_12$idade)~df_12$sexo,
+        main = "Box-Plot Comparativo de Idade por Sexo",
+        xlab = "Sexo",
+        ylab = "Idade",
+        col = c("lightblue", "darkblue"),
+        border = "black"
+        )
+```
+
+Com base no gráfico acima, observamos que não há outliers significativos, o que sugere que as idades dos indivíduos dentro do sexo Feminino e Masculino estão relativamente próximas entre si. Além disso, observamos que a mediana do sexo feminino, superiormente próxima de 30 anos, é ligeiramente maior do que a do sexo Masculino que está ligeiramente abaixo de 30 anos.

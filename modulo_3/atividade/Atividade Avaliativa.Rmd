@@ -1,0 +1,87 @@
+---
+title: "Curso de Especialização em Data Science e Estatística Aplicada\nMódulo I - Introdução à Linguagem R\n\nAtividade Avaliativa"
+author: "Prof. Dr. Fabrizzio Soares"
+date: "2024-07-06"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{=html}
+<style>body {text-align: justify}</style>
+```
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Instruções
+
+- O desenvolvimento desta atividade deve ser realizada de forma individual. 
+
+- Deve-se completar o arquivo Rmd enviado na atividade. 
+
+- É necessário devolver o arquivo em Rmd e em pdf. 
+
+- Valor da atividade: 10 pontos. 
+
+**Data disponível: 06/07/2024**
+
+**Data máxima para entrega: 03/08/2024**
+
+
+# Atividade
+
+Nesta atividade avaliativa, desenvolveremos um pequeno projeto para analisar dados do Painel de COVID do Ministério da Saúde.
+
+## Sobre o Painel COVID-19
+
+O painel COVID-19 foi desenvolvido pelo Departamento de Monitoramento e Avaliação de (DEMAS) da Secretaria de Informação e Saúde Digital (SEIDIGI),
+em parceria com: Departamento de Imunização e Doenças Imunopreveníveis (DPNI) da Secretaria de Vigilância em Saúde e Ambiente (SVSA).
+
+Possui periodicidade de atualização semanal, em que os dados são consolidados todas às quintas-feiras 15:30h, contendo informações até a semana epidemiológica anterior.Os dados contidos no painel de informação serão considerados como preliminares e sujeitos à alteração.
+
+O processo de atualização dos dados sobre casos e óbitos confirmados por COVID-19 no Brasil é realizado semanalmente pelo Ministério da Saúde através das informações oficiais (fonte única e exclusiva) repassadas pelas Secretarias Estaduais de Saúde das 27 Unidades Federativas, desde os anos de 2020 até o presente momento. Fonte: [Painel COVID-19](https://infoms.saude.gov.br/extensions/covid-19_html/covid-19_html.html) - <https://infoms.saude.gov.br/extensions/covid-19_html/covid-19_html.html>.
+
+## Sobre os dados
+
+Para esta atividade coletar dados nacionais de casos e óbitos de COVID-19, referentes ao ano de 2021 de todo território nacional.
+
+Os dados podem ser baixados da página do [Painel COVID-19](https://infoms.saude.gov.br/extensions/covid-19_html/covid-19_html.html) <https://infoms.saude.gov.br/extensions/covid-19_html/covid-19_html.html>, onde é possível filtrar pelo ano, abrangência, dentre outros.
+
+![](img/covid1.png)
+![](img/covid2.png)
+
+Exclua o ano de 2024, clicando no X, e escolha o ano de 2021.
+Uma vez escolhido o filtro, clique em exportar dados para salvar um arquivo no formato Excel.
+
+![](img/covid3.png)
+
+O arquivo no formato Excel trará dados de todo o território nacional referente a casos e óbitos de COVID-19, no ano de 2021. 
+Os dados podem ser visualizados no Excel ou no próprio R.
+
+![](img/covid4.png)
+
+# Desenvolva e/ou responda os itens abaixo.
+
+## Item 1. Importe os dados de COVID-19 do ano de 2021, obtidos no site do Ministério da Saúde, ou baixada da página do curso.
+
+# Considerando a base toda (Todo o território nacional)
+
+## Item 2. Realize a limpeza dos dados de todas as colunas (*NA's, Datas, etc*). Use as funções e as ferramentas trabalhadas em aula.
+
+## Item 3. Use a função "factor" para categorizar a coluna "Metro/Interior" no data frame.
+
+## Item 4. Realize um resumo dos dados utilizando a função summary.
+
+## Item 5. Filtre os dados para a cidade de Goiânia e mostre as 10 primeiras linhas do data frame.
+
+# Considerando os dados Filtrados de Goiânia
+
+## Item 6. Calcule e exiba o número de casos e de óbitos acumulados de COVID-19 no ano de 2021.
+
+## Item 7. Gere e exiba um gráfico de linha de casos acumulados de COVID-19 por semana em 2021.
+
+## Item 8. Gere e exiba um gráfico de linha de óbitos acumulados de COVID-19 por semana em 2021.
+
+# Bônus
+
+## Item 9. Crie uma nova coluna denominada "Regiao", partir da coluna "UF". Agrupe as UF segundo suas regiões específicas: Norte, Nordeste, Centro-Oeste, Sul e Sudeste.

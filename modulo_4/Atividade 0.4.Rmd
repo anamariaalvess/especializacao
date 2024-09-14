@@ -1,0 +1,504 @@
+---
+title: 'Estatística descritiva para \textit{Data Science}'
+subtitle: '0.4 - Aula Prática: Sumarização de dados em tabelas'
+author: "Profa. Dra. Amanda Buosi Gazon Milani"
+date: "2024-07-19"
+output: pdf_document
+header-includes:
+   - \usepackage{array}
+   - \usepackage{longtable}
+   - \usepackage[brazil]{babel}
+---
+
+## Conjunto de dados - Nascidos Vivos 2024 (DataSUS)
+
+
+O conjunto de dados que será utilizado nesta disciplina foi obtido no site do OpenDataSUS, foi tratado e consiste da base de informações sobre nascidos vivos 2024 (parcial).
+
+\vspace{0.5cm}
+
+Inicialmente vamos importar (carregar) os dados no R, utilizando os códigos a seguir.  
+
+\vspace{0.2cm}
+```{r}
+
+setwd <- "C:\\Users\\AmandaBGM\\Google Drive\\UFG\\Especialização_FEN_IME\\2024\\Scripts"
+
+# 2 opções de importação (.csv com separador ponto-e-vígula):
+
+# dados <- read.csv2(file = "Dataframe_AulaAmanda.csv",  header = TRUE)
+# ou:
+dados <- read.csv(file = "Dataframe_AulaAmanda.csv", sep=';', header = TRUE)
+
+head(dados)
+dim(dados)
+
+```
+
+
+
+
+\vspace{1cm}
+
+
+
+##  Tabela de frequência absoluta
+
+Para executarmos uma tabela de frequência absoluta no R, a função utilizada é a \texttt{table(...)}
+
+\vspace{0.5cm}
+
+Vamos construir a tabela de frequência absoluta para algumas variáveis do nosso conjunto de dados:
+
+\vspace{0.5cm}
+
+### $\bullet$ LOCNASC
+
+```{r}
+
+# Tabela de frequência absoluta:
+
+table(dados$LOCNASC)
+
+```
+
+
+
+\vspace{0.5cm}
+
+### $\bullet$ ESTCIVMAE
+
+```{r}
+
+# Tabela de frequência absoluta:
+
+table(dados$ESTCIVMAE)
+
+```
+
+\vspace{0.5cm}
+
+Note que a função \texttt{table(...)} por padrão descarta os valores faltantes (NA's) da variável. 
+
+\vspace{0.5cm}
+
+```{r}
+
+length(dados$ESTCIVMAE)      ## para verificar o tamanho total 
+
+sum(table(dados$ESTCIVMAE))  ## obtém a quantidade de valores (soma) da tabela 
+
+length(dados$ESTCIVMAE) - sum(table(dados$ESTCIVMAE)) ## diferença (quantidade de NA's)
+
+```
+\vspace{0.5cm}
+
+Caso seja uma informação importante, pode-se habilitar na função \texttt{table(...)} o parâmetro \texttt{useNA} para que os valores faltantes (NA's) sejam contados e apresentados na tabela de frequências. 
+
+\vspace{0.5cm}
+
+```{r}
+
+# Tabela de frequência absoluta com NA's:
+
+table(dados$ESTCIVMAE, useNA = "always")
+
+```
+\vspace{0.5cm}
+
+
+### $\bullet$ GESTACAO
+
+```{r}
+
+# Tabela de frequência absoluta:
+
+table(dados$GESTACAO)
+
+```
+
+
+\vspace{0.5cm}
+
+### $\bullet$ GRAVIDEZ
+
+```{r}
+
+# Tabela de frequência absoluta:
+
+table(dados$GRAVIDEZ)
+
+```
+
+
+\newpage
+
+
+##  Tabela de frequência relativa
+
+Para executarmos uma tabela de frequência relativa no R, a função utilizada é a \texttt{prop.table(...)} . Ela deve ser aplicada à uma tabela de frequência absoluta, portanto seu uso será conjunto com a função \texttt{table(...)} .
+
+\vspace{0.5cm}
+
+Vamos construir a tabela de frequência relativa para algumas variáveis do nosso conjunto de dados:
+
+\vspace{0.5cm}
+
+### $\bullet$ LOCNASC
+
+```{r}
+
+# Tabela de frequência relativa:
+
+prop.table(table(dados$LOCNASC))
+
+```
+\vspace{0.5cm}
+
+Para visualizar melhor as frequências relativas deste exemplo, podemos usar a função \texttt{round(...)} para arredondar as proporções para um determinado número de casas decimais:
+
+\vspace{0.5cm}
+
+
+```{r}
+
+# Tabela de frequência relativa com arredondamento:
+
+round( prop.table(table(dados$LOCNASC)) , 5)
+
+```
+
+
+
+
+\vspace{0.5cm}
+
+### $\bullet$ ESTCIVMAE
+
+```{r}
+
+# Tabela de frequência relativa com arredondamento:
+
+round( prop.table(table(dados$ESTCIVMAE)) , 3 )
+
+```
+
+\vspace{0.5cm}
+
+Novamente, pode-se habilitar na função \texttt{table(...)} o parâmetro \texttt{useNA} para que os valores faltantes (NA's) sejam contados e apresentados na tabela de frequências e, ao executar a tabela de prequências relativas com \texttt{prop.table(...)}, os NA's serão considerados na tabela.
+
+\vspace{0.5cm}
+
+```{r}
+
+# Tabela de frequência relativa com NA's:
+
+round( prop.table(table(dados$ESTCIVMAE, useNA = "always")) , 3)
+
+```
+\vspace{0.5cm}
+
+A tabela de frequência relativa adotando a porcentagens pode ser obtida multiplicando por 100 o resultado de uma tabela de frequência relativa com proporções!
+
+\vspace{0.5cm}
+
+### $\bullet$ LOCNASC
+
+\vspace{0.5cm}
+
+
+```{r}
+
+# Tabela de frequência relativa com arredondamento:
+
+100*round( prop.table(table(dados$LOCNASC)) , 5)
+
+```
+
+
+
+
+\vspace{0.5cm}
+
+### $\bullet$ ESTCIVMAE
+
+```{r}
+
+# Tabela de frequência relativa com arredondamento:
+
+100*round( prop.table(table(dados$ESTCIVMAE)) , 2 )
+
+```
+
+\vspace{0.5cm}
+
+Em resumo, temos a seguinte estrutura de uso das funções para construção de tabelas de frequências absoluta e relativas:
+
+\vspace{0.5cm}
+
+```{r, eval=FALSE}
+
+table(nome_variavel)                 ## frequência absoluta
+
+prop.table(table(nome_variavel))     ## frequência relativa (proporção)
+
+100*prop.table(table(nome_variavel)) ## frequência relativa (porcentagem)
+
+
+```
+
+
+
+## Criando intervalos de classes
+
+
+Quando a variável é quantitativa contínua, necessitamos criar intervalos de classes para construir a tabelas de frequências. O mesmo ocorre quando a variável é quantitativa discreta com muitos valores distintos de ocorrência, e também necessita da quebra em intervalos para que ocorra um efetivo resumo e organização dos dados.
+
+
+### $\bullet$ IDADEMAE
+
+\vspace{0.3cm}
+
+O primeiro passo é fazer um sumário da variável, para conhecer sua distribuição, seu mínimo e máximo e entender como proceder com a criação dos intervalos de classe.
+
+\vspace{0.3cm}
+
+```{r}
+
+summary(dados$IDADEMAE)
+
+```
+\vspace{0.3cm}
+
+Geralmente 99 é um valor de controle, para valor ignorado, portanto vamos filtrar os dados somente para idades menores que 99 anos e retomar o \texttt{summary(...)} .
+
+
+\vspace{0.3cm}
+
+```{r}
+
+summary(dados$IDADEMAE[dados$IDADEMAE<99])
+
+```
+\vspace{0.3cm}
+
+Podemos ver que a idade mínima é de 8 anos e a máxima é de 65 anos, portanto, podemos adotar intervalos de 10 em 10 anos, por exemplo.
+
+\vspace{0.3cm}
+
+
+```{r}
+
+dados$IDADEMAE_cat <- cut(dados$IDADEMAE,                      ## variável que será categorizada
+                          breaks = c(0,10,20,30,40,50,60,70),  ## limites dos intervalos 
+                          right = FALSE)                       ## para intervalos fechados à esquerda
+table(dados$IDADEMAE_cat)
+
+```
+\vspace{0.3cm}
+
+Note que nessa categorização da variável, conseguimos inclusive "excluir" os valores 99, pois eles foram incluídos aos NA's (uma vez que os intervalos de classe não contemplavam esse valor).
+
+\vspace{0.3cm}
+
+
+```{r}
+
+table(dados$IDADEMAE_cat, useNA = "always")
+
+table(dados$IDADEMAE>=99)  ## essa tabela verifica quantos "TRUE" satisfazem a condição
+
+```
+
+\newpage
+
+### $\bullet$ PESO
+
+\vspace{0.2cm}
+
+O primeiro passo é fazer um sumário da variável, para conhecer sua distribuição, seu mínimo e máximo e entender como proceder com a criação dos intervalos de classe.
+
+\vspace{0.5cm}
+
+```{r}
+
+summary(dados$PESO)
+
+```
+\vspace{0.5cm}
+
+Podemos ver que o menor peso é de 100g e o maior peso é de 7000g, portanto, podemos adotar intervalos de 1000 em 1000 gramas, por exemplo.
+
+\vspace{0.5cm}
+
+
+```{r}
+dados$PESO_cat <- cut(dados$PESO,                     ## variável que será categorizada
+                          breaks = seq(0,7000,1000),  ## limites dos intervalos 
+                          right = FALSE,              ## para intervalos fechados à esquerda
+                          include.lowest = TRUE)      ## fechar o último intervalo à direita também  
+
+table(dados$PESO_cat)
+
+```
+\vspace{0.5cm}
+
+Podemos mudar os rótulos (nomes) das classes, como a seguir. Neste caso, usando a unidade de medida quilograma (kg) em vez de grama (g), conseguimos rótulos mais claros e legíveis.
+
+\vspace{0.5cm}
+
+```{r}
+
+nomes_classes <- c('[0,1)','[1,2)','[2,3)','[3,4)','[4,5)','[5,6)','[6,7]')  # rótulos para as classes (em kg)
+
+dados$PESO_cat <- cut(dados$PESO,                     ## variável que será categorizada
+                          breaks = seq(0,7000,1000),  ## limites dos intervalos 
+                          right = FALSE,              ## para intervalos fechados à esquerda
+                          include.lowest = TRUE,      ## fechar o último intervalo à direita também  
+                          labels = nomes_classes)     ## adiciona os rótulos das classes
+
+table(dados$PESO_cat)
+
+```
+\vspace{0.3cm}
+
+E para variáveis categorizadas com intervalos de classes podemos fazer também tabelas de frequências relativas:
+
+\vspace{0.3cm}
+
+```{r}
+
+round( prop.table(table(dados$PESO_cat)) , 5 )     ## frequência relativa (proporção)
+
+100*round( prop.table(table(dados$PESO_cat)) , 5 ) ## frequência relativa (porcentagem)
+
+```
+
+\vspace{0.5cm}
+
+## Tabela de frequência acumulada
+
+\vspace{0.5cm}
+
+Para as variáveis quantitativas, podemos construir a tabela de frequência acumulada. Para isso, utilizaremos o pacote \texttt{fdth} e você precisará instalá-lo antes de usá-lo pela primeira vez.
+
+\vspace{0.5cm}
+
+```{r, warning=FALSE}
+#install.packages("fdth")   # remover o # para rodar e instalar, caso necessário
+library(fdth)               # habilitando o pacote
+
+# Tabela de frequências (absoluta, relativa e acumulada) para variável quantitativa:
+tabela.pesos <- fdt(dados$PESO, na.rm = TRUE)
+tabela.pesos
+
+```
+
+\vspace{0.5cm}
+
+Note que a tabela ficou com muitos intervalos de classes e estes com valores quebrados. Podemos manipular os valores dos limites das classes:
+
+\vspace{0.5cm}
+
+```{r, warning=FALSE}
+
+# Alterando os valores dos limites das classes na função fdt(...)
+tabela.pesos <- fdt(dados$PESO, na.rm = TRUE, start = 0, end = 7000, h = 1000)
+tabela.pesos
+
+```
+
+
+\vspace{0.5cm}
+
+Vamos aplicar ao exemplo da variável IDADEMAE, replicando os mesmos intervalos de classes que utilizamos anteriormente:
+
+\vspace{0.5cm}
+
+```{r, warning=FALSE}
+
+# Tabela de frequências (absoluta, relativa e acumulada) para variável quantitativa:
+tabela.idademae <- fdt(dados$IDADEMAE, na.rm = TRUE, start = 0, end = 70, h = 10)
+tabela.idademae
+
+```
+
+\vspace{1.5cm}
+
+## Tabela completa
+
+\vspace{0.5cm}
+
+Retomando os resultados obtidos com as funções \texttt{table(...)} e \texttt{prop.table(...)}, podemos agrupar os resultados das tabelas de frequência absoluta e relativa em um única tabela, e obter tabelas completas, como visto nos exemplos da aula teórica.
+
+\vspace{0.5cm}
+
+```{r}
+
+## tabela de frequência absoluta
+absoluta <- table(dados$PESO_cat)                              
+
+# só os valores da tabela de frequência relativa (proporção)
+proporcao <- as.numeric( round( prop.table(table(dados$PESO_cat)) , 5 ) )    
+
+# só os valores da tabela de frequência relativa (porcentagem)
+porcentagem <- as.numeric( 100*round( prop.table(table(dados$PESO_cat)) , 5 ) )
+
+#Criando dataframe com as 3 tabelas:
+pesos.frame<-data.frame(absoluta,proporcao,porcentagem)
+pesos.frame
+
+#Editando os nomes das colunas:
+names(pesos.frame) <- c('Pesos (kg)', 'Frequência', 'Proporção', 'Porcentagem')
+pesos.frame
+
+#Adicionando linha de 'Total' :
+pesos.frame[8,] <- c('Total', sum(pesos.frame[,2]), 
+                     round(sum(pesos.frame[,3])), 
+                     round(sum(pesos.frame[,4])))
+pesos.frame
+
+```
+
+\vspace{0.5cm}
+
+## Exportando a tabela
+
+\vspace{0.5cm}
+
+Exportar o resultado de uma tabela obtido no R pode ser útil para elaboração de um relatório, por exemplo. Após transformar a tabela em um dataframe, podemos exportá-la, por exemplo, para um arquivo .csv :
+
+\vspace{0.5cm}
+
+```{r}
+
+#Exportando dataframe (tabela de frequências) para arquivo csv:
+
+write.table(pesos.frame, "tabela_pesos.csv", fileEncoding="latin1", sep=";")
+
+getwd()
+
+```
+
+\vspace{0.5cm}
+
+\textbf{Observação:} O arquivo exportado será salvo na pasta definida em \texttt{setwd}. Se você não definiu uma pasta na sessão ou quer conferir qual pasta está definida, basta usar o comando \texttt{getwd()} que o caminho da pasta onde o arquivo será salvo será exibido.
+
+\vspace{0.5cm}
+
+Além disso, podemos exportar a tabela para o \texttt{latex}, o que pode ser muito útil na escrita de relatórios utilizando tal compilador. Para isso, utilizaremos o pacote \texttt{xtable} e você precisará instalá-lo antes de habilitá-lo, caso ainda não o tenha instalado em seu computador.
+
+\vspace{0.5cm}
+
+```{r, warning=FALSE}
+
+#Exportando dataframe (tabela de frequências) para o latex:
+
+#install.packages("xtable")  # remover o # para instalar, caso necessário
+library(xtable)
+
+xtable(pesos.frame)
+
+```
+
+\vspace{0.5cm}

@@ -1,0 +1,380 @@
+---
+title: "Atividade Avaliativa"
+author: "Ana Maria Alves da Silva"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, eval = TRUE)
+```
+
+## Análise de Dado do SINAN
+
+Nesta atividade estão sendo analisados os dados de Febre de Chikungunya de Goiás, do Maranhão e do Brasil. Os dados foram obtidos do site do SINAN, e são carregados com os vetores abaixo.
+
+
+```{r dados_goias, echo=TRUE}
+
+dados_goias <- c(2017,NA,23,15,27,35,55,
+                269,238,29,17,18,5,
+               2018,NA,8,6,24,30,46,
+                221,165,19,12,12,3,
+               2019,NA,4,11,14,30,29,
+                148,106,13,7,17,3,
+               2020,NA,18,6,16,11,16,
+                115,71,13,6,5,3,
+               2021,3,22,15,32,38,51,
+                367,372,50,34,37,14,
+               2022,NA,60,107,180,258,289,
+                1929,2476,389,332,342,101,
+               2023,1,35,80,130,187,269,
+                1445,1369,222,170,181,61,
+               2024,1,43,125,240,328,491,
+                2477,2799,508,429,535,244)
+
+```
+
+```{r dados_maranhao, echo=TRUE}
+
+dados_maranhao <- c(2017,NA,159,179,402,581,775,
+                      3063,1863,305,250,305,117,
+                    2018,NA,44,30,37,40,84,
+                      365,251,32,25,51,15,
+                    2019,NA,33,66,79,112,88,
+                      360,186,24,16,21,4,
+                    2020,NA,26,18,28,27,23,
+                      75,40,6,2,5,2,
+                    2021,1,28,33,29,20,19,
+                      69,55,8,9,5,3,
+                    2022,5,154,144,245,275,235,
+                      1183,915,129,96,105,32,
+                    2023,1,78,120,267,302,260,
+                      1453,1266,207,159,203,81,
+                    2024,NA,28,75,89,85,101,
+                      480,335,51,39,43,15)
+
+```
+
+```{r dados_brasil, echo=TRUE}
+dados_brasil <- c(2017,66,3346,4976,9930,13999,18984,
+                    91150,69186,11401,9123,10826,4704,
+                  2018,27,1715,2514,4376,6060,8301,
+                    41701,36162,6306,4705,5176,1722,
+                  2019,91,2226,3528,6741,9016,11645,
+                    62033,54629,10042,7678,7975,2895,
+                  2020,55,1820,1874,3757,4724,5577,
+                    36982,33253,4878,3573,3972,1606,
+                  2021,89,1789,3329,5554,6430,7189,
+                    45081,40969,6212,4791,5482,2060,
+                  2022,99,3723,6918,12126,15108,16824,
+                    96867,83007,12675,9670,12032,4873,
+                  2023,74,2352,5684,10986,14309,16772,
+                    85526,73568,12268,9817,11524,4894,
+                  2024,53,1850,5064,9715,12573,15512,
+                    72253,66695,12289,9881,11574,4680)
+
+```
+#### *Ps. Foram os usados os dados fornecidos na atividade, logo os dados de 2024 podem estar diferentes dos dados encontrados atualmente no site do SINAN *
+
+## Matrizes de dados (Item 1)
+<!-- Item 1. Montar 3 matrizes dos dados de Goiás, Maranhão e Brasil, respectivamente, em que, as colunas conterão os dados de faixa etária, descartando-se a coluna Ano de notificacao, e Em branco/IGN. -->
+
+<!-- Optei por fazer a construção usando os vetores e já excluindo os dados solicitados nos própios vetores
+e depois usando rbind para transformar os vetores de anos nas matrizes solicitadas.
+-->
+### **1. Goiás:**
+
+```{r matriz_go, echo=FALSE, results='asis'}
+g_2017 <- c(23,15,27,35,55,269,238,29,17,18,5)
+g_2018 <- c(8,6,24,30,46,221,165,19,12,12,3)
+g_2019 <- c(4,11,14,30,29,148,106,13,7,17,3)
+g_2020 <- c(18,6,16,11,16,115,71,13,6,5,3)
+g_2021 <- c(22,15,32,38,51,367,372,50,34,37,14)
+g_2022 <- c(60,107,180,258,289,1929,2476,389,332,342,101)
+g_2023 <- c(35,80,130,187,269,1445,1369,222,170,181,61)
+g_2024 <- c(43,125,240,328,491,2477,2799,508,429,535,244)
+
+dados_goias <- rbind(g_2017, g_2018, g_2019, g_2020, g_2021, g_2022, g_2023, g_2024)
+faixa <- c("< 1", "1-4", "5-9", "10-14", "15-19", "20-39", "40-59", "60-64", "65-69", "70-79", "80 +")
+anos <- c("2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024")
+colnames(dados_goias) <- faixa
+rownames(dados_goias) <- anos
+
+library(knitr)
+kable(dados_goias, caption = "Dados de Febre de Chikungunya por ano e faixa etária")
+```
+
+### **2. Maranhão:**
+
+```{r matriz_ma, echo=FALSE, results='asis'}
+
+m_2017 <- c(159,179,402,581,775,3063,1863,305,250,305,117)
+m_2018 <- c(44,30,37,40,84,365,251,32,25,51,15)
+m_2019 <- c(33,66,79,112,88,360,186,24,16,21,4)
+m_2020 <- c(26,18,28,27,23,75,40,6,2,5,2)
+m_2021 <- c(28,33,29,20,19,69,55,8,9,5,3)
+m_2022 <- c(154,144,245,275,235,1183,915,129,96,105,32)
+m_2023 <- c(78,120,267,302,260,1453,1266,207,159,203,81)
+m_2024 <- c(28,75,89,85,101,480,335,51,39,43,15)
+
+dados_maranhao <- rbind(m_2017, m_2018, m_2019, m_2020, m_2021, m_2022, m_2023, m_2024)
+colnames(dados_maranhao) <- faixa
+rownames(dados_maranhao) <- anos
+
+library(knitr)
+kable(dados_maranhao, caption = "Dados de Febre de Chikungunya por ano e faixa etária")
+```
+
+### **3. Brasil:**
+
+```{r matriz_br, echo=FALSE, results='asis'}
+b_2017 <- c(3346,4976,9930,13999,18984,91150,69186,11401,9123,10826,4704)
+b_2018 <- c(1715,2514,4376,6060,8301,41701,36162,6306,4705,5176,1722)
+b_2019 <- c(2226,3528,6741,9016,11645,62033,54629,10042,7678,7975,2895)
+b_2020 <- c(1820,1874,3757,4724,5577,36982,33253,4878,3573,3972,1606)
+b_2021 <- c(1789,3329,5554,6430,7189,45081,40969,6212,4791,5482,2060)
+b_2022 <- c(3723,6918,12126,15108,16824,96867,83007,12675,9670,12032,4873)
+b_2023 <- c(2352,5684,10986,14309,16772,85526,73568,12268,9817,11524,4894)
+b_2024 <- c(1850,5064,9715,12573,15512,72253,66695,12289,9881,11574,4680)
+
+dados_brasil <- rbind(b_2017, b_2018, b_2019, b_2020, b_2021, b_2022, b_2023, b_2024)
+colnames(dados_brasil) <- faixa
+rownames(dados_brasil) <- anos
+
+library(knitr)
+kable(dados_brasil, caption = "Dados de Febre de Chikungunya por ano e faixa etária")
+
+```
+
+## Vetores de totais (Item 2)
+
+<!-- Item 2. Desenvolver comandos e gerar vetores de totais por ano, e por faixa etária para cada conjunto de dado. Assim, serão gerados 6 vetores  (2 para cada área geográfica).  -->
+
+<!-- para calcular a média por ano, podemos somar as linhas e dividir pelo tamanho das colunas, usando o round para arreddondar ou usar a função rowMeans, para calcular a média por faixa, podemos usar a função colMeans. Além disso, usei o round para arredondar em uma casa decimal e usei a função t para transpor os vetore para a visualização dos dados ficar melhor.-->
+### 1. Goiás:
+```{r vetor_media_ano_go, echo=FALSE, results='asis'}
+media_ano_go <- round(rowMeans(dados_goias), 1)
+m_go <- t(media_ano_go)
+library(knitr)
+kable(m_go, caption = "Média de casos por ano")
+
+```
+
+
+```{r vetor_media_faixa_go, echo=FALSE, results='asis'}
+media_f_go <-round(colMeans(dados_goias), 1)
+f_go <- t(media_f_go)
+library(knitr)
+kable(f_go, caption = "Média de casos por faixa etária")
+```
+
+### 2. Maranhão:
+
+```{r vetor_media_ano_ma, echo=FALSE, results='asis'}
+media_ano_ma <- round(rowSums(dados_maranhao) / ncol(dados_maranhao), 1)
+m_ma <- t(media_ano_ma)
+
+library(knitr)
+kable(m_ma, caption = "Média de casos por ano")
+
+```
+
+```{r vetor_media_faixa_ma, echo=FALSE, results='asis'}
+media_f_ma <-round(colMeans(dados_maranhao, 1))
+f_ma <- t(media_f_ma)
+library(knitr)
+kable(f_ma, caption = "Média de casos por faixa etária")
+```
+
+### 3. Brasil:
+
+
+```{r vetor_media_ano_br, echo=FALSE, results='asis'}
+media_ano_br <- round(rowSums(dados_brasil) / ncol(dados_brasil), 1)
+m_br <- t(media_ano_br)
+
+library(knitr)
+kable(m_br, caption = "Média de casos por ano")
+```
+
+
+```{r vetor_media_faixa_br, echo=FALSE, results='asis'}
+media_f_br <-round(colMeans(dados_brasil, 1))
+f_br <- t(media_f_br)
+
+library(knitr)
+kable(f_br, caption = "Média de casos por faixa etária")
+
+```
+
+## Novas matrizes de dados com totais por ano (Item 3)
+<!-- Item 3. Desenvolver comandos para concatenar os vetores de totais por ano nas matrizes de dados, para que os dados passem a ter uma coluna de totais por ano (*lembra da função cbind?*).  -->
+
+### **1. Goiás:**
+
+```{r m_totais_go, echo=FALSE, results='asis'}
+ano_go <- rowSums(dados_goias)
+dados_goias <- cbind(dados_goias,ano_go)
+library(knitr)
+kable(dados_goias, caption = "Adição da coluna de totais de casos por ano")
+```
+
+### **2. Maranhão:**
+
+```{r m_totais_ma, echo=FALSE, results='asis'}
+ano_ma <- rowSums(dados_maranhao)
+dados_maranhao <- cbind(dados_maranhao, ano_ma)
+library(knitr)
+kable(dados_maranhao, caption = "Adição da coluna de totais de casos por ano")
+```
+
+
+### **3. Brasil:**
+
+```{r m_totais_br, echo=FALSE, results='asis'}
+ano_br <- rowSums(dados_brasil)
+dados_brasil <- cbind(dados_brasil, ano_br)
+
+library(knitr)
+kable(dados_brasil, caption = "Adição da coluna de totais de casos por ano")
+
+```
+
+## Matriz de faixa de áreas geográficas X Faixas etárias (Item 4)
+<!-- Item 4. Desenvolver comandos para concatenar os vetores de totais por faixa etária para formar uma matriz em que as linhas são as áreas geográficas (**Goiás, Maranhão e Brasil**). -->
+
+<!-- Basta usar o rbind e unir os vetores de média por faixa calculados no item 2-->
+
+```{r matriz_media_regiao, echo=FALSE, results='asis'}
+media_regiao <- rbind(media_f_br, media_f_go, media_f_ma)
+regiao <- c("BR", "GO", "MA")
+rownames(media_regiao) <- regiao
+library(knitr)
+kable(media_regiao, caption = "Matriz de Média de faixa etária por Ano")
+```
+
+## Matrízes nomeadas (item 5)
+<!-- Item 5. Desenvolver comandos e para dar nome às linhas e colunas das matrizes de dados (*lembra das funções rownames e colnames?*), em que as linhas e colunas representarão o ano de notificação e faixa etária, respectivamente (*Não se esqueça da coluna de totais!*). -->
+
+### 1. Goiás:
+```{r m_total_go, echo=FALSE, results='asis'}
+faixa_t <- c("< 1", "1-4", "5-9", "10-14", "15-19", "20-39", "40-59", "60-64", "65-69", "70-79", "80 +", "Total Ano")
+colnames(dados_goias) <- faixa_t
+
+library(knitr)
+kable(dados_goias, caption = "Matriz com coluna de total de casos por Ano")
+```
+
+### 2. Maranhão:
+```{r m_total_ma, echo=FALSE, results='asis'}
+faixa_t <- c("< 1", "1-4", "5-9", "10-14", "15-19", "20-39", "40-59", "60-64", "65-69", "70-79", "80 +", "Total Ano")
+colnames(dados_maranhao) <- faixa_t
+
+library(knitr)
+kable(dados_maranhao, caption = "Matriz  com coluna de total de casos por Ano")
+
+```
+
+### 3. Brasil:
+```{r m_total_br, echo=FALSE, results='asis'}
+faixa_t <- c("< 1", "1-4", "5-9", "10-14", "15-19", "20-39", "40-59", "60-64", "65-69", "70-79", "80 +", "Total Ano")
+colnames(dados_brasil) <- faixa_t
+
+library(knitr)
+kable(dados_brasil, caption = "Matriz com coluna de total de casos por Ano")
+
+```
+
+## Questões a serem respondidas (Item 6)
+### 1. Qual é o percentual do Brasil para cada faixa etária em Goiás e no Maranhão?
+<!-- Considerei que o que a questão pede é para considerar o total de casos por faixa etária, independente de ano, e o percentual sendo (dados go/ dados Br)*100 e (dados ma /dados br)*100. Para realizar os calculos, usei a função colSums para somar os dados de cada coluna e realizei manualmente o calculo do percentaul.-->
+#### -Goiás:
+```{r perc_go, echo=FALSE, results='asis'}
+sum_faixa_go <- colSums(dados_goias)
+sum_faixa_br <- colSums(dados_brasil)
+perc_goias <- sprintf("%.2f%%",round((sum_faixa_go/sum_faixa_br)*100, 2))
+p_go <- t(perc_goias)
+colnames(p_go) <- faixa_t
+library(knitr)
+kable(p_go, caption = "Percentual de casos por faixa etária")
+
+```
+
+#### -Maranhão:
+```{r perc_ma, echo=FALSE, results='asis'}
+sum_faixa_ma <- colSums(dados_maranhao)
+perc_maranhao <- sprintf("%.2f%%",round((sum_faixa_ma/sum_faixa_br)*100, 2))
+
+p_ma <- t(perc_maranhao)
+colnames(p_ma) <- faixa_t
+library(knitr)
+kable(p_ma, caption = "Percentual de casos por faixa etária")
+```
+#### -Comparação de casos por região:
+```{r com_regiao, echo=FALSE, results='asis'}
+sum_total_faixa <- rbind(sum_faixa_br, sum_faixa_go, perc_goias, sum_faixa_ma, perc_maranhao)
+col_comparacao <- c("BR","GO","GO%", "MA", "MA%")
+rownames(sum_total_faixa) <- col_comparacao
+library(knitr)
+kable(sum_total_faixa, caption = "Total de casos por faixa etária e Região")
+```
+
+### 2. Qual é a faixa etária com o maior número de casos em Goiás, Maranhão e no Brasil?
+<!-- Você pode exibir os dados individuais por campo ou resumidos em uma tabela!-->
+<!-- Usei a função which max para identificar a faixa etária com maior número de casos, considerando o total de casos daquela faixa, isso é somando os casos por ano. -->
+
+#### 1.Goiás
+```{r echo=FALSE}
+dados_goias <- dados_goias[, -ncol(dados_goias)]
+sum_faixa_go <- colSums(dados_goias)
+max_f_go <- faixa[which.max(sum_faixa_go)]
+
+cat('A faixa etária com maior número de casos foi', max_f_go)
+```
+
+#### 2.Maranhão
+```{r echo=FALSE}
+dados_maranhao <- dados_maranhao[, -ncol(dados_maranhao)]
+sum_faixa_ma <- colSums(dados_maranhao)
+max_f_ma <- faixa[which.max(sum_faixa_ma)]
+cat('A faixa etária com  maior número de casos foi', max_f_ma)
+```
+
+#### 3.Brasil
+```{r echo=FALSE}
+dados_brasil <- dados_brasil[, -ncol(dados_brasil)]
+sum_faixa_br <- colSums(dados_brasil)
+max_f_br <- faixa[which.max(sum_faixa_br)]
+cat('A faixa etária com maior número de casos foi', max_f_br)
+```
+
+### Qual é o ano com o maior número casos em Goiás, Maranhão e no Brasil?
+Você pode exibir os dados individuais por campo ou resumidos em uma tabela!
+
+#### 1.Goiás
+```{r echo=FALSE}
+
+sum_ano_go <- rowSums(dados_goias)
+max_a_go <- anos[which.max(sum_ano_go)]
+
+cat('O ano com maior número de casos foi', max_a_go)
+```
+
+#### 2.Maranhão
+```{r echo=FALSE}
+
+sum_ano_ma <- rowSums(dados_maranhao)
+max_a_ma <- anos[which.max(sum_ano_ma)]
+cat('O ano com maior número de casos foi', max_a_ma)
+```
+
+#### 3.Brasil
+```{r echo=FALSE}
+
+sum_ano_br <- rowSums(dados_brasil)
+max_a_br <- anos[which.max(sum_ano_br)]
+cat('O ano com maior número de casos foi', max_a_br)
+```

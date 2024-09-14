@@ -1,0 +1,33 @@
+---
+title: "Análise de Notas"
+author: "Ana M. Alves"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, eval = TRUE)
+```
+
+### Esse documento calcula a maior, menor nota do aluno. Calcula também a média e diz se ele foi aprovado ou não.
+
+
+```{r results='asis', echo=FALSE}
+notas <- runif(5, min = 0, max = 10)
+menor <- min(notas) # mostra o menor valor do vetor
+maior <- max(notas) # mostra o maior valor do vetor
+media <- mean(notas) # calcula a média das notas
+resultado <- if (media >= 6) 'Aprovado' else 'Reprovado'
+
+cat('A maior nota é:', maior, '\n')
+
+cat( 'a menor nota é:', menor, '\n')
+
+cat('A média do aluno foi:', media, '\n')
+
+cat('E o aluno foi', resultado, '\n')
+
+```
+
