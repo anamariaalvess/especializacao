@@ -1,0 +1,147 @@
+---
+title: "Análise estatística de várias populações: 1ª Aula Prática - Parte 2"
+author: "Profa. Dra. Tatiane F. N. Melo"
+date: "13/09/2024"
+output: pdf_document
+---
+
+# Inferência estatística para duas populações
+
+**Exemplo 6:** Vamos usar dados reais obtidos no site do Ministério da Saúde - Vacinômetro COVID-19. Estes dados são referentes ao número de doses da vacina contra COVID-19 aplicadas nos 246 municípios do estado de Goiás em novembro de 2021. O interesse é verificar se há uma diferença significativa entre as médias do número de vacinas aplicadas nas primeiras e segundas doses. Neste caso, é adequado usarmos o teste $t$ para dados pareados.
+
+
+Inicialmente vamos carregar os dados no R, utilizando os códigos a seguir.  
+
+```{r, message=FALSE, warning=FALSE}
+# Limpa a memória
+rm(list=ls())
+
+# Pacote necessario para leitura dos dados
+library(readxl)
+
+# Dados referentes ao numero de vacinas contra COVID19
+# aplicadas nos 246 municipios do Estado de Goias
+dados <- read_excel("C:/Users/tafen/Desktop/Exemplo6Aula1Parte2.xls")
+
+# Impressão dos dados
+print(dados)
+
+# Selecionando a 1a dose
+Primeira.dose <- dados$`1ª Dose`
+
+# Selecionando a 2a dose
+Segunda.dose  <- dados$`2ª Dose`
+
+```
+No R, podemos realizar o teste $t$ pareado de duas maneiras: (i) criando uma função usando as fórmulas vista anteriormente ou (ii) usar uma função já existente no R. Sempre é mais recomendável usar funções próprias do R. Criar funções novas, somente em casos onde não existe no R, sua implementação.
+
+Primeiramente, vamos criar uma função. 
+
+\vspace{0.5cm}
+
+
+```{r, message=FALSE, warning=FALSE}
+
+##### Criando uma função, aplicando as fórmulas vistas em sala
+TH.MEDIA.PAREADO <- function(x,y,alfa)
+{
+  n = length(x)
+  d = x-y
+  d.barra   = mean(d)
+  s.d.barra = sqrt(var(d)/n)
+  t.obs     = d.barra/s.d.barra
+  Valor.p   = 2*pt(t.obs,n-1,lower.tail = FALSE)
+  
+  print(c("t.obs:", t.obs))
+  print(c("Valor.p:", Valor.p))
+  
+  if(Valor.p <= alfa) print("Rejeitamos H.0")
+  else print("Nao rejeitamos H.0")
+}
+
+TH.MEDIA.PAREADO(Primeira.dose,Segunda.dose,0.01)
+
+
+```
+
+\vspace{0.5cm}
+A segunda maneira de realizar o teste $t$ pareado é usando uma função já existente no R. Inicialmente, vamos realizar um teste bilateral, ou seja, 
+$$H_0: \mu_1 = \mu_2 \ \ {\rm contra} \ \ H_1: \mu_1 \neq \mu_2.$$
+
+
+No R,
+```{r, message=FALSE, warning=FALSE}
+
+t.test(Primeira.dose, Segunda.dose, paired = TRUE)
+
+```
+\vspace{0.5cm}
+Ao realizar o teste bilateral, rejeitamos a hipótese nula, de que as médias são iguais. Então realizamos o teste unilateral à direita, ou seja, $H_0: \mu_1 \leq \mu_2$ contra $H_1: \mu_1 > \mu_2$. Logo,
+
+
+```{r, message=FALSE, warning=FALSE}
+
+t.test(Primeira.dose, Segunda.dose, alternative = "greater", paired = TRUE)
+
+
+```
+
+\vspace{0.5cm}
+Neste caso, também rejeitamos a hipótese nula. Concluimos, ao nível de 1\%, que o número médio de vacinas aplicadas da 1ª dose foi maior do que o número médio de vacinas aplicadas da 2ª dose, para os municípios analisados, em novembro de 2021.
+
+
+\vspace{1cm}
+
+**Exemplo 7:** O interesse, neste exemplo, é verificar se há uma diferença significativa entre as médias do número de vacinas aplicadas nas primeiras e segundas doses, na cidade de Goiânia, em novembro de 2021. Especificamente, para a vacina Pfizer.
+
+Primeiramente, vamos carregar os dados no R:
+
+```{r}
+# Limpa a memória
+rm(list=ls())
+
+# Pacote necessario para leitura dos dados
+library(readxl)
+
+# Leitura dos dados
+dados <- read_excel("C:/Users/tafen/Desktop/Exemplo7Aula1Parte2.xls")
+Primeira.dose <- dados$`Primeira dose`
+Segunda.dose  <- dados$`Segunda dose`
+
+# Calculando a diferenca entre as duas amostras
+Diferenca     <- Primeira.dose - Segunda.dose 
+n             <- length(Diferenca); n
+```
+
+
+Agora realizamos o teste de normalidade:
+
+```{r}
+# Teste para normalidade dos dados (tamanho da amostra < 30)
+shapiro.test(Diferenca)$p.value
+```
+
+\vspace{0.5cm}
+Neste caso, não rejeitamos a hipótese de normalidade, ao nível de 5\%.
+
+
+\vspace{0.5cm}
+Para o teste de igualdade de médias, vamos considerar um teste bilateral, ou seja, $H_0: \mu_1 = \mu_2.$ contra $H_1: \mu_1 \neq \mu_2$.
+
+```{r}
+########### Realizar o teste t pareado (funcao já existente no R)###
+t.test(Primeira.dose, Segunda.dose, paired = TRUE)
+```
+
+\vspace{0.5cm}
+Ao realizar o teste bilateral, rejeitamos a hipótese nula, de que as médias sejam iguais. Então realizamos, por exemplo, o teste unilateral à esquerda, ou seja, $H_0: \mu_1 \geq \mu_2.$ contra $H_1: \mu_1 < \mu_2$. 
+
+```{r}
+# Teste unilateral à esquerda 
+t.test(Primeira.dose, Segunda.dose, alternative = "less", paired = TRUE)
+```
+
+\vspace{0.5cm}
+Neste caso, também rejeitamos a hipótese nula. Portanto, concluimos, ao nível de 1\%, que o número médio de vacinas Pfizer aplicadas da 1ª dose foi menor do que da 2ª dose, na cidade de Goiânia, em novembro de 2021. 
+
+

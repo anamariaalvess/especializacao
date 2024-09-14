@@ -1,0 +1,263 @@
+---
+title: "Análise estatística de várias populações: 2ª Aula Prática - Parte 1"
+author: "Profa. Dra. Tatiane F. N. Melo"
+date: "14/09/2024"
+output: pdf_document
+---
+
+# Inferência estatística para duas populações: 
+
+# 1º Caso) Comparação das variâncias dos grupos
+
+**Exemplo 1:** Suponha que estamos interessados em verificar se há uma diferença significativa na variabilidade do número de vacinas aplicadas diariamente em dois municípios do estado de Goiás, a saber: Goiânia e Aparecida de Goiânia, em 2022, $n=331$ (Ministério da Saúde - Vacinômetro COVID-19).
+
+\vspace{0.3cm}
+Inicialmente vamos carregar os dados no R, utilizando os códigos a seguir.  
+
+```{r}
+
+# Pacote necessario para leitura dos dados
+library(readxl)
+
+# Dados referentes ao numero de vacinas contra COVID19
+# aplicadas, diariamente, em 2022 nos municípios de 
+# Goiânia e Aparecida de Goiânia
+dados.Ex1 <- read_excel("Exemplo1Aula2Parte1.xls")
+
+print(dados.Ex1)
+
+Vac.Goiania           <- dados.Ex1$`Total de Doses Aplicadas – Goiânia`
+
+Vac.Aparecida.Goiania <- dados.Ex1$`Total de Doses Aplicadas – Aparecida de Goiânia`
+
+```
+
+\vspace{0.5cm}
+Inicialmente, vamos realizar um teste bilateral, ou seja, 
+$$H_0: \sigma^2_{G} = \sigma^2_{AG} \ \ {\mbox{contra}} \ \ H_1: \sigma^2_{G} \neq \sigma^2_{AG}.$$
+
+\vspace{0.3cm}
+No R, podemos realizar o teste de duas formas: (i) criando uma função usando as fórmulas vista na aula teórica ou (ii) usar uma função já existente no R. Como visto anteriormente, sempre é mais recomendável usar funções próprias do R. Somente em casos onde não existe no R, sua implementação, devemos criar novas funções.
+
+\vspace{0.5cm}
+Se no R não existisse a função pronta, poderíamos usar:
+
+```{r}
+##### Realizar o teste F (aplicando as fórmulas)
+TH.VAR <- function(x,y,alfa)
+{
+  n.1 = length(x)
+  n.2 = length(y)
+  var.1 = var(x)
+  var.2 = var(y)
+  
+  if(var.1 > var.2)
+  {
+    f_obs = var.1/var.2
+    quantil_f_obs = pf(f_obs,n.1-1,n.2-1)
+  }
+  else
+  {
+    f_obs = var.2/var.1
+    quantil_f_obs = pf(f_obs,n.2-1,n.1-1)
+  
+  }
+  
+  Valor.p = 2*min(quantil_f_obs, 1-quantil_f_obs)
+  print(c("f.obs:", round(f_obs,3)))
+  print(c("Valor.p:", round(Valor.p,100)))
+  
+  if(Valor.p <= alfa) print("Rejeitamos H.0")
+  else print("Nao rejeitamos H.0")
+}
+
+TH.VAR(Vac.Goiania,Vac.Aparecida.Goiania,0.01)
+
+```
+
+\vspace{0.5cm}
+A segunda maneira de realizar o teste de igualdade de variâncias é usando uma função já existente no R. Ou seja,
+\vspace{0.3cm}
+
+```{r}
+
+########### Realizar o teste F (funcao já existente no R)
+# Teste bilateral
+var.test(Vac.Goiania,Vac.Aparecida.Goiania)
+```
+\vspace{0.2cm}
+Note que rejeitamos $H_0$, então temos uma indicação de que ambos os municípios, Goiânia e Aparecida de Goiânia, não têm uma consistência semelhante nas suas quantidades de doses aplicadas, ao longo do tempo.
+Pode ser que um dos municípios tenha uma estratégia de vacinação mais consistente, enquanto o outro pode ter flutuações maiores nas quantidades de doses aplicadas, ao longo do tempo. 
+   
+\vspace{0.3cm}   
+Suponha que temos o interesse em saber qual munícipio apresenta uma variabilidade maior nas doses aplicadas. Neste caso, precisamos realizar um teste unilateral, por exemplo, à direita. Ou seja,
+       $$H_0: \sigma^2_{G} \leq \sigma^2_{AG} \ \ {\mbox{contra}} \ \ H_1: \sigma^2_{G} > \sigma^2_{AG}.$$
+
+```{r}
+# Teste unilateral à direita
+var.test(Vac.Goiania,Vac.Aparecida.Goiania, alternative="greater")
+```
+
+\vspace{0.5cm}
+Aqui, também rejeitamos a hipótese nula. Logo, ao nível de 1\%, o município de Goiânia tem flutuações maiores nas quantidades de doses aplicadas, ao longo do tempo, do que Aparecida de Goiânia. 
+
+
+
+
+\vspace{1cm}
+**Exemplo 2:** Agora vamos supor que estamos interessados em verificar se há uma diferença significativa na variabilidade das idades das mães, de nascidos vivos, entre aquelas que fizeram parto vaginal com aquelas que foram submetidas ao parto cesário. Os dados foram obtidos da Base de dados SINASC, do Estado de São Paulo, em 2023. 
+
+\vspace{0.2cm}
+Neste caso, foram 28.812 mães que fizeram partos vaginais e 36.718 foram submetidas ao parto cesário. Logo, $n_1 = 28.812$ e $n_2 = 36.718$. Realizaremos o teste bilateral
+$$H_0: \sigma^2_{V} = \sigma^2_{C} \ \ \mbox{contra} \ \ H_1: \sigma^2_{V} \neq \sigma^2_{C},$$
+onde $\sigma^2_{V}$ é a variabilidade das idades das mães que fizeram parto vaginal e $\sigma^2_{C}$ é a variabilidade das idades das mães que foram submetidas ao parto cesário. Implementando, este teste no R:
+\vspace{0.2cm}
+
+```{r}
+
+# Dados referentes às idades das mães que fizeram partos 
+# vaginal ou cesário no Estado de São Paulo, em 2023. 
+dados.Ex2 <- read_excel("Exemplo2Aula2Parte1.xls")
+
+print(dados.Ex2)
+
+idade_vaginal  <- as.numeric(subset(dados.Ex2, PARTO == 1)$IDADE)
+
+idade_cesario  <- as.numeric(subset(dados.Ex2, PARTO == 2)$IDADE)
+
+# Teste bilateral - Igualdade de variâncias
+var.test(idade_vaginal,idade_cesario)
+```
+
+\vspace{0.5cm}
+Neste caso, não rejeitamos $H_0$, ao nível de 1\%, então temos uma indicação de que em ambos os partos (vaginal e cesário), as variabilidades nas idades das mães são iguais.
+
+
+
+
+
+\vspace{1cm}
+**Exemplo 3:** Consideremos os dados referentes ao número de vacinas aplicadas contra COVID-19 (Ministério da Saúde - Vacinômetro COVID-19) em 20 dias do mês novembro de 2022, nos municípios de Formosa e Catalão - estados de Goiás. Neste caso, temos que o tamanho amostral é igual a $n = 20$.
+
+```{r}
+
+# Dados referentes ao numero de vacinas contra COVID19
+# aplicadas nos 20 dias de novembro de 2022 nos municípios de 
+# Formosa e Catalão
+dados.Ex3 <- read_excel("Exemplo3Aula2Parte1.xls")
+
+print(dados.Ex3)
+
+Vac.Formosa <- dados.Ex3$`Total de Doses Aplicadas – Formosa`
+
+Vac.Catalao <- dados.Ex3$`Total de Doses Aplicadas – Catalao`
+
+```
+
+
+
+Como a amostra tem tamanho 20, a premissa de normalidade é necessária. Para isso, realizamos o teste de normalidade Shapiro-Wilk, que indicou, ao nível de 1\%, que os dados são provenientes de uma população normal.
+
+```{r}
+
+# Teste para normalidade dos dados (tamanho da amostra < 30)
+# H.0: Os dados vieram de uma população normal
+shapiro.test(Vac.Formosa)
+shapiro.test(Vac.Catalao)
+
+```
+
+O código em R, para o teste bilateral de igualdade entre as variâncias
+teste unilateral à esquerda, ou seja,
+$$H_0: \sigma^2_{Form} = \sigma^2_{Cat} \ \ {\mbox{contra}} \ \ H_1: \sigma^2_{Form} \neq \sigma^2_{Cat},$$
+é dado por:
+
+```{r}
+# Teste bilateral - Igualdade de variâncias
+var.test(Vac.Formosa,Vac.Catalao)
+```
+
+\vspace{0.3cm}
+Como rejeitamos $H_0$, então temos uma indicação de que ambos os municípios, Formosa e Catalão, não têm uma consistência semelhante nas suas quantidades de doses aplicadas, ao longo do mês de novembro de 2022.
+
+
+\vspace{0.3cm}
+Quando realizamos o teste unilateral à esquerda, ou seja,
+       $$H_0: \sigma^2_{Form} \geq \sigma^2_{Cat} \ \ {\mbox{contra}} \ \ H_1: \sigma^2_{Form} < \sigma^2_{Cat},$$
+rejeitamos a hipótese nula. Veja:
+
+\vspace{0.2cm}
+```{r}
+# Teste unilateral à esquerda
+var.test(Vac.Formosa,Vac.Catalao, alternative="less")
+```
+
+
+\vspace{0.3cm}
+Então, ao nível de 1\%, o município de Formosa tem flutuações menores nas quantidades de doses aplicadas, ao longo do mês de novembro de 2022, do que Catalão.
+
+
+\newpage
+# 2º Caso) Teste $t$ para comparar médias quando as variâncias são iguais (homocedásticas)
+
+\vspace{0.5cm}
+**Voltando ao Exemplo 2:** Nesse exemplo, não rejeitamos a hipótese de igualdade entre as variâncias, ao nível de 1\%, então podemos usá-lo neste caso. Primeiramente, vamos realizar o teste bilateral:
+        %\vspace{0.2cm}        
+         $$H_0: \mu_{V} = \mu_{C}  \ \ \mbox{contra} \ \ H_1: \mu_{V} \neq \mu_{C},$$
+onde $\mu_{V}$ é a idade média das mães que fizeram parto vaginal e $\mu_{C}$ é a idade média das mães que foram submetidas ao parto cesário.
+
+\vspace{0.2cm}
+```{r}
+t.test(idade_vaginal,idade_cesario, var.equal = TRUE, paired = FALSE)
+```
+
+\vspace{0.5cm}
+Neste caso, rejeitamos $H_0: \mu_{V} = \mu_{G}$. Então, temos uma indicação de que em ambos os partos (vaginal e cesário), a idade média das mães não é a mesma, ao nível de 1\%. A média das idades é significativamente diferente nos partos vaginal e cesário. Isto indica que, em média, em um dos partos, a idade da mãe é maior que o outro.
+
+\vspace{0.5cm}
+Logo, podemos realizar um teste unilateral, para verificar em qual tipo de parto a idade média da mãe é maior. Por exemplo, um teste unilateral à esquerda, 
+       $$H_0: \mu_{V} \geq \mu_{C} \ \ \mbox{contra} \ \ H_1: \mu_{V} < \mu_{C}.$$
+
+\vspace{0.2cm}
+```{r}
+t.test(idade_vaginal,idade_cesario, var.equal = TRUE, alternative = "less", paired = FALSE)
+```
+
+
+\vspace{0.5cm}
+Neste caso, rejeitamos $H_0: \mu_{V} \geq \mu_{C}$. Então, há indicação de que, em média, as mães que foram submetidas ao parto cesário têm idades maiores do que as que fizeram parto vaginal, ao nível de 1\%.
+
+
+# 3º Caso) Teste $t$ para comparar médias quando as variâncias são diferentes (heterocedásticas)
+
+\vspace{0.5cm}
+**Voltando ao Exemplo 1:** Tivemos, anteriormente, a indicação de variâncias diferentes. Agora, queremos testar as hipóteses:
+        %\vspace{0.2cm}        
+         $$H_0: \mu_{G} = \mu_{AG} \ \ \mbox{contra} \ \ H_1: \mu_{G} \neq \mu_{AG},$$
+onde $\mu_{G}$ é o número médio de vacinas aplicadas na cidade de Goiânia e $\mu_{AG}$ é o número médio de vacinas aplicadas em Aparecida de Goiânia.
+
+\vspace{0.2cm}
+```{r}
+t.test(Vac.Goiania,Vac.Aparecida.Goiania, var.equal = FALSE, paired = FALSE)
+```
+
+\vspace{0.5cm}
+Rejeitamos $H_0: \mu_{G} = \mu_{AG}$. Logo, ao nível de 1\%, o número médio de vacinas aplicadas em Goiânia e Aparecida de Goiânia são diferentes. Vamos realizar um teste unilateral, para verificar em qual dos dois municípios um número médio de doses aplicadas maior. Por exemplo, um teste unilateral à direita, ou seja,
+$$H_0: \mu_{G} \leq \mu_{AG} \ \ \mbox{contra} \ \ H_1: \mu_{G} > \mu_{AG}.$$
+       
+\vspace{0.2cm}
+```{r}
+t.test(Vac.Goiania,Vac.Aparecida.Goiania, alternative = "greater",var.equal = FALSE, paired = FALSE)
+```
+
+\vspace{0.5cm}
+Neste caso, rejeitamos $H_0$. Então, há indicação de que a quantidade média de doses, da vacina contra COVID-19, aplicadas em Goiânia foi maior do que as aplicadas em Aparecidade de Goiânia, ao nível de 1\%. 
+
+\vspace{0.5cm}
+**Conclusão:**
+\begin{itemize}
+\item{O município de Goiânia alcançou um número médio maior de vacinas aplicadas, mas enfrentou desafios com a estabilidade da vacinação. Indicando haver períodos em que a vacinação foi muito alta e outros em que foi mais baixa.}
+\vspace{0.2cm}
+\item{Já Aparecida de Goiânia teve um número médio de doses aplicadas menor, porém foi mais estável, na aplicação, ao longo do tempo.}
+\vspace{0.2cm}
+\end{itemize} 
