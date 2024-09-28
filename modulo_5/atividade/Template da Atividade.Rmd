@@ -144,14 +144,14 @@ P_A <- round(sum(df_saude$Populacao_Indigena[evento_A]) / populacao_total, 4)*10
 # P(B)
 P_B <- round(sum(df_saude$Populacao_Indigena[evento_B]) / populacao_total, 4)*100
 
-# P(A ∪ B)
+# P(A \cup B)
 P_A_union_B <- round(
                 sum(
                     df_saude$Populacao_Indigena[evento_A | evento_B]
                     ) / populacao_total, 4
                 )*100
 
-# P(A ∩ B)
+# P(A \cap B)
 P_A_intersection_B <- round(
                         sum(
                           df_saude$Populacao_Indigena[evento_A & evento_B]
@@ -212,7 +212,7 @@ summary_df_sp <- summary(df_vacina_sp)
 print(summary_df_sp)
 ```
 
-2. Cálculo da Média, Desvio Padrão
+2. Cálculo da Média, Desvio Padrão e Tamanho da amostra
 
 ```{r}
 media_doses <- mean(df_vacina_sp$`Total de Doses Aplicadas`)
@@ -288,15 +288,61 @@ decimais.
 
 ## Solução:
 
-1. Carregamento dos dados
 
-Resalto que para essa questão os dados não foram fornecidos, extraí os dados do link informado no dia 11/09 às 21h. Logo, pode haver divergência nas informações. Nesse período houve atualização dos dados.
+Observe que para essa questão foram fornecidos dados suficientes para que não seja necessário realizar a extração dos dados no link informado.
 
+1. Item a:
 
-Antes de responder aos itens solicitados, vamos realizar uma análise inicial dos dados.  
-```{r , echo=TRUE}
+Usaremos a função prop.test para realizar o teste de hipótese pois estamos com um problema de comparação de duas proporções, e este é o teste mais adequado para essa realizarmos esta comparação. 
+```{r, echo=TRUE}
+# Definir os dados
+vac_norte <- 79111
+pop_norte <- 154911
+vac_br <- 604329
+pop_br <- 1133106
 
-df_pq <- read_excel(
-              "/Users/anamaria/especializacao/modulo_5/atividade/dados_populacao_quilombola.xlsx")
-print(df_pq)
+# Proporções
+prop_norte <- round(vac_norte / pop_norte, 3)
+prop_br <- round(vac_br / pop_br, 3)
+cat("Proporção norte", prop_norte)
+cat("Proporção br", prop_br)
+
+# Realizar o teste de proporção
+resultado_teste <- prop.test(x = c(vac_norte, vac_br), 
+                             n = c(pop_norte, pop_br), 
+                             correct = FALSE)  
+
+# Exibir os resultados
+print(resultado_teste)
+
+# Extrair o p-value
+p_valor <- resultado_teste$p.value
+cat("O p-valor é:", p_valor)
+
+# Verificação com o nível de significância de 5%
+if (p_valor < 0.05) {
+  cat(" Rejeitamos a hipótese nula: as proporções são diferentes.")
+} else {
+  cat(" Não rejeitamos a hipótese nula: as proporções são iguais.")
+}
 ```
+
+Ou seja, ao rejeitarmos a hipótese nula temos que a proporção de vacinados na região norte é significativamente diferente da proporção nacional.
+
+2. Item b
+
+Usaremos a função a função binom.test para construir o intervaloc com 99% confiança para a proporção de quilombolas vacinados. Pois estamos lidando com um problema binomial no qual desejamos determinar o intervalo de confiança para uma proporção.
+
+```{r, echo=TRUE}
+# Realizar o teste binomial para obter o intervalo de confiança de 99%
+resultado_teste <- binom.test(vac_br, pop_br, conf.level = 0.99)
+
+# Extrair o intervalo de confiança
+intervalo_conf <- round(resultado_teste$conf.int, 3)
+
+# Exibir o intervalo de confiança
+cat("Intervalo de confiança de 99%:", intervalo_conf, "\n")
+```
+
+O intervalo de confiança de 99% para a proporção de quilombolas vacinados no Brasil é aproximadamente 53.2% a 53.5%. Isso significa que, com 99% de confiança, podemos afirmar que a proporção verdadeira de quilombolas vacinados no Brasil está entre 53.2% e 53.5%.
+
