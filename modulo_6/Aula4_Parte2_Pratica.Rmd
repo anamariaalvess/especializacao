@@ -1,0 +1,186 @@
+---
+title: "Análise estatística de várias populações: 4ª Aula Prática - Parte 2"
+author: "Profa. Dra. Tatiane F. N. Melo"
+date: "28/09/2024"
+output: pdf_document
+---
+
+
+# Análise de variância com um fator
+
+
+**Exemplo 3:** Vamos considerar a Base de dados SINASC (Sistema de Informações sobre Nascidos Vivos), no município de São Paulo, em 2023. Suponha que queremos verificar se existe uma diferença significativa entre as idades médias das mães nos diferentes locais de nascimento dos filhos. As variáveis usadas são: "Idade das mães" e "Local de nascimento", cujos níveis são: hospital, Outros estabelecimentos de saúde, Domicílio e Outros. 
+
+\vspace{0.5cm}
+As hipóteses de interesse são:
+
+  \vspace{0.2cm}
+  $H_0:$ As médias das idades das mães são iguais em todos os locais de nascimento, ou seja,
+
+  \vspace{0.2cm} 
+  $H_0: \mu_1 = \mu_2 = \mu_3 = \mu_4$,
+
+  \vspace{0.2cm}
+  onde 
+  \begin{itemize}
+      \item{$\mu_1$ é a média da idade das mães cujo local de nascimento foi no "Hospital";}
+      \item{$\mu_2$ é a média da idade das mães cujo local de nascimento foi em "Outros estabelecimentos de saúde";}
+      \item{$\mu_3$ é a média da idade das mães cujo local de nascimento foi em "Domicílio";}
+      \item{$\mu_4$ é a média da idade das mães cujo local de nascimento foi em "Outros".}
+  \end{itemize}
+  
+  \vspace{0.3cm}
+  $H_1:$ Pelo menos uma das médias das idades das mães é diferente entre os locais de nascimento.
+
+
+No R, temos:
+\vspace{0.2cm}
+```{r}
+# Limpar memória
+rm(list=ls())
+
+
+# Carregar pacote para leitura de dados excel
+library(readxl)
+
+
+# Carregar o conjunto de dados
+dados_nasc_vivos <- read_excel("Nascidos_Vivos_São_Paulo.xls")
+
+
+# Converter IDADE para numérico
+dados_nasc_vivos$IDADEMAE <- as.numeric(dados_nasc_vivos$IDADEMAE)
+
+
+# Converter a variável GRAVIDEZ para fator
+dados_nasc_vivos$LOCNASC <- factor(dados_nasc_vivos$LOCNASC, 
+                            levels = c(1, 2, 3, 4), 
+                            labels = c("Hospital", "Outros Estab Saude", "Domicilio", 
+                                       "Outros"))
+
+
+# Verificar as primeiras linhas do conjunto de dados
+head(dados_nasc_vivos)
+
+```
+
+\vspace{0.5cm}
+Aqui, não realizaremos teste de normalidade, pois pelo Teorema Central do Limite, quando o tamanho da amostra é suficientemente grande, a distribuição amostral da média tende a ser aproximadamente normal, independentemente da distribuição original dos dados. No nosso caso, temos 36.723 observações, a ANOVA pode ser aplicada, pois a normalidade das amostras individuais não é tão crítica.
+
+
+\vspace{0.5cm}
+Mas, antes de realizar a ANOVA, vale a pena realizar o teste de Levene para verificar a homogeneidade das variâncias dos grupos. Neste caso, temos que a hipótese nula é:
+
+\vspace{0.2cm}
+$H_0$: As variabilidades na idade da mãe são iguais entre os diferentes locais de nascimento da criança. 
+
+\vspace{0.5cm}
+No R, usamos:
+
+\vspace{0.2cm}
+```{r}
+
+# Pacote necessário
+library(car)
+
+
+# Teste de Levene
+leveneTest(IDADEMAE ~ LOCNASC, data = dados_nasc_vivos)
+
+```
+
+\vspace{0.5cm}
+Ao nível de 1\%, não rejeitamos a hipótese nula de homogeneidade das variâncias nos diferentes grupos. Portanto, podemos seguir a análise e realizar a ANOVA. 
+
+\vspace{0.2cm}
+```{r}
+# ANOVA
+resultado_anova <- aov(IDADEMAE ~ LOCNASC, data = dados_nasc_vivos)
+
+# Ver o resumo dos resultados
+summary(resultado_anova)
+
+```
+\vspace{0.5cm}
+Rejeitamos a hipótese nula, ao nível de 1\%. Portanto, há indícios de que ao menos uma das médias das idades das mães é diferente entre os locais de nascimento. Aqui, seria interessante usar o teste de Tukey para verificar em quais locais de nascimento essas médias diferem entre si.
+
+\vspace{0.2cm}
+```{r}
+# Teste de Tukey para comparações múltiplas
+tukey <- TukeyHSD(resultado_anova)
+
+# Visualizar os resultados
+tukey
+
+```
+
+\vspace{0.5cm}
+O resultado acima nos dá as seguintes interpretações:
+
+\begin{itemize}
+\item
+{
+  {\bf "Outros Estab Saúde" - "Hospital":} 
+  \begin{itemize}
+  \item{Diferença média: -1,28, significa que as mães que deram à luz em 
+        "Outros Estabelecimentos de Saúde" têm, em média, 1.28 anos a menos 
+        do que as que deram à luz no "Hospital".}
+  \item{Valor-$p$: 0,002. Como o valor-$p$ é menor que 5\%, a diferença entre esses
+        dois grupos é estatisticamente significativa.}
+  \end{itemize}
+}
+\item
+{
+  {\bf "Domicílio" - "Hospital":} 
+  \begin{itemize}
+  \item{Diferença média: -0,63, significa que as mães que deram à luz em "Domicílio" têm, em média, 0,63 anos a menos do que as que deram à luz no "Hospital".}
+  \item{Valor-$p$: 0,471. Como o valor-$p$ é maior que 5\%, a diferença entre esses
+        dois grupos não é estatisticamente significativa.}
+  \end{itemize}
+}
+\item
+{
+  {\bf "Domicílio" - "Outros Estab Saúde":} 
+  \begin{itemize}
+  \item{Diferença média: 0,65, significa que as mães que deram à luz em "Domicílio" têm, em média, 0,65 anos a mais do que as que deram à luz em "Outros Estabelecimentos de Saúde.}
+  \item{Valor-$p$: 0,662. Nenhuma diferença significativa entre esses grupos.}
+  \end{itemize}
+}
+\item{As outras análises são similares.}
+
+\end{itemize}
+
+
+\vspace{0.5cm}
+Concluimos que existe uma diferença significativa na idade das mães entre os locais "Outros Estabelecimentos de Saúde" e "Hospital". Não há diferenças significativas entre as outras comparações (todas as outras comparações têm valores-$p$ maiores que 5\%). Isso significa que, entre os grupos analisados, apenas o grupo "Outros Estabelecimentos de Saúde" e "Hospital" apresentou uma diferença significativa na idade das mães.
+
+
+\vspace{0.5cm}
+Note que, se considerássemos um nível de significância de 5\% para analisar o teste de Levene, então, rejeitaríamos a hipótese de homogeneidade das variâncias, e portanto, não poderíamos usar a ANOVA tradicional. Neste caso, usaríamos a ANOVA de Welch, da seguinte forma:
+
+\vspace{0.2cm}
+```{r}
+oneway.test(IDADEMAE ~ LOCNASC, data = dados_nasc_vivos, var.equal = FALSE)
+```
+
+\vspace{0.5cm}
+Assim como na ANOVA tradicional, a ANOVA de Welch indica a rejeição da hipótese nula, ao nível de 1\%. Logo, chegamos à mesma conclusão, ou seja, que há indícios de que ao menos uma das médias das idades das mães é diferente entre os locais de nascimento.
+
+\vspace{0.5cm}
+Neste caso, para verificar em quais locais de nascimento essas médias diferem entre si, podemos usar um teste de comparação múltipla chamado teste de Games-Howell (GAMES \& HOWELL, 1974). Este teste é uma alternativa ao teste de Tukey, quando os grupos têm variâncias desiguais, ou seja, quando o pressuposto de homogeneidade das variâncias é violado. No R, o teste de Games-Howell, pode ser realizado da seguinte forma:
+
+
+\vspace{0.2cm}
+```{r}
+
+# Pacote necessário
+library(PMCMRplus)
+
+# Teste de Games-Howell
+summary(gamesHowellTest(IDADEMAE ~ LOCNASC, data = dados_nasc_vivos))
+
+```
+
+
+\vspace{0.5cm}
+Observe que, chegamos às mesmas conclusões do teste de Tukey, que entre os grupos analisados, apenas o grupo "Outros Estabelecimentos de Saúde" e "Hospital" apresentou uma diferença significativa na idade das mães.

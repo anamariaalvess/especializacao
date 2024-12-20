@@ -1,0 +1,134 @@
+---
+title: "Análise estatística de várias populações: 3ª Aula Prática - Parte 2"
+author: "Profa. Dra. Tatiane F. N. Melo"
+date: "27/09/2024"
+output: pdf_document
+---
+
+
+# Análise de aderência e associação: Teste de Homogeneidade
+
+**Exemplo 5:** Narcolepsia é uma doença que envolve distúrbios do ciclo sono-vigília. Membros da Sociedade Alemã de Enxaqueca e Cefaleia estudaram a relação entre enxaquecas em 96 indivíduos diagnosticados com narcolepsia e 96 controles saudáveis. Desejamos saber se podemos concluir, com base nesses dados, que a população com narcolepsia e as populações saudáveis representadas pelas amostras não são homogêneas com relação à frequência de enxaqueca.
+
+\vspace{0.5cm}
+Neste caso, temos interesse nas hipóteses:
+
+$H_0:$ As duas populações são homogêneas em relação à frequência de enxaqueca.
+
+\vspace{0.2cm}
+$H_1:$ As duas populações não são homogêneas em relação à frequência de enxaqueca.
+
+\vspace{0.5cm}
+No R, temos
+
+\vspace{0.2cm}
+```{r}
+
+# Limpa a memória
+rm(list=ls())
+
+
+
+# Criar a tabela de contingência com os dados observados
+dados <- matrix(c(21,75,19,77),nrow=2)
+
+
+
+# Adicionar nomes às linhas e colunas da tabela
+colnames(dados) <- c("Narcolépticos", "Saudáveis")
+
+
+
+rownames(dados) <- c("Tem enxaqueca", "Não tem enxaqueca")
+
+
+
+# Exibir a tabela de contingência
+print(dados)
+
+
+
+# Executando o teste qui-quadrado de homogeneidade
+chisq.test(dados, correct = FALSE)
+
+
+
+# Executando o teste qui-quadrado de homogeneidade com Yate's
+chisq.test(dados, correct = TRUE)
+
+```
+
+\vspace{0.5cm}
+Ao nível de 1\% não rejeitamos a hipótese nula. Portanto, concluímos que as duas populações podem ser homogêneas em relação à frequência de enxaqueca. Em outras palavras, os indivíduos narcolépticos e saudáveis são homogêneos, ao nível de 1\%, em relação à frequência de enxaqueca.
+
+
+\newpage
+**Exemplo 6:** Consideremos os dados do vacinômetro que indicam o número de doses da vacina contra COVID-19 administradas em diferentes faixas etárias em três diferentes municípios do estado de Goiás, a saber: Niquelândia, Padre Bernardo e Posse. Queremos verificar se a distribuição das doses aplicadas entre as faixas etárias é semelhante em todos os três municípios, ou seja, queremos testar a homogeneidade da distribuição das vacinas.
+
+\vspace{0.5cm}
+As hipóteses de interesse são:
+
+$H_0$: As distribuições das vacinas por faixa etária são homogêneas entre os municípios de Niquelândia, Padre Bernardo e Posse.
+      
+\vspace{0.2cm}
+$H_1$: As distribuições das vacinas por faixa etária diferem entre os municípios de Niquelândia, Padre Bernardo e Posse.
+
+\vspace{0.5cm}
+No R, temos
+
+\vspace{0.2cm}
+```{r}
+
+# Limpa a memória
+rm(list=ls())
+
+# Pacote necessario para leitura dos dados
+library(readxl)
+
+
+# Dados referentes ao numero de vacinas contra COVID19
+# aplicadas Goiânia, por faixa etária (Pfizer e Astrazenica - 1a dose)
+dados <- read_excel("Exemplo6Aula3Parte2.xls")
+
+
+
+# Criar a tabela de contingência com os dados observados
+dados_vacinacao <- matrix(c(dados$Niquelandia,dados$PadreBernardo,dados$Posse), nrow=17)
+
+
+
+# Adicionar nomes às linhas e colunas da tabela
+rownames(dados_vacinacao) <- c("3-4 anos", "5-11 anos", 
+                               "12-17 anos", "18-19 anos", 
+                               "20-24 anos", "25-29 anos", 
+                               "30-34 anos", "35-39 anos",
+                               "40-44 anos", "45-49 anos",
+                               "50-54 anos", "55-59 anos",
+                               "60-64 anos", "65-69 anos",
+                               "70-74 anos", "75-79 anos",
+                               "80+ anos")
+
+
+
+colnames(dados_vacinacao) <- c("Niquelândia", "Padre Bernardo", "Posse")
+
+
+
+# Exibir a tabela de contingência
+print(dados_vacinacao)
+
+
+
+# Executando o teste qui-quadrado de homogeneidade
+chisq.test(dados_vacinacao)
+
+
+```
+
+\vspace{0.5cm}
+\begin{itemize}
+\item{Como o valor-$p$ é menor que $\alpha = 1\%$, então rejeitamos a hipótese nula. Ou seja, ao nível de 1\%, as distribuições das vacinas por faixa etária diferem entre os municípios de Niquelândia, Padre Bernardo e Posse.}
+\vspace{0.3cm}
+\item{Portanto, não podemos afirmar que as vacinas foram distribuídas de maneira homogênea entre os três municípios. Essa diferença poderia motivar ações por parte das autoridades de saúde para investigar a causa da discrepância e, se necessário, implementar medidas corretivas para garantir uma distribuição mais equitativa.}
+\vspace{0.3cm}
+\end{itemize}

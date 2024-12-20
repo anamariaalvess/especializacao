@@ -1,0 +1,28 @@
+---
+title: "Atividade Avaliativa"
+subtitle: "Fundamentos de Big Data"
+author: "Ana Maria Alves da Silva"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+```
+
+```{r libraries, echo=FALSE, warning = FALSE, message=FALSE}
+
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(car)
+library(tidyverse)
+```  
+
+```{r}
+df <- read.csv("/Users/anamaria/especializacao/modulo_8/diabetes.csv")
+print(dim(df))
+```

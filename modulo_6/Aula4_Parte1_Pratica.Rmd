@@ -1,0 +1,120 @@
+---
+title: "Análise estatística de várias populações: 4ª Aula Prática - Parte 1"
+author: "Profa. Dra. Tatiane F. N. Melo"
+date: "28/09/2024"
+output: pdf_document
+---
+
+
+# Análise de variância com um fator
+
+**Exemplo 1:** Um pesquisador deseja avaliar o impacto de três diferentes tipos de exercícios físicos sobre a pressão arterial sistólica de pacientes hipertensos. O objetivo é verificar se há diferença significativa na redução da pressão arterial após um mês de prática desses exercícios (caminhada moderada, corrida leve, natação). As hipóteses de interesse são:
+  \vspace{0.3cm}
+  
+  $H_0$: Não há diferença significativa nas médias de redução da pressão arterial entre os três tipos de exercícios (Caminhada, Corrida e Natação). 
+  \begin{itemize}
+      \item{Em outras palavras, a redução média da pressão arterial é igual para os três grupos de pacientes, independentemente do tipo de exercício realizado.}
+  \end{itemize}
+  \vspace{0.3cm}
+
+  $H_1$: pelo menos uma das médias de redução da pressão arterial é diferente entre os três grupos.
+  \begin{itemize}
+      \item{Isso significa que o tipo de exercício influencia a redução da pressão arterial e que pelo menos um dos exercícios tem um efeito diferente sobre a redução da pressão arterial em relação aos outros.}
+  \end{itemize}
+
+
+\vspace{0.2cm}
+```{r}
+
+# Limpa a memória
+rm(list=ls())
+
+
+# Fator: Tipo de exercício (Caminhada, Corrida, Natação)
+# Variável de interesse: Redução na pressão arterial (em mmHg).
+dados <- data.frame(
+  Paciente = 1:30,
+  Exercício = factor(rep(c("Caminhada", "Corrida", "Natação"), each = 10)),
+  Reducao_Pressao = c(8, 10, 12, 9, 11, 10, 8, 9, 7, 11, 
+                      13, 15, 16, 14, 17, 13, 14, 16, 15, 17, 
+                      19, 20, 22, 21, 23, 20, 22, 21, 23, 22)
+)
+
+
+print(dados)
+
+# Grupos
+caminhada = dados$Reducao_Pressao[dados$Exercício == "Caminhada"]
+corrida   = dados$Reducao_Pressao[dados$Exercício == "Corrida"]
+natacao   = dados$Reducao_Pressao[dados$Exercício == "Natação"]
+
+```
+
+\vspace{0.5cm}
+Antes de começarmos a estudar a ANOVA, precisamos verificar se os pressupostos para utilização da mesma estão sendo violados. Primeiramente, realizamos um teste de normalidade para cada grupo de atividade, ou seja,
+
+\vspace{0.2cm}
+```{r}
+# Teste de normalidade
+shapiro.test(caminhada)
+shapiro.test(corrida)
+shapiro.test(natacao)
+```
+
+\vspace{0.5cm}
+Observamos que para as três atividades, não rejeitamos a hipótese de normalidade dos dados, ao nível de 1\%. Ou seja, o pressuposto de normalidade é válido. Agora, devemos realizar o teste de homogeneidade das variâncias. Aqui, utilizaremos o teste de Bartlett, que, no R, é da forma:
+
+\vspace{0.2cm}
+```{r}
+# Teste de homogeneidade das variâncias
+bartlett.test(Reducao_Pressao ~ Exercício, data = dados)
+```
+
+
+\vspace{0.5cm}
+Como não rejeitamos a hipótese de homogeneidade das variâncias e nem de normalidade dos dados, então todos os pressupostos estão válidos e podemos, enfim, realizar o ANOVA, da seguinte maneira:
+
+\vspace{0.2cm}
+```{r}
+# Executando a ANOVA
+resultado_anova <- aov(Reducao_Pressao ~ Exercício, data = dados)
+
+# Resumo da ANOVA
+summary(resultado_anova)
+```
+
+
+\vspace{0.5cm}
+Rejeitamos a hipótese nula, ao nível de 1\%. Concluimos que, pelo menos uma das médias de redução da pressão arterial é diferente entre os três grupos. Em outras palavras, temos que o tipo de exercício influencia a redução da pressão arterial e que pelo menos um dos exercícios tem um efeito diferente sobre a redução da pressão arterial em relação aos outros.
+
+
+\vspace{0.5cm}
+Aqui, é interessante verificar para quais dos grupos as médias diferem entre si. Neste caso, é adequado usar o teste de Tukey, da seguinte forma:
+
+\vspace{0.2cm}
+```{r}
+# Teste de Tukey para comparações múltiplas
+tukey <- TukeyHSD(resultado_anova)
+
+# Visualizar os resultados
+tukey
+```
+\vspace{0.5cm}
+O resultado acima nos dá as seguintes interpretações:
+
+
+\begin{itemize}
+\item{{\bf Corrida - Caminhada:} A diferença na redução da pressão arterial entre Corrida e Caminhada foi de 5,5 unidades (diff = 5,5). O intervalo de confiança de 95\% vai de 3,87 a 7,13, o que não inclui zero, indicando que essa diferença é significativa. O valor-$p$ igual a zero, confirma essa significância. Logo, há uma diferença significativa entre Corrida e Caminhada na redução da pressão arterial.
+}
+\vspace{0.3cm}
+\item{{\bf Natação - Caminhada:} A diferença na redução da pressão arterial entre Natação e Caminhada foi de 11,8 unidades. O intervalo de confiança de 95\% vai de 10,17 a 13,43, novamente sem incluir zero. O valor-$p$ também é 0, mostrando que a Natação provoca uma redução significativamente maior na pressão arterial em relação à Caminhada.}
+
+\vspace{0.3cm}
+\item{{\bf Natação - Corrida:} A diferença entre Natação e Corrida foi de 6,3 unidades. O valor-$p$ é 0. Isso sugere que a Natação também é significativamente mais eficaz do que a Corrida na redução da pressão arterial.}
+\vspace{0.3cm}
+\end{itemize}
+
+\vspace{0.5cm}
+Concluimos que há uma diferença significativa na redução da pressão arterial entre os três tipos de exercícios físicos. A Natação parece ser a mais eficaz, seguida pela Corrida, com a Caminhada sendo a menos eficaz dos três.
+
+

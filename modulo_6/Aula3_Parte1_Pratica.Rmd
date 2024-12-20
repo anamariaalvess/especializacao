@@ -1,0 +1,310 @@
+---
+title: "Análise estatística de várias populações: 3ª Aula Prática - Parte 1"
+author: "Profa. Dra. Tatiane F. N. Melo"
+date: "27/09/2024"
+output: pdf_document
+---
+
+
+# Análise de aderência e associação: Teste de Independência
+
+**Exemplo 2:** Suponha que queremos saber se a distribuição do tipo de vacina aplicada é independente da faixa etária dos indivíduos. Para isso, vamos usar os dados da vacinação contra COVID-19 em Goiânia. Consideramos dois tipos de vacinas: Pfizer e Astrazeneca.
+
+\vspace{0.5cm}
+As hipóteses de interesse são:
+
+\vspace{0.2cm}
+ $H_0$: Faixa etária e tipo de vacina são independentes.
+
+ \vspace{0.2cm}
+ $H_1$: Faixa etária e tipo de vacina não são independentes.
+ 
+ \vspace{0.5cm}
+ No R, temos:
+ 
+ \vspace{0.2cm}
+```{r}
+
+# Pacote necessario para leitura dos dados
+library(readxl)
+
+
+
+# Dados referentes ao numero de vacinas contra COVID19
+# aplicadas Goiânia, por faixa etária (Pfizer e Astrazenica - 1a dose)
+dados.Ex2 <- read_excel("Exemplo2Aula3Parte1.xls")
+
+
+
+# Criar a tabela de contingência com os dados observados
+dados_vacinacao <- matrix(c(dados.Ex2$Pfizer,dados.Ex2$Astrazeneca), nrow=17)
+
+
+ 
+# Adicionar nomes às linhas e colunas da tabela
+rownames(dados_vacinacao) <- c("3-4 anos", "5-11 anos", 
+                               "12-17 anos", "18-19 anos", 
+                               "20-24 anos", "25-29 anos", 
+                               "30-34 anos", "35-39 anos",
+                               "40-44 anos", "45-49 anos",
+                               "50-54 anos", "55-59 anos",
+                               "60-64 anos", "65-69 anos",
+                               "70-74 anos", "75-79 anos",
+                               "80+ anos")
+
+
+colnames(dados_vacinacao) <- c("Pfizer", "Astrazeneca")
+
+
+
+# Exibir a tabela de contingência
+print(dados_vacinacao)
+
+
+
+# Realizar o teste de independência usando o teste Chi-Quadrado
+chisq.test(dados_vacinacao)
+
+```
+ 
+ 
+\vspace{0.5cm}
+Rejeitamos a hipótese nula de que a faixa etária e o tipo de vacina são independentes. Isso sugere que há uma associação significativa entre a faixa etária e o tipo de vacina aplicada. A distribuição do tipo de vacina varia conforme a faixa etária.
+
+
+\newpage
+**Exemplo 3:** Vamos considerar a Base de dados SINASC (Sistema de Informações sobre Nascidos Vivos), no município de São Paulo, em 2023. O interesse é verificar se há independência entre o tipo de parto das mães (1 - vaginal e 2 - cesário) e o local de nascimento dos filhos (1 - hospitalar e 2 - não hospitalar).
+
+\vspace{0.3cm}
+As hipóteses de interesse são:
+
+\begin{itemize}     
+     \item{$H_0:$ O tipo de parto e o local de nascimento dos filhos são independentes. }
+     \vspace{0.3cm}
+     \item{$H_1:$ O tipo de parto e o local de nascimento dos filhos não são independentes. Ou seja, há associação entre o tipo de parto (cesário e vaginal) e o local de nascimento da criança (hospitalar e não hospitalar).}
+     \vspace{0.3cm}     
+ \end{itemize}
+
+
+No R, temos:
+
+\vspace{0.2cm} 
+```{r}
+
+# Limpar memória
+rm(list=ls())
+
+
+# Carregar pacote para leitura de dados excel
+library(readxl)
+
+
+# Carregar o conjunto de dados
+dados_nasc_vivos <- read_excel("Nascidos_Vivos_São_Paulo.xls")
+
+
+# Visualizar os primeiros dados
+head(dados_nasc_vivos)
+
+
+# Definir as variáveis
+LocNas    = dados_nasc_vivos$LOCNASC
+TipoParto = dados_nasc_vivos$PARTO
+
+
+# Agrupar os dados
+LocNas_agrupado    <- ifelse(LocNas == 1, "Hospital", "Não Hospitalar")
+TipoParto_agrupado <- ifelse(TipoParto == 1, "Parto Vaginal", 
+                             ifelse(TipoParto == 2, "Parto Cesário", NA))
+
+
+# Remover os dados faltantes (por exemplo, TipoParto == 9 (Ignorado))
+dados_filtrados <- na.omit(data.frame(LocNas_agrupado, TipoParto_agrupado))
+
+
+# Visualizar os primeiros dados filtrados
+head(dados_filtrados)
+
+```
+
+
+\vspace{0.3cm}
+Temos a seguinte tabela de contingência:
+
+\vspace{0.2cm}
+```{r}
+
+# Criar a tabela de contingência
+tabela_contingencia <- table(dados_filtrados$LocNas_agrupado, dados_filtrados$TipoParto_agrupado)
+
+
+# Visualizar a tabela de contingência
+print(tabela_contingencia)
+```
+
+
+\vspace{0.5cm}
+Realizando o teste Qui-Quadrado de Independência, temos
+
+\vspace{0.2cm}
+```{r}
+
+# Teste Qui-Quadrado de Independência sem correção de Yates
+chisq.test(tabela_contingencia, correct=FALSE)
+
+
+# Teste Qui-Quadrado de Independência com correção de Yates
+chisq.test(tabela_contingencia, correct=TRUE)
+```
+
+
+\vspace{0.3cm}
+Rejeitamos a hipótese nula, ao nível de $1\%$. Logo, ao nível de $1\%$, há indicação de associação entre o tipo de parto (cesário e vaginal) e o local de nascimento da criança (hospitalar e não hospitalar).
+ 
+
+
+
+
+\newpage
+**Exemplo 4:** Aqui também vamos considerar a Base de dados SINASC. Agora o  interesse é verificar se há independência entre a raça/cor da mãe (1 - Branca, 2 - Preta, 3 - Amarela, 4 - Parda, 5 - Indígena) e a escolaridade da mãe (1 - Nenhuma, 2 - 1 a 3 anos, 3 - 4 a 7 anos, 4 - 8 a 11 anos, 5 - 12 anos ou mais).
+
+\vspace{0.3cm}
+As hipóteses de interesse são:
+
+\begin{itemize}     
+     \item{$H_0:$ A raça/cor e a escolaridade da mãe são independentes. }
+     \vspace{0.3cm}
+     \item{$H_1:$ A raça/cor e a escolaridade da mãe não são independentes. Ou seja, há associação entre a raça/cor e escolaridade da mãe.}
+     \vspace{0.3cm}     
+ \end{itemize}
+
+
+\vspace{0.2cm}
+```{r}
+
+# Limpar memória
+rm(list=ls())
+
+
+# Carregar pacote para leitura de dados excel
+library(readxl)
+
+
+# Carregar o conjunto de dados
+dados_nasc_vivos <- read_excel("Nascidos_Vivos_São_Paulo.xls")
+
+
+# Visualizar os primeiros dados
+head(dados_nasc_vivos)
+
+# Variáveis
+RacaCor = dados_nasc_vivos$RACACORMAE
+EscMae  = dados_nasc_vivos$ESCMAE
+
+
+# Agrupar os dados
+RacaCor_agrupado <- ifelse(RacaCor == 1, "Branca", 
+                    ifelse(RacaCor == 2, "Preta", 
+                    ifelse(RacaCor == 3, "Amarela", 
+                    ifelse(RacaCor == 5, "Indígena", "Parda"))))
+
+
+EscMae_agrupado  <- ifelse(EscMae == 1, "Nenhuma", 
+                    ifelse(EscMae == 2, "1 a 3 anos", 
+                    ifelse(EscMae == 3, "4 a 7 anos", 
+                    ifelse(EscMae == 4, "8 a 11 anos", 
+                    ifelse(EscMae == 5, "12 ou mais anos", NA)))))
+
+
+# Remover os dados faltantes (por exemplo, TipoParto == 9 (Ignorado))
+dados_filtrados <- na.omit(data.frame(RacaCor_agrupado, EscMae_agrupado))
+
+
+# Visualizar os primeiros dados filtrados
+head(dados_filtrados)
+
+
+# Criar a tabela de contingência
+tabela_contingencia <- table(dados_filtrados$RacaCor_agrupado, dados_filtrados$EscMae_agrupado)
+
+
+# Visualizar a tabela de contingência
+print(tabela_contingencia)
+
+
+# Teste Qui-Quadrado de Independência
+chisq.test(tabela_contingencia)
+
+
+```
+
+\vspace{0.5cm}
+Note que, na tabela de contingência aparece células com valores zeros, por isso temos uma mensagem de alerta na realização do teste qui-quadrado. Vamos unir as classes "Nenhuma" e "1 a 3 anos" na variável escolaridade e "Amarela" e "Indígena" na variável raça/cor da mãe:
+
+
+\vspace{0.3cm}
+```{r}
+RacaCor_agrupado <- ifelse(RacaCor == 1, "Branca", 
+                    ifelse(RacaCor == 2, "Preta", 
+                    ifelse(RacaCor == 3, "Amarela e Indígena", 
+                    ifelse(RacaCor == 5, "Amarela e Indígena", "Parda"))))
+
+EscMae_agrupado  <- ifelse(EscMae == 1, "Até 3 anos", 
+                    ifelse(EscMae == 2, "Até 3 anos", 
+                    ifelse(EscMae == 3, "4 a 7 anos", 
+                    ifelse(EscMae == 4, "8 a 11 anos", 
+                    ifelse(EscMae == 5, "12 ou mais anos", NA)))))
+
+
+# Remover os dados faltantes (por exemplo, TipoParto == 9 (Ignorado))
+dados_filtrados <- na.omit(data.frame(RacaCor_agrupado, EscMae_agrupado))
+
+
+# Visualizar os primeiros dados filtrados
+head(dados_filtrados)
+
+
+# Criar a tabela de contingência
+tabela_contingencia <- table(dados_filtrados$RacaCor_agrupado, dados_filtrados$EscMae_agrupado)
+
+
+# Visualizar a tabela de contingência
+print(tabela_contingencia)
+
+
+# Teste Qui-Quadrado de Independência
+chisq.test(tabela_contingencia)
+
+
+
+```
+
+\vspace{0.5cm}
+Observe que, ainda temos uma mensagem de alerta na realização do teste qui-quadrado, pois há uma célula com frequência muito baixa, igual a 3. Agora, consideraremos apenas as raças Branca, Preta e Pardo teremos:
+
+\vspace{0.3cm}
+```{r}
+RacaCor_agrupado <- ifelse(RacaCor == 1, "Branca", 
+                    ifelse(RacaCor == 2, "Preta", "Parda"))
+
+# Remover os dados faltantes (por exemplo, TipoParto == 9 (Ignorado))
+dados_filtrados <- na.omit(data.frame(RacaCor_agrupado, EscMae_agrupado))
+
+# Visualizar os primeiros dados filtrados
+head(dados_filtrados)
+
+# Criar a tabela de contingência
+tabela_contingencia <- table(dados_filtrados$RacaCor_agrupado, dados_filtrados$EscMae_agrupado)
+
+
+
+# Visualizar a tabela de contingência
+print(tabela_contingencia)
+
+
+# Teste Qui-Quadrado de Independência
+chisq.test(tabela_contingencia)
+
+```
+\vspace{0.3cm}
+Rejeitamos a hipótese nula. Então, ao nível de $1\%$, há indicação de associação entre a raça/cor da mãe e a escolaridade da mesma.

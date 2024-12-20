@@ -1,0 +1,348 @@
+---
+title: "Atividade Avaliativa"
+subtitle: "Análise Estatística para Data Science"
+author: "Ana Maria Alves da Silva"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    latex_engine: xelatex
+  html_document: default
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+```
+
+```{r libraries, echo=FALSE, warning = FALSE, message=FALSE}
+
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+
+```
+
+# Questão 1
+
+Utilizando os comandos apresentados em aula e o banco de dados *dados_saude* determine os eventos:
+
+  - A: a população indígena da região tem mais que 5000 e menos que 10000 habitantes;
+
+  - B: o percentual (ou proporção) da população indígena que tomou a segunda dose ou dose única é maior que 75\% (ou 0.75) da população;
+
+
+Calcule: $P(A)$, $P(B)$, $P(A\cup B)$ e $P(A\cap B)$.
+
+## Solução:
+
+1. Carregamento dos dados
+
+Antes de responder aos itens solicitados, vamos realizar uma análise inicial dos dados. 
+```{r , echo=TRUE}
+
+df_saude <- read_excel(
+              "/Users/anamaria/especializacao/modulo_5/atividade/dados_saude.xlsx")
+print(df_saude)
+```
+
+Supondo que as colunas do dataframe seguem o mesmo padrão das colunas do mesmo dataframe vistas em aulas, temos:
+
+- Colunas no conjunto de dados:
+
+C1 : DSEI (Distritos Sanitários Especiais Indígenas);
+
+C2: População Indígena (nº de indígenas por distrito);
+
+C3: Dose 1 (nº de indígenas vacinados com a 1a dose);
+
+C4: % Dose 1 (percentual de indígenas vacinados com a 1a dose);
+
+C5: Dose 2 e Única (nº de indígenas vacinados com a 2a dose e dose
+única);
+
+C6: % Dose 2 e Única (percentual de indígenas vacinados com a 2a dose e
+dose única);
+
+C7: Dose 1 (3 a 4 anos): (nº de indígenas vacinados com a 1a dose com
+faixa etária entre 3 e 4 anos);
+
+C8: Dose 1 (5 a 17 anos): (nº de indígenas vacinados com a 1a dose com
+faixa etária entre 5 e 17 anos);
+
+C9: Dose 1 (\>18 anos): (nº de indígenas vacinados com a 1a dose com
+faixa etária maior que 18 anos);
+
+C10: Dose 2 (3 a 4 anos): (nº de indígenas vacinados com a 2a dose com
+faixa etária entre 3 e 4 anos);
+
+C11: Dose 2 (5 a 17 anos): (nº de indígenas vacinados com a 2a dose com
+faixa etária entre 5 e 17 anos);
+
+C12: Dose 2 (\>18 anos): (nº de indígenas vacinados com a 2a dose com
+faixa etária maior que 18 anos);
+
+C13: Reforço 1 (\> 18 anos): (nº de indígenas vacinados com a 1a dose de
+Reforço com faixa etária maior que 18 anos);
+
+- Renomeando as colunas para melhor entedimento
+
+```{r, echo=TRUE}
+colnames(df_saude) <- c('DSEI', 'Populacao_Indigena', 'Dose1', 'Percentual_Dose1', 
+                  'Dose2_Unica', 'Percentual_Dose2_Unica', 'Dose1_3a4', 
+                  'Dose1_5a17', 'Dose1_18+', 'Dose2_3a4', 'Dose2_5a17', 
+                  'Dose2_18+', 'Reforco_18+')
+``` 
+
+- Tamanho do conjunto de dados:
+```{r , echo=TRUE}
+print(dim(df_saude))
+```
+
+- Verificando se é um dataframe:
+```{r , echo=TRUE}
+is_data_frame <- is.data.frame(df_saude)
+print(is_data_frame)
+```
+
+- Verificando se há dados duplicados:
+```{r}
+duplicados <- duplicated(df_saude) 
+ha_duplicados <- any(duplicados)
+print(ha_duplicados)
+```
+
+
+Logo, nosso dataframe tem 13 colunas e 34 linhas. Além disso, não é há linhas duplicadas.
+
+- Visualizando um resumo dos dados:
+```{r , echo=TRUE}
+summary_df <- summary(df_saude)
+print(summary_df)
+```
+
+
+2. Determinando os eventos A e B
+```{r, echo=TRUE}
+# Evento A: população indígena entre 5000 e 10000
+evento_A <- df_saude$Populacao_Indigena > 5000 & df_saude$Populacao_Indigena < 10000
+
+# Evento B: percentual de segunda dose maior que 75%
+evento_B <- df_saude$Percentual_Dose2_Unica > 0.75
+
+```
+
+3. Determinando as Probabilidades
+
+```{r, echo=TRUE}
+# População indígena total
+populacao_total <- sum(df_saude$Populacao_Indigena)
+
+# P(A)
+P_A <- round(sum(df_saude$Populacao_Indigena[evento_A]) / populacao_total, 4)*100
+
+# P(B)
+P_B <- round(sum(df_saude$Populacao_Indigena[evento_B]) / populacao_total, 4)*100
+
+# P(A \cup B)
+P_A_union_B <- round(
+                sum(
+                    df_saude$Populacao_Indigena[evento_A | evento_B]
+                    ) / populacao_total, 4
+                )*100
+
+# P(A \cap B)
+P_A_intersection_B <- round(
+                        sum(
+                          df_saude$Populacao_Indigena[evento_A & evento_B]
+                          ) / populacao_total, 4
+                        )*100
+
+cat("Probabilidade do evento A: ", P_A, "%", sep = "", "\n")
+cat("Probabilidade do evento B: ", P_B, "%", sep = "", "\n")
+cat("Probabilidade da união de A e B: ", P_A_union_B, "%", sep = "", "\n")
+cat("Probabilidade da interseção de A e B: ", P_A_intersection_B, "%", sep = "", "\n")
+```
+# Questão 2
+O banco de dados dados_vacinacao_sp.xls contém informações sobre a quantidade de vacinas contra COVID-
+19 aplicadas, diariamente, em 2022, na cidade de São Paulo. Responda:
+
+(a) obtenha um intervalo de confiança de 90% para a quantidade média de vacinas contra COVID-19
+aplicadas, diariamente, em 2022, na cidade de São Paulo. Interprete o resultado.
+
+(b) pode-se afirmar que a quantidade média diária de vacinas contra COVID-19 aplicadas em São Paulo, no ano de 2022, é igual a 30 mil doses, ao nível de significância de 5%? Ou seja
+
+– H0 : A média de vacinas aplicadas diariamente em São Paulo em 2022 é igual a 30 mil
+– H1: A média de vacinas aplicadas diariamente em São Paulo em 2022 é diferente de 30 mil
+Interprete o resultado.
+
+## Solução:
+
+1. Carregamento dos dados
+
+Antes de responder aos itens solicitados, vamos realizar uma análise inicial dos dados. 
+```{r , echo=TRUE}
+
+df_vacina_sp <- read_excel(
+              "/Users/anamaria/especializacao/modulo_5/atividade/dados_vacinacao_sp.xls")
+print(df_vacina_sp)
+```
+
+- Tamanho do conjunto de dados:
+```{r , echo=TRUE}
+print(dim(df_vacina_sp))
+```
+
+- Verificando se  é um dataframe:
+```{r , echo=TRUE}
+is_data_frame_2 <- is.data.frame(df_vacina_sp)
+print(is_data_frame_2)
+```
+
+- Verificando se há dados duplicados:
+```{r}
+duplicados <- duplicated(df_vacina_sp) 
+ha_duplicados <- any(duplicados)
+print(ha_duplicados)
+```
+
+- Visualizando um resumo dos dados:
+```{r , echo=TRUE}
+summary_df_sp <- summary(df_vacina_sp)
+print(summary_df_sp)
+```
+
+2. Cálculo da Média, Desvio Padrão e Tamanho da amostra
+
+```{r}
+media_doses <- mean(df_vacina_sp$`Total de Doses Aplicadas`)
+desvio_padrao <- sd(df_vacina_sp$`Total de Doses Aplicadas`)
+lenght_amostra <- nrow(df_vacina_sp)
+cat("Média", media_doses, "\n")
+cat("Desvio Padrão", desvio_padrao, "\n")
+cat("Tamanho da Amostra", lenght_amostra, "\n")
+
+```
+
+3. Item(a) obtenha um intervalo de confiança de 90% para a quantidade média de vacinas contra COVID-19 aplicadas, diariamente, em 2022, na cidade de São Paulo. Para isso usaremos a função _t.test_.
+
+```{r}
+intervalo_conf <- t.test(df_vacina_sp$`Total de Doses Aplicadas`, conf.level = 0.90)
+print(intervalo_conf$conf.int)
+```
+
+Com o resultado acima,  estamos 90% confiantes de que a média diária verdadeira de vacinas aplicadas em São Paulo durante 2022 está entre 26.240,23 e 30.973,99 doses.
+
+4. Item (b) pode-se afirmar que a quantidade média diária de vacinas contra COVID-19 aplicadas em São Paulo, no ano de 2022, é igual a 30 mil doses, ao nível de significância de 5%? 
+
+```{r, echo=TRUE}
+# Definir a média hipotética
+media_hipotetica <- 30000
+
+# Realizar o teste t
+teste_t <- t.test(df_vacina_sp$`Total de Doses Aplicadas`, mu = media_hipotetica)
+
+# Exibir o resultado do teste t
+print(teste_t)
+
+# Interpretar o p-valor
+if(teste_t$p.value < 0.05) {
+  cat(
+    "Rejeitamos a hipótese nula, H0. A média diária de vacinas é diferente de 30.000 doses.\n")
+} else {
+  cat(
+    "Não rejeitamos a hipótese nula, H0. Não há evidências suficientes para afirmar\n 
+    que a média diária de vacinas é diferente de 30.000 doses.\n")
+}
+
+```
+
+A média diária observada é de 28.607 doses. O valor do teste t é -0,97, e o valor p é 0,332.
+
+Como o valor p é maior que o nível de significância de 5% (0,05), não rejeitamos a hipótese nula H0. Isso significa que não temos evidências suficientes para afirmar que a quantidade média diária de vacinas aplicadas foi diferente de 30.000 doses.
+
+# Questão 3
+O Departamento de Monitoramento e Avaliação (DEMAS) da Secretaria de Informação e Saúde Digital
+(SEIDIGI) desenvolveu em parceria com o Departamento de Imunização e Doenças Imunopreveníveis (DIMU) da Secretaria de Vigilância em Saúde e Ambiente (SVSA), um painel com dados sobre os imunizantes de COVID-19, [clique aqui](https://infoms.saude.gov.br/extensions/VACINOMETRO_COVID19/VACINOMETRO_COVID19.html).
+
+As seguintes informações foram obtidas em 06/09/2024:
+
+• Quilombolas vacinados com a primeira dose no Brasil: 604.329
+
+• População quilombola no Brasil: 1.133.106
+
+• Quilombolas vacinados com a primeira dose na região norte: 79.111
+
+• População quilombola na região norte: 154.911
+
+Responda:
+
+(a) é possível afirmar que a proporção de quilombolas vacinados com a primeira dose na região norte do
+Brasil é igual à proporção nacional? Considere o nível de significância de 5%. Interprete o resultado.
+
+(b) obtenha um intervalo de confiança de 99% para a proporção de quilombolas vacinados no Brasil.
+Interprete o resultado.
+
+Obs.: para o cálculo das proporções de quilombolas vacinados na região norte ou no país, utilize 3 casas
+decimais.
+
+## Solução:
+
+
+Observe que para essa questão foram fornecidos dados suficientes para que não seja necessário realizar a extração dos dados no link informado.
+
+1. Item a:
+
+Usaremos a função prop.test para realizar o teste de hipótese pois estamos com um problema de comparação de duas proporções, e este é o teste mais adequado para essa realizarmos esta comparação. 
+```{r, echo=TRUE}
+# Definir os dados
+vac_norte <- 79111
+pop_norte <- 154911
+vac_br <- 604329
+pop_br <- 1133106
+
+# Proporções
+prop_norte <- round(vac_norte / pop_norte, 3)
+prop_br <- round(vac_br / pop_br, 3)
+cat("Proporção norte", prop_norte)
+cat("Proporção br", prop_br)
+
+# Realizar o teste de proporção
+resultado_teste <- prop.test(x = c(vac_norte, vac_br), 
+                             n = c(pop_norte, pop_br), 
+                             correct = FALSE)  
+
+# Exibir os resultados
+print(resultado_teste)
+
+# Extrair o p-value
+p_valor <- resultado_teste$p.value
+cat("O p-valor é:", p_valor)
+
+# Verificação com o nível de significância de 5%
+if (p_valor < 0.05) {
+  cat(" Rejeitamos a hipótese nula: as proporções são diferentes.")
+} else {
+  cat(" Não rejeitamos a hipótese nula: as proporções são iguais.")
+}
+```
+
+Ou seja, ao rejeitarmos a hipótese nula temos que a proporção de vacinados na região norte é significativamente diferente da proporção nacional.
+
+2. Item b
+
+Usaremos a função a função binom.test para construir o intervaloc com 99% confiança para a proporção de quilombolas vacinados. Pois estamos lidando com um problema binomial no qual desejamos determinar o intervalo de confiança para uma proporção.
+
+```{r, echo=TRUE}
+# Realizar o teste binomial para obter o intervalo de confiança de 99%
+resultado_teste <- binom.test(vac_br, pop_br, conf.level = 0.99)
+
+# Extrair o intervalo de confiança
+intervalo_conf <- round(resultado_teste$conf.int, 3)
+
+# Exibir o intervalo de confiança
+cat("Intervalo de confiança de 99%:", intervalo_conf, "\n")
+```
+
+O intervalo de confiança de 99% para a proporção de quilombolas vacinados no Brasil é aproximadamente 53.2% a 53.5%. Isso significa que, com 99% de confiança, podemos afirmar que a proporção verdadeira de quilombolas vacinados no Brasil está entre 53.2% e 53.5%.
+

@@ -1,0 +1,433 @@
+---
+title: "Atividade Avaliativa"
+subtitle: "Big Data Anallytics"
+author: "Ana Maria Alves da Silva"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+```
+
+```{r libraries, echo=FALSE, warning = FALSE, message=FALSE}
+
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(car)
+library(tidyverse)
+library(reshape2)
+library(ggplot2)
+library(rpart)       
+library(rpart.plot)  
+library(caret)  
+```
+
+### 1. Definir do Problema
+
+O objetivo principal do problema é prever a ocorrência de diabetes (coluna Outcome) utilizando um modelo baseado em Árvore de Decisão.
+
+### 2. Análise Exploratória de Dados (EDA)
+
+Realize a Análise Exploratória de Dados (EDA). Apresente os seguintes itens:
+
+#### Solução: 
+Antes de apresentar a análise exploratória de dador, vamos carregar  na memória o conjunto de dados em formato dataframe que trabalharemos para que possamos realizar as manipulações e análises desejadas. Para isso, usaremos o código abaixo:
+
+```{r}
+df <- read.csv("/Users/anamaria/especializacao/modulo_8/atividade/diabetes.csv")
+```
+
+(i) Número de linhas e colunas do dataset;
+
+#### Solução: 
+Para vermos o tamanho do conjunto de dados, isso é, quantidade de linhas e colunas, basta usarmos a função dim. 
+```{r}
+print(dim(df))
+```
+
+Nessa caso, nosso dataframe possui 768 linhas e 9 colunas.
+
+(ii) Tipos de variáveis do dataset;
+
+#### Solução:
+
+```{r}
+str(df) 
+```
+O dataframe possui 7 colunas do tipo inteiro e 2 colunas do tipo float (reais e inteiros).
+
+(iii) Presença e número de valores ausentes;
+
+#### Solução:
+Para verificar se há valores ausentes, podemos usar a função colSums e is.na no dataframe, conforme o código abaixo.
+
+```{r}
+print(colSums(is.na(df)))
+```
+Ou ainda:
+
+```{r}
+print(colnames(df)[colSums(is.na(df)) > 0])
+```
+
+Em ambos os casos, vemos que não há valores ausentes. Se houvesse valores ausentes teriamos que trata-los de alguma maneira.
+
+(iv) Estatísticas descritivas (média, mediana, variância, frequências, etc.);
+
+#### Solução:
+Como todas as variáveis do dataframe são numéricas, seja inteiro ou float, basta usarmos a função summary, que fornece o resumo das estatísticas decritivas do dataframe.
+
+```{r}
+print(summary(df))
+```
+Note que há valores nulos nas colunas Pregnancies, Glucose, BloodPressure, SkinThickness, Insulin e BMI.
+(v) Geração de gráficos para entender a relação entre as variáveis independentes e a variável-alvo (se aplicável).
+
+#### Solução:
+Como nosso o objetivo é prever a ocorrência de diabetes (variável-alvo: Outcome), todas as outras colunas que podem influenciar essa previsão são variáveis independentes. Antes de fazermos gráficos para entender a relação dessas variáveis com a ocorrência de diabetes, vamos estudar a correlação das variáveis independentes com a variável alvo. Vamos usar também as bibliotecas ggplot2 e reshape2 para vizualizar a matriz de correlação de uma forma mais amigável.
+
+```{r, echo=FALSE}
+cor_matrix <- cor(df, use = "complete.obs")
+
+
+cor_data <- melt(cor_matrix)
+
+
+ggplot(data = cor_data, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile(color = "white") + 
+  scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0,
+                       limit = c(-1, 1), name = "Correlação") +
+  geom_text(aes(label = sprintf("%.2f", value)), color = "black", size = 3) + 
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  labs(x = NULL, y = NULL, title = "Matriz de Correlação")
+```
+
+Podemos interpretar a matriz de correlação da seguinte maneira, os valores positivos (tons avermelhados) indicam uma correlação positiva, isso é, à medida que uma variável independente aumenta a variável alvo também tende a aumentar.  Já os valores negativos (tons azulados) indicam uma correlação negativa com a variável alvo, isso é, à medida que uma variável aumenta, a outra tende a diminuir. Valores próximos de zero indicam baixa correlação ou nenhuma correlação com a váriavel alvo. A intensidade da cor reflete o módulo do valor, ou seja, quanto mais próximo de 1 ou -1, mais forte a correlação da variável independente com a variável alvo.
+
+No nosso caso, há uma correlação moderada entre Insulin e BMI, sugerindo que indivíduos com um IMC mais alto tendem a ter níveis mais elevados de insulina. Já Glucose e BloodPressure há uma correlação baixa. Enquanto
+Age e Pregnancies possuem a maior correlação entre variáveis independentes. Isso pode ser esperado, pois, geralmente, mulheres mais velhas tendem a ter mais gestações ao longo da vida. Por outro lado, Glucose é a variável com a correlação mais forte com a ocorrência de diabetes equanto BMI, Age, e Pregnancies também apresentam impacto, embora em menor grau.
+
+Dessa forma, diria que as variáveis independentes que apresentam maior impacto na prevenção de diabetes é Glucose, seguida de BMI, Age, e Pregnancies. Vamos ver a distribuição dessas variáveis com a variável alvo.
+
+```{r, echo = FALSE}
+ggplot(df, aes(x = factor(Outcome), y = Glucose, fill = factor(Outcome))) +
+  geom_boxplot() +
+  labs(title = "Distribuição de Glicose pela Variável Alvo",
+       x = "Não Diabético, Diabético",
+       y = "Glucose") +
+  theme_minimal() +
+  scale_fill_manual(values = c("0" = "skyblue", "1" = "tomato"))
+
+```
+Note que essa relação fortalece a ideia de que a variável Glucose deve ser considerada uma variável relevante para prever a ocorrência de diabetes em modelos preditivos, o que é esperado já que Diabetes é uma doença crônica que ocorre quando o organismo não produz ou não absorve insulina de forma adequada e a insulina é o que regula a glicose no sangue.
+
+
+
+```{r, echo=FALSE}
+ggplot(df, aes(x = factor(Outcome), y = BMI, fill = factor(Outcome))) +
+  geom_boxplot() +
+  labs(title = "Distribuição de BMI pela Variável Alvo",
+       x = "Não Diabético, Diabético",
+       y = "BMI") +
+  theme_minimal() +
+  scale_fill_manual(values = c("0" = "skyblue", "1" = "tomato"))
+```
+
+O BMI elevado parece estar associado à presença de diabetes, sugerindo uma relação positiva entre sobrepeso ou obesidade e o risco de diabetes.
+
+
+```{r, echo=FALSE}
+ggplot(df, aes(x = factor(Outcome), y = Age, fill = factor(Outcome))) +
+  geom_boxplot() +
+  labs(title = "Distribuição de Idade pela variável alvo",
+       x = "Não Diabético, Diabético",
+       y = "Age") +
+  theme_minimal() +
+  scale_fill_manual(values = c("0" = "skyblue", "1" = "tomato"))
+
+```
+Idade acima de 30 anos parece estar mais correlacionada com a possibilidade de um indíviduo ter diabetes.
+```{r, echo=FALSE}
+ggplot(df, aes(x = factor(Outcome), y = Pregnancies, fill = factor(Outcome))) +
+  geom_boxplot() +
+  labs(title = "Distribuição de Gravidez pela Variável Alvo",
+       x = "Não Diabético, Diabético",
+       y = "Pregnancies") +
+  theme_minimal() +
+  scale_fill_manual(values = c("0" = "skyblue", "1" = "tomato"))
+
+```
+
+Conforme mostrado na matriz de correlação, quanto maior o número de gravidez maior a probabilidade da mulher ter diabetes.
+
+### 3. Realizar o pré-processamento dos dados
+
+Realize as seguintes etapas para o pré-processamento dos dados:
+
+(i) Tratamento de valores ausentes: identificar e substituir ou remover valores nulos.
+
+#### Solução:
+Vamos subistituir os valores nulos pela média.
+
+```{r}
+df_clean <- df %>%
+  mutate(across(c(Glucose, BloodPressure, SkinThickness, Insulin, BMI), 
+                ~ ifelse(. == 0, round(mean(., na.rm = TRUE),2), .)))
+
+print(summary(df_clean))
+```
+
+(ii) Escalonamento: se necessário, normalize variáveis com escalas muito distintas.
+
+#### Solução: 
+Baseando-se nos resumos dos dados acima, seria recomendado normalizar ou padronizar variáveis como Insulin, Diabetes e Pregnancies para garantir que todas as variáveis tenham a mesma importância no modelo. Embora árvores de decisão não precisem de normalização pois esses algoritmos não são sensíveis à escala das variáveis por dividirem os dados com base em limites, podemos normalizar os dados (como faria para o KNN) usando preProcess. Isso é aceitável e pode até ser um requisito se for parte de um pipeline maior onde outro modelo também será testado. Se fossemos seguir dessa forma, poderiamos utilizar o metódo de preprocessamento do KNN para normalizar os dados, por exemplo, conforme código abaixo.
+
+```{r}
+library(caret)
+
+data <- df_clean[, -which(names(df) == "Outcome")]
+target <- df_clean$Outcome
+
+# Normalizar os dados (center e scale)
+preProcValues <- preProcess(data, method = c("center", "scale"))
+
+# Aplicar a normalização
+data_normalized <- predict(preProcValues, data)
+
+# Reunir os dados normalizados com a variável-alvo
+data_normalized$Outcome <- target
+
+# Visualizar os dados normalizados
+head(data_normalized)
+
+```
+No entanto, como o modelo que iremos usar é uma Árvore de decisão, optarei por não normalizar os dados devido a não sensibilidade da árvore à escala das variáveis.
+
+(iii) Divisão dos dados:
+- Separe o dataset em conjunto de treino (70%) e teste (30%).
+- Use uma semente aleatória para garantir a reprodutibilidade.
+
+#### Solução:
+Para definir uma semente aleatória para garantir a reprodutibilidade podemos usar a função abaixo:
+
+
+```{r}
+# Definir a semente para reprodutibilidade
+set.seed(123)
+```
+
+Agora, vamos dividir o conjunto em treino e teste.
+
+```{r}
+# Índices de treino
+trainIndex <- sample(1:nrow(df_clean), size = 0.7 * nrow(df_clean))
+
+# Dividir os dados em treino e teste
+train <- df_clean[trainIndex, ]
+test <- df_clean[-trainIndex, ]
+
+# Visualizar os tamanhos dos conjuntos
+cat("Tamanho do conjunto de treino:", nrow(train), "\n")
+cat("Tamanho do conjunto de teste:", nrow(test), "\n")
+
+# Exibir as primeiras linhas
+print(head(train))
+print(head(test))
+
+```
+
+### 4. Constuir e treinar o modelo
+  
+Realize a construção do modelo seguindo os passos abaixo:
+
+(i) Utilize a biblioteca rpart para criar a Árvore de Decisão.
+
+#### Solução:
+A função rpart é usada para criar modelos de árvore de decisão no R, que implementa o algoritmo CART (Classification and Regression Trees). Outcome é a nossa variável alvo, o conjunto de dados será o train, para treinar o modelo, utilizaremos também o method = "class" pois ele cria uma árvore de classificação para variáveis-alvo categóricas. Logo temos o código abaixo:
+
+```{r}
+model <- rpart(Outcome ~ ., 
+               data = train, 
+               method = "class")
+```
+(ii) Detalhe os parâmetros escolhidos para o treinamento.
+
+#### Solução:
+
+```{r}
+printcp(model)
+```
+O modelo realizou 12 divisões, mas o ponto ideal de poda ocorre após 10 divisão pois é quando o erro de validação cruzada (xerror) começa a estabilizar, sugerindo que esse é um bom ponto para poda da árvore. O Nó Raiz é de 36%, isso significa que todas as observações são classificadas para a classe mais frequente, não diabético. Além disso, as variáveis Age, Glucose, BMI, e outras foram identificadas como relevantes.
+
+Vamos identificar qual é o CP ideal e realizar a poda da árvore para termos 10 divisões.
+
+```{r}
+optimal_cp <- model$cptable[which.min(model$cptable[, "xerror"]), "CP"]
+cat("CP ideal para poda:", optimal_cp, "\n")
+
+```
+
+Agora, vamos criar uma nova árvore podada com base no CP selecionado.
+
+```{r}
+pruned_model <- prune(model, cp = optimal_cp)
+printcp(pruned_model)
+```
+A poda foi aplicada para reduzir o risco de overfitting e simplificar a árvore, mantendo apenas as divisões relevantes. Note que a variável independente SkinThickness foi descartada no modelo podado, sugerindo que sua contribuição era limitada após a poda. O nó raiz permaneceu em 36%. Dessa forma, o modelo podado mantém um bom desempenho com baixo valor xerror e evita adicionar complexidade desnecessária se mantessemos a árvore completa.
+
+(iii) Geração do gráfico da Árvore.
+
+#### Solução:
+Irei gerar o gráfico da árvore original e da árvore podada, a fim de comparação.
+
+-  Árvore Original
+```{r,fig.width=8, fig.height=6, out.width="100%"}
+rpart.plot(model, type = 3, extra = 106, under = TRUE, tweak = 0.5, 
+          main = "Árvore de Decisão Original")
+```
+
+- Árvore Podada
+```{r, fig.width=8, fig.height=6, out.width="100%"}
+rpart.plot(pruned_model, type = 3, extra = 106, under = TRUE, tweak = 0.8, main = "Árvore de Decisão Podada")
+```
+
+### 5. Avaliar o Modelo
+
+Realize a avaliação do modelo seguindo os passos abaixo:
+
+
+(i) Calcule as métricas de desempenho: Acurácia; Matriz de confusão; Precisão, Recall e F1-Score.
+
+#### Solução:
+Resalto que a partir de agora, considerarei a ávore podada, as mesmas análises podem ser feitas para a árvore sem poda.
+Agora, vejamos a matriz de confusão do modelo.
+
+```{r}
+train_pred <- predict(pruned_model, train, type = "class")
+confusion_train <- confusionMatrix(as.factor(train_pred), as.factor(train$Outcome))
+print(confusion_train)
+```
+Como resultado da matriz de confusão temos que foram feitas 300 previsões corretas para a classe 0, sem diabetes. 145 previsões corretas para a classe 1, diabetes. 47 previsões incorretas da classe 1 como classe 0, falsos negativos. E 
+45 previsões incorretas da classe 0 como classe 1, isso é, falso positivos.
+
+```{r}
+# Métricas de desempenho
+accuracy <- confusion_train$overall["Accuracy"]
+precision <- confusion_train$byClass["Pos Pred Value"]
+recall <- confusion_train$byClass["Sensitivity"]
+f1_score <- 2 * ((precision * recall) / (precision + recall))
+
+cat("Acurácia:", accuracy, "\n")
+cat("Precisão:", precision, "\n")
+cat("Recall:", recall, "\n")
+cat("F1-Score:", f1_score, "\n")
+```
+O modelo classificou corretamente 82.8% das observações no conjunto de treino com 95% de confiança, a acurácia do modelo está entre 79.4%, 85.9%. Isso indica uma boa estabilidade da métrica. Além disso o modelo apresenta 86.4% de precisão e 86.9% de Recall, como o recall mede a capacidade do modelo de encontrar todos os casos positivos, nesse caso o modelo captura bem os casos da classe positiva. O F1-Score de 86.7% indica que o modelo tem um bom equilíbrio entre Precisão (evitar falsos positivos) e Recall (evitar falsos negativos).
+
+(ii) Compare o desempenho nos conjuntos de treino e teste.
+
+#### Solução:
+Antes de comparar o desempenho, vamos calcular a matriz de confusão do conjunto de teste.
+```{r}
+test_pred <- predict(pruned_model, test, type = "class")
+confusion_test <- confusionMatrix(as.factor(test_pred), as.factor(test$Outcome))
+print(confusion_test)
+```
+
+Como resultado da matriz de confusão temos que foram feitas 123 previsões corretas para a classe 0, sem diabetes. 46 previsões corretas para a classe 1, diabetes. 30 previsões incorretas da classe 1 como classe 0, falsos negativos. E 
+32 previsões incorretas da classe 0 como classe 1, isso é, falso positivos.
+
+```{r}
+# Métricas de desempenho
+accuracy_test <- confusion_test$overall["Accuracy"]
+precision_test <- confusion_test$byClass["Pos Pred Value"]
+recall_test <- confusion_test$byClass["Sensitivity"]
+f1_score_test <- 2 * ((precision * recall) / (precision + recall))
+
+cat("Acurácia:", accuracy_test, "\n")
+cat("Precisão:", precision_test, "\n")
+cat("Recall:", recall_test, "\n")
+cat("F1-Score:", f1_score_test, "\n")
+```
+O modelo classificou corretamente 73.1% das observações no conjunto de treino com 95% de confiança, a acurácia do modelo está entre 66.9%, 78.7%.  Além disso o modelo apresenta 80.3% de precisão e 79.3% de Recall, como o recall mede a capacidade do modelo de encontrar todos os casos positivos, nesse caso o modelo captura bem os casos da classe positiva. O F1-Score de 86.7% indica que o modelo tem um bom equilíbrio entre Precisão (evitar falsos positivos) e Recall (evitar falsos negativos).
+
+Embora as métricas de desempenho estejam ligeiramente diferentes, ambos estão com um bom desempenho.
+
+### 6. Elaborar a conclusão
+    
+Apresente os principais insights do modelo:
+
+(i) A importância das variáveis no modelo.
+
+#### Solução:
+Vamos usar uma função rpart para responder a esta questão.
+
+```{r}
+importance <- pruned_model$variable.importance
+
+# Exibir a importância ordenada
+importance_sorted <- sort(importance, decreasing = TRUE)
+print(importance_sorted)
+
+# Plotar a importância das variáveis
+barplot(importance_sorted, 
+        main = "Importância das Variáveis no Modelo",
+        xlab = " ",
+        ylab = "Importância",
+        col = "skyblue",
+        las = 2)
+```
+As variáveis com maior importância para o modelo são Glucose, Insulin, Age, Pregnancies, DiabetesPredigreeFuncion e BMI. Com maior importância para as 3 primeiras, e destaque para a Glucose, pois elas tiveram maior influência para a decisão do modelo.
+
+(ii) Interpretação dos resultados obtidos.
+
+#### Solução:
+A árvore de decisão utiliza "Glucose" como o primeiro critério de divisão, reforçando a importância dessa variável.
+As subdivisões posteriores incluem BMI, Age e Insulin, que ajudam a refinar a previsão e separar as classes refletindo um modelo que baseia suas previsões principalmente em fatores metabólicos e fatores mudanças fisiológicas. 
+
+Como pontos fortes, temos que a  árvore de decisão é fácil de visualizar e entender, fornecendo transparência nas previsões. Além disso, o modelo apresenta um bom desempenho geral com a acurácia e o F1-Score equilibrados e classificando corretamente a maioria dos casos positivos.
+
+Como pontos negativos, temos que embora o recall seja alto, ainda existem casos positivos que o modelo classifica como negativos. Isso pode ser crítico em diagnósticos médicos. Algumas variáveis, como por exemplo SkinThickness e BMI,  podem não estar contribuindo significativamente e podem ser reavaliadas ou excluídas da classificação.
+
+Como resultado da árvore, temos:
+
+- Condições que Levam a Maior Probabilidade de Diabetes:
+
+1. Glucose >= 158: Esta condição é o fator mais forte para classificar alguém como diabético. Se a glicose é maior ou igual a 158, a probabilidade de diabetes é muito alta (nó terminal com classe 1 e 15% das observações).
+
+2. Glucose >= 143 e Glucose < 158 + Insulin >= 98: Se os níveis de glicose estão entre 143 e 158 e os níveis de insulina são maiores ou iguais a 98, isso também leva a uma alta probabilidade de diabetes.
+
+3. Glucose < 143 e Insulin >= 138 + Pregnancies >= 8: A combinação de glicose menor que 143, insulina alta (>= 138) e mais de 8 gestações também leva a uma probabilidade elevada de diabetes.
+
+4. BMI >= 26 e BloodPressure < 73: Indivíduos com IMC maior ou igual a 26 e pressão arterial baixa (< 73) têm maior chance de diabetes.
+
+- Condições que Levam a Menor Probabilidade de Diabetes:
+
+1. Glucose < 100: Glicose abaixo de 100 é um dos principais indicadores de baixa probabilidade de diabetes (classe 0).
+
+2. Glucose < 143 e Age < 29: Indivíduos jovens (idade menor que 29) com glicose menor que 143 têm uma probabilidade muito baixa de diabetes.
+
+3. BMI < 26 e BloodPressure >= 73: Baixo índice de massa corporal (BMI < 26) e pressão arterial normal ou alta (>= 73) também reduzem significativamente a probabilidade de diabetes.
+
+4. DiabetesPedigreeFunction < 0.73: Valores baixos do Diabetes Pedigree Function (indicador de histórico genético) contribuem para baixa probabilidade de diabetes.
+
+(ii) Limitações do modelo e sugestões de melhorias. 
+
+#### Solução: 
+
+Embora o modelo de árvore de decisão seja mais fácil de  interpretar e apresentar um bom desempenho, ele ainda possui limitações como overfitting, sensibilidade a dados e dependência excessiva de variáveis dominantes, como a variável Glucose, o que pode indicar dependência excessiva dessa variável. Se houver inconsistências ou ruídos nos valores de glicose, o modelo pode ser impactado. 
+
+Melhorias podem ser alcançadas usando Random Forest ou Gradient Boosting, que combinam múltiplas árvores para reduzir o overfitting. Podemos fazer uma feature selection para garantir que apenas as variáveis mais importantes sejam utilizadas, isso é, as variáveis independentes que possuem maior correlação com a variável alvo.  Remover outliers também é uma melhoria a ser considerada.
+
+Se a amostra fosse maior, poderiamos separar o conjunto de dados em treino, teste e validação. Onde o conjunto de validação nos auxilia ajustar hiperparâmetros do modelo como profundidade da árvore, taxa de aprendizado, número de estimadores, etc. O conjunto de validação também é usado para monitorar overfitting, isso é, se o erro no conjunto de validação começa a aumentar enquanto o erro no treino continua caindo, indica que o modelo está "decorando" os dados do treino e um sobreajuste está acontecendo. 
+
+
+
+
+
