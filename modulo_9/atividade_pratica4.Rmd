@@ -1,0 +1,126 @@
+---
+title: 'Tópicos de Amostragem: 4ª Atividade Prática'
+author: "Prof. Dr. Fabiano F. T. dos Santos"
+date: "2024-12-02"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+header-includes:
+- \usepackage{array}
+- \usepackage{longtable}
+- \usepackage[brazil]{babel}
+---
+
+Estimação da Proporção Populacional
+
+\vspace{0.5cm}
+
+Considere o conjunto de dados referente ao número de óbitos decorrentes do câncer de mama no Centro-Oeste, de 1979 a 2022. O interesse é na proporção de anos em que a proporção de óbitos por câncer de mama ficou abaixo de 0,5%. Para uma amostra piloto de tamanho n = 10, obtemos uma estimativa para P igual a 0,30 (e de Q igual a 0,70). A verdadeira proporção populacional é 0,20.
+
+\vspace{0.5cm}
+
+```{r}
+
+#Função para calcular o tamanho amostral
+
+calcular_tamanho_amostral <- function(P, B, z_alpha = 1.96) {
+  Q <- 1 - P  # Complemento da proporção
+  n <- (P * Q) / (B / z_alpha)^2  # Cálculo do tamanho da amostra
+  return(ceiling(n))  # Retorna o valor arredondado para o inteiro superior
+}
+
+# Parâmetros fornecidos no exemplo
+P <- 0.30  # Proporção estimada de 30%
+B <- 0.10   # Erro máximo desejável
+z_alpha <- 1.96  # Valor crítico para 95% de confiança
+
+# Calcular o tamanho amostral
+tamanho_amostral <- calcular_tamanho_amostral(P, B, z_alpha)
+
+# Exibir o resultado
+print(paste("Tamanho amostral necessário:", tamanho_amostral))
+```
+\vspace{0.5cm}
+
+Se optássemos pelo dimensionamento conservador, teríamos
+
+\vspace{0.5cm}
+
+```{r}
+
+#Função para calcular o tamanho amostral
+
+calcular_tamanho_amostral_conservador <- function(B, z_alpha = 1.96) {
+  nc <- 1 / (4*(B / z_alpha)^2)  # Cálculo do tamanho da amostra
+  return(ceiling(nc))  # Retorna o valor arredondado para o inteiro superior
+}
+
+# Parâmetros fornecidos no exemplo
+B <- 0.10   # Erro máximo desejável
+z_alpha <- 1.96  # Valor crítico para 95% de confiança
+
+# Calcular o tamanho amostral
+tamanho_amostral_conservador <- calcular_tamanho_amostral_conservador(B, z_alpha)
+
+# Exibir o resultado
+print(paste("Tamanho amostral necessário:", tamanho_amostral_conservador))
+```
+\vspace{0.5cm}
+
+Carregando o arquivo Cancermamagoias.csv
+
+\vspace{0.5cm}
+
+```{r}
+
+library(readr)
+dados_Aulacancer <- read_delim("D:/Especialização/Atividades em sala/Atividades práticas Fabiano/Cancermamagoias.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+head(dados_Aulacancer)
+
+dim(dados_Aulacancer)
+
+attach(dados_Aulacancer)
+
+```
+\vspace{0.5cm}
+
+```{r}
+# Verificando se é um dataframe
+is.data.frame(dados_Aulacancer)
+
+# Caso não seja (apagar # para rodar:)
+#df.nv24 <- as.data.frame(df.nv24)
+```
+\vspace{0.5cm}
+
+Coleta da amostra da variável "PROPOR"
+
+\vspace{0.5cm}
+
+```{r}
+amostrapropor=with(dados_Aulacancer,sample(PROPOR,97,replace=T))
+
+print(amostrapropor)
+```
+\vspace{0.5cm}
+
+```{r}
+
+#Função para calcular o intervalo de confiança para a proporção populacional
+
+proporamostral<-24/97
+Q<-1-proporamostral
+z_alpha<-1.96
+namostra<-tamanho_amostral_conservador
+erroamostral<-z_alpha*sqrt((proporamostral*Q)/(namostra-1))
+limiteinferior<-proporamostral-erroamostral
+round(limiteinferior, 2)
+limitesuperior<-proporamostral+erroamostral
+round(limitesuperior, 2)
+cat("(", round(limiteinferior, 2), ",", round(limitesuperior, 2), ")")
+```
+
+

@@ -1,0 +1,32 @@
+---
+title: 'Tópicos de Amostragem: 8ª Atividade Prática'
+author: "Prof. Dr. Fabiano F. T. dos Santos"
+date: "2024-12-02"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+header-includes:
+- \usepackage{array}
+- \usepackage{longtable}
+- \usepackage[brazil]{babel}
+---
+
+Designação de estratos
+
+\vspace{0.5cm}
+
+Em uma pesquisa para lançar um medicamento, um grupo de 10 pessoas receberá o placebo (A) e um grupo de outras 10 pessoas receberá o medicamento (B). 
+
+\vspace{0.5cm}
+
+```{r}
+medicamento<-rep(c('A','B'),10) #Replicando os símbolos A e B do objeto c 10 vezes cada
+pacientes<-sample(1:20,20,replace=F) #Selecionando uma amostra de 20 pacientes dentre os 20 pacientes, sem reposição. Gera-se uma lista de números de 1 a 20, com a ordem escolhida aleatoriamente 
+cbind(medicamento,pacientes) #Criação da tabela
+```
+
+
+
+

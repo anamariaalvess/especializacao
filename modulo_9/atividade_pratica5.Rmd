@@ -1,0 +1,141 @@
+---
+title: 'Tópicos de Amostragem: 5ª Atividade Prática'
+author: "Prof. Dr. Fabiano F. T. dos Santos"
+date: "2024-12-02"
+output:
+  html_document:
+    df_print: paged
+header-includes:
+- \usepackage{array}
+- \usepackage{longtable}
+- \usepackage[brazil]{babel}
+---
+
+Estimação da Média Populacional
+
+\vspace{0.5cm}
+
+Considere o conjunto de dados referente aos nascidos vivos Dataframe_AulaFabiano.csv. O interesse é estimar o peso médio dos nascidos em 2024. Para isso, precisamos dimensionar uma amostra.
+
+\vspace{0.5cm}
+
+```{r}
+
+#Função para calcular o tamanho amostral
+
+calcular_tamanho_amostral <- function(N,varpop, B, z_alpha = 1.96) {
+n <- 1/(B^2/(z_alpha^2*varpop)+1/N)  # Cálculo do tamanho da amostra
+return(ceiling(n))  # Retorna o valor arredondado para o inteiro superior
+}
+
+# Parâmetros fornecidos no exemplo
+
+N<-779928
+
+varpop <- 313735.1  # Variância populacional conhecida
+
+B <- 100   # Erro máximo desejável
+
+z_alpha <- 1.96  # Valor crítico para 95% de confiança
+
+# Calcular o tamanho amostral
+
+tamanho_amostral <- calcular_tamanho_amostral(N,varpop, B, z_alpha)
+
+# Exibir o resultado
+
+print(paste("Tamanho amostral necessário:", tamanho_amostral))
+```
+\vspace{0.5cm}
+
+Carregando o arquivo Dataframe_AulaFabiano
+
+\vspace{0.5cm}
+
+```{r}
+
+library(readr)
+dados_AulaFabiano <- read_delim("D:/Especialização/Atividades em sala/Atividades práticas Fabiano/Dataframe_AulaFabiano.csv", delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+head(dados_AulaFabiano)
+
+dim(dados_AulaFabiano)
+
+attach(dados_AulaFabiano)
+
+```
+
+\vspace{0.5cm}
+
+Coleta da amostra da variável "PESO"
+
+\vspace{0.5cm}
+
+```{r}
+amostrapeso=with(dados_AulaFabiano,sample(PESO,121,replace=T))
+
+print(amostrapeso)
+```
+\vspace{0.5cm}
+
+Cálculo do peso médio amostral 
+
+\vspace{0.5cm}
+
+```{r}
+mean(amostrapeso)
+
+round(mean(amostrapeso), 1)
+```
+Cálculo da variância amostral
+
+```{r}
+var(amostrapeso)
+```
+
+```{r}
+
+#Função para calcular o intervalo de confiança para a média populacional
+
+mediaamostral<-mean(amostrapeso)
+N<-779928
+varpop <- 313735.1
+z_alpha<-1.96
+namostra<-tamanho_amostral
+erroamostral<-z_alpha*sqrt((1-namostra/N)*(varpop/namostra))
+limiteinferior<-mediaamostral-erroamostral
+round(limiteinferior, 1)
+limitesuperior<-mediaamostral+erroamostral
+round(limitesuperior, 1)
+cat("(", round(limiteinferior, 1), ",", round(limitesuperior, 1), ")\n")
+```
+\vspace{0.5cm}
+
+Cálculo do peso médio populacional
+
+\vspace{0.5cm}
+
+```{r}
+names(dados_AulaFabiano)
+
+sum(is.na(dados_AulaFabiano$PESO))
+
+mean(dados_AulaFabiano$PESO, na.rm = TRUE)
+
+round(mean(dados_AulaFabiano$PESO, na.rm = TRUE), 1)
+```
+\vspace{0.5cm}
+
+Cálculo da variância populacional
+
+\vspace{0.5cm}
+
+```{r}
+var(dados_AulaFabiano$PESO, na.rm = TRUE)
+```
+
+
+
+
+
+

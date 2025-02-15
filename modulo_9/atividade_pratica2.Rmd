@@ -1,0 +1,80 @@
+---
+title: "Tópicos de Amostragem: 2ª Atividade Prática"
+author: "Prof. Dr. Fabiano F. T. dos Santos"
+date: "2024-12-02"
+output: pdf_document
+header-includes:
+   - \usepackage{array}
+   - \usepackage{longtable}
+   - \usepackage[brazil]{babel}
+---
+
+## Como gerar números aleatórios no R?
+
+\vspace{0.2cm}
+
+## Para gerar 30 números aleatórios com distribuição normal padrão, use o comando 
+
+```{r}
+rnorm(30)
+```
+
+\vspace{0.2cm}
+
+```{r}
+hist(rnorm(30))
+```
+
+\vspace{0.2cm}
+
+## Para gerar 30 números aleatórios com distribuição normal com média 3 e desvio padrão 1, use o comando
+
+```{r}
+rnorm(30,mean=3,sd=1)
+```
+
+\vspace{0.2cm}
+
+```{r}
+hist(rnorm(30,mean=3,sd=1))
+```
+
+\vspace{0.2cm}
+
+## Como gerar amostras no R?
+
+\vspace{0.2cm}
+
+## Para gerar 30 números aleatórios entre 0 e 100, use o comando 
+
+```{r}
+runif(30, min=0, max=100)
+```
+
+\vspace{0.2cm}
+
+```{r}
+hist(runif(30, min=0, max=100))
+```
+
+\vspace{0.2cm}
+
+## Para gerar uma amostra aleatória de 30 números no intervalo de 1 a 100 e com reposição, use o comando
+
+```{r}
+sample(1:100, 30, replace=TRUE)
+```
+
+\vspace{0.2cm}
+
+```{r}
+hist(sample(1:100, 30, replace=TRUE))
+```
+
+
+
+
+
+
+
+

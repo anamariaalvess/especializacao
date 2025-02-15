@@ -1,0 +1,44 @@
+---
+title: 'Tópicos de Amostragem: 7ª Atividade Prática'
+author: "Prof. Dr. Fabiano F. T. dos Santos"
+date: "2024-12-02"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+header-includes:
+- \usepackage{array}
+- \usepackage{longtable}
+- \usepackage[brazil]{babel}
+---
+
+\vspace{0.5cm}
+
+Dimensionamento de amostras no plano Amostragem Estratificada Proporcional
+
+Um pesquisador está interessado em saber o tempo médio que estudantes de uma determinada universidade dedicam aos estudos. São 11.000 estudantes e deve-se extrair uma amostra de 10% da população considerando-se a proporcionalidade dos estratos. Qual o tamanho da amostra a ser extraída de cada estrato? 
+
+\vspace{0.5cm}
+
+```{r}
+
+#Dimensionamento de amostras - Amostragem estratificada proporcional
+
+N<-11000 #Tamanho da população
+N1<-5000 #Tamanho do estrato 1
+N2<-4000 #Tamanho do estrato 2
+N3<-2000 #Tamanho do estrato 3
+n<-0.10*N #Tamanho da amostra global
+f<-n/N #proporção
+n1<-f*N1 #Tamanho da amostra extraída do estrato 1
+n2<-f*N2 #Tamanho da amostra extraída do estrato 2
+n3<-f*N3 #Tamanho da amostra extraída do estrato 3
+(amostras=cbind(n1,n2,n3)) #Tabela com os estratos e as amostras
+(amostra_1=sample(N1,n1,replace=T)) #Extração da amostra no estrato 1
+(amostra_2=sample(N2,n2,replace=T)) #Extração da amostra no estrato 2
+(amostra_3=sample(N3,n3,replace=T)) #Extração da amostra no estrato 3
+
+
+```
+
