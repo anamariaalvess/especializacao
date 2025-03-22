@@ -1,0 +1,180 @@
+---
+title: "Métodos Não Paramétricos"
+author: "Profa. Teresa Cristina"
+date: "01/2025"
+output:
+  
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+
+
+# Teste binomial #
+
+## Exemplos apresentados na aula 04: testes baseados na distribuiçao    binomial##
+
+1. Um medicamento foi aplicado em animais com determinada doença e foram registrados: cura do animal ou não cura. A empresa que fabrica o medicamento afirma que 95% dos animais são curados com a aplicação de tal medicamento.  No estudo, o medicamento foi aplicado em  15 animais e, destes, 7 foram curados. O que podemos afirmar?
+
+Informações: 
+
+- n = 15 
+
+- "sucesso": cura do animal 
+
+- 7: quantidade de animais curados $\Rightarrow$  $T = O_1 = 7$
+
+- hipóteses: 
+
+$$  H_0: p \geq 0.95$$
+$$H_1: p < 0.95 $$
+
+No R, usamos o comando 
+
+\begin{center}
+binom.test(x, n, p, alternative = c("two.sided", "less", "greater"), conf.level = 0.95)
+\end{center}
+
+escolhendo o tipo de hipótese, mais especificamente, definindo a hipótese alternativa e, o nível de confiança.
+
+```{r}
+teste.1 <-binom.test(7, 15, p = 0.95, alternative = c("less"), conf.level = 0.95)
+teste.1
+```
+
+Podemos dizer que não existe evidência na amostra para aceitar a hipótese $H_0$. Observe a proporção (sucesso) estimada  $\hat{p} \approx 0,47$, considerando p-valor $< 0,001$.
+
+\vspace{1cm}
+
+2. Alunos matriculados em disciplinas, ao final do período são classificados, como aprovado ou reprovado. Historicamente em determinada disciplina, a proporção de aprovados é, no máximo, igual 60\%. Na última oferta da disciplina, entre os 21 alunos, 8 foram aprovados. O que podemos dizer?
+
+Informações: 
+
+- n = 21
+
+- "sucesso": aprovação do aluno 
+
+- 8: quantidade de alunos aprovados $\Rightarrow$  $T = O_1 = 8$
+
+- hipóteses: 
+
+$$  H_0: p \leq 0.60$$ 
+$$H_1: p > 0.60 $$ 
+
+```{r}
+teste.2 <- binom.test(8, 21, p = 0.6, alternative = c("greater"), conf.level = 0.95)
+teste.2
+```
+
+Podemos dizer que não existe evidência na amostra para rejeitar a hipótese $H_0$. Observe a proporção estimada  $\hat{p} \approx 0,38$, considerando p-valor $= 0,9877$.
+
+\newpage
+
+3. Certa indústria de refrigerantes desenvolveu um produto. O gerente de vendas gostaria de saber se o novo produto é tão preferido quanto o tradicional. Para tanto, realizou um experimento e entre os 13 degustadores, 5 preferem o novo. O que podemos afirmar?
+
+Informações: 
+
+- n = 13
+
+- "sucesso": preferência pela nova bebida
+
+- 5: número de degustadores que preferem a nova bebida
+
+- hipóteses: 
+
+$$  H_0: p \leq 0.50$$ 
+$$H_1: p > 0.50 $$ 
+
+```{r}
+teste.3 <- binom.test(5, 13, p = 0.5, alternative = c("greater"), conf.level = 0.95)
+teste.3
+```
+
+Podemos dizer que não existe evidência na amostra para rejeitar a hipótese $H_0$. Observe a proporção estimada  $\hat{p} \approx 0,38$ para p-valor $= 0,8666$.
+
+\newpage
+
+4. Em uma plantação (planta específica) foram observadas ao acaso 16 plantas e, entre estas, quatro estavam infectada com certo fungo. Se a proporção de infestação estiver abaixo de 30%, esta é considerada controlada. O que podemos afirmar?
+
+Informações: 
+
+- n = 16
+
+- "sucesso": planta estar infectada
+
+- 4: número de plantas infectadas
+
+- hipóteses: 
+
+$$  H_0: p \leq 0.30$$ 
+$$H_1: p > 0.30 $$ 
+
+```{r}
+teste.4 <- binom.test(4, 16, p = 0.3, alternative = c("greater"), conf.level = 0.95)
+teste.4
+```
+
+Podemos dizer que não existe evidência na amostra para rejeitar a hipótese $H_0$. Observe a proporção estimada  $\hat{p} = 0,25$, para p-valor $= 0,7541$.
+
+
+\newpage
+
+
+
+## Aplicação: *Comportamento anoréxico e percepção corporal em universitário* ##
+(Jornal Brasileiro de Psiquiatria, v. 57, p. 166-170, 2008)
+
+Um estudo foi realizado para avaliar a percepção corporal e a prevalência de sintomas de anorexia nervosa em estudantes universitários:
+
+ - participaram do estudo: 149 estudantes de Nutrição e 78 estudantes de Educação Física.
+
+ - método: Seleção da amostra foi realizada por conveniência. O questionário teste de atitudes alimentares (EAT- 26) e teste de imagem corporal foram aplicados para avaliar os sintomas de anorexia nervosa e a percepção corporal, respectivamente. 
+
+Considerando os resultados da tabela acima e as afirmações:
+
+- de acordo com dados da Organização Mundial da Saúde (OMS), 4,7% dos brasileiros sofrem de compulsão alimentar (22/7/24)
+- insatisfação corporal atinge mais de 50% dos brasileiros,
+
+especifique o tamanho amostral e estatística teste, discuta, construa e teste as hipóteses, para os casos abaixo:
+
+1. os estudantes de Nutrição têm tendência de apresentarem comportamento de risco para anorexia nervosa
+
+2. os estudantes de Educação Física tendem a ter proporção elevadas de insatisfação corporal.
+
+3. os estudantes, das duas turmas, têm tendência de apresentarem comportamento de risco para anorexia nervosa 
+o que podemos afirmar?
+	    
+## caso 1: 
+- hipóteses: 
+
+$$  H_0: p \leq 0.047   \; \;  vs  \; \; H_1: p > 0.047 $$ 
+
+```{r, default = 'hide'}
+aplicacao.1 <- binom.test(21, 149, p = 0.047, alternative = c("greater"), conf.level = 0.95)
+```
+
+
+## caso 2: 
+- hipóteses: 
+
+$$  H_0: p \leq 0.50  \; \;  vs  \; \; H_1: p > 0.5 $$ 
+
+```{r}
+aplicacao.2 <- binom.test(61, 78, p = 0.5, alternative = c("greater"), conf.level = 0.95)
+```
+
+## caso 3: 
+
+- hipóteses: 
+
+$$  H_0: p \leq 0.047  \; \;  vs  \; \; H_1: p > 0.047 $$ 
+
+```{r}
+aplicacao.3 <- binom.test(29, 227, p = 0.047, alternative = c("greater"), conf.level = 0.95)
+```
+
+
+### Exercício: interpretar os resultados dos casos 1) a 3) e, realizar testes de hipóteses considerando os demais itens.
+
+

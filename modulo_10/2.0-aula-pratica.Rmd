@@ -1,0 +1,85 @@
+---
+title: "Métodos Não Paramétricos"
+author: "Profa. Teresa Cristina"
+date: "01/2025"
+output:
+  
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Configurações globais do documento
+library(ggplot2)
+library("DescTools")   # instale o pacote
+library(conover.test) # instale o pacote
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Teste de comparação de variâncias 
+
+1. *Quantidade de ferro sérico em solução aquosa*
+
+Existe diferença entre os métodos? 
+
+  -  Vamos verificar graficamente o comportamento dos dados:
+```{r}
+Ramsay <- c(111, 107, 100, 99, 102, 106, 109, 108, 104, 99,
+            101, 96, 97, 102, 107, 113, 116, 113, 110, 98)
+Jung.P <- c(107, 108, 106, 98, 105, 103, 110, 105, 104,
+            100, 96, 108, 103, 104, 114, 114, 113, 108, 106, 99)
+
+metodos <- matrix(c(Ramsay, Jung.P), ncol =1, byrow = F)
+
+
+grupos <- matrix(c(rep("Ramsay", length(Ramsay)), rep("Jung.P", length(Jung.P))), 
+                  ncol = 1, byrow = FALSE)
+
+stripchart(metodos ~ grupos, col = c("magenta", "blue"),pch = c(19, 19), 
+          method = "stack",  xlab = "metodos")
+```
+
+  - Aplicando o teste:
+
+```{r}
+Ramsay <- c(111, 107, 100, 99, 102, 106, 109, 108, 104, 99,
+            101, 96, 97, 102, 107, 113, 116, 113, 110, 98)
+Jung.P <- c(107, 108, 106, 98, 105, 103, 110, 105, 104,
+            100, 96, 108, 103, 104, 114, 114, 113, 108, 106, 99)
+            
+ansari.test(Ramsay, Jung.P, exact = FALSE)
+```
+
+Pelo teste de Ansari-Bradley (aplicado somente para comparar duas variâncias), podemos dizer que nao existe evidências para rejeitar a hipótese de que as variâncias são iguais.
+
+\vspace{1cm}
+
+2. *Exercício* (Cargnelutti Filho, A., *et al.* Testes não paramétricos para pesquisas agrícolas, Santa Maria, UFSM, 2001)
+
+Em um experimento, os resultados do comprimento da parte aérea (cm), após 60 dias da semeadura de dois híbridos de milho:
+
+Híbrido 1: (167, 190, 217, 220, 222, 258, 262, 287)
+
+Híbrido 2: (116, 132, 148, 162, 188, 210, 215, 252)
+
+Para estas amostras, podemos dizer que as variâncias são diferentes?
+
+\vspace{1cm}
+
+2. *Exercício* (adaptado de Conover, W. J. Practical nonparametric statistics.  John Wiley & Sons, 1999)
+
+Quinze amigos decidiram investir, cada um, 1.000 (unidades monetárias - u.m.). Um grupo (G1) investiu em CDBs, outro grupo (G2) investiu em  Fundos DI e, o outro grupo (G3) investiu em Fundos de renda fixa. Os valores de retorno (u.m) foram: 
+
+G1: (146, 180, 192, 185, 153)
+
+G2: (176, 110, 212, 108, 196)
+
+G3: (-540, 1052, 642, 281, 67) 
+
+O que voce conclui a respeito da  variância nos grupos?
+
+**Observação**: para aplicar o teste de Siegel-Tukey, use o comando:
+*SiegelTukeyTest(x, y,  z)*, em que x, y, e z são os grupos.
+
+

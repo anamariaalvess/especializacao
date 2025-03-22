@@ -1,0 +1,154 @@
+---
+title: "Métodos Não Paramétricos"
+author: "Profa. Teresa Cristina"
+date: "01/2025"
+output:
+  
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Configurações globais do documento
+library("ggplot2")
+library("DescTools")   # instale o pacote
+library("ppcor")         # instale o pacote
+library(devtools)      # instale o pacote
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Testes de associação:
+
+1. *Classe social e tipo de moradia*
+
+Em uma cidade foi realizada uma pesquisa a fim de verificar se existe associação entre a classe social e o tipo de moradia dos residentes. Na amostra, 1000 famílias responderam as perguntas: "Você reside em casa própria ou alugada? 
+Qual sua classe social?" É possível afirmar que o tipo de moradia está associado à classe social?
+
+```{r}
+c.social <- c("B", "M", "A")
+moradia <- c("A", "P")
+valores <- matrix(c(315,135, 150, 150, 109, 141),  ncol = 2, byrow = T)
+dimnames(valores) <- list(c("Baixa", "Média", "Alta"), c("Alugada",
+                                                         "Própria"))
+valores
+```
+
+ - Observando o comportamento conjunto das variáveis:
+
+```{r}
+ barplot(valores, beside = T, space = c(.1, 1.01),
+        col = c("mistyrose", "lightcyan", "lavender"),
+        legend = rownames(valores),
+        args.legend = list(x = "topright"),
+        ylim = c(0, 350),
+        ylab = "Frequência absoluta",
+        main = "", font.main = 4)
+```
+
+```{r}
+barplot(prop.table(valores, margin = 1), beside = T, space = c(.1, 1.05),
+        col = c("mistyrose", "lightcyan", "lavender"),
+        legend = rownames(valores),
+        args.legend = list(x = "topright"),
+        ylim = c(0, 0.9),
+        ylab = "Frequência relativa",
+        main = "", font.main = 4)
+```
+
+ - vamos obter o valor da estatística de Pearson:
+ 
+```{r}
+n <- sum(valores)
+n
+valores        # tabela com nomes nas linhas e colunas
+margin.table(valores, margin = 1)
+
+margin.table(valores, margin = 2)
+prop.table(valores, margin = 1)
+
+teste.xsq <-  chisq.test(valores)  # estatistica
+teste.xsq
+
+teste.xsq$observed   # valores observados
+teste.xsq$expected   # valores esperados
+```
+
+ - os coeficientes de Cramér e, de McNemar-Siegel são dados por:
+```{r}
+teste.xsq$statistic
+T_1 <- sqrt((teste.xsq$statistic)/(n*1))
+T_1
+
+T_2 <- sqrt(teste.xsq$statistic/(n + teste.xsq$statistic))
+T_2
+```
+
+2. *Exercício*
+
+Existe associação entre consumo de energia e temperatura, considerando este conjunto de dados?
+
+```{r}
+temperatura <- c("B", "M", "A")
+consumo <- c("A", "B")
+valores <- matrix(c(56, 24, 15, 25, 35, 20),  ncol = 2, byrow = T)
+
+dimnames(valores) <- list(c("Baixa", "Média", "Alta"), c("Alto", "Baixo"))
+```
+
+
+3. Para realizar um teste de correlacao para variáveis quantitativas, use:
+
+ # cor(x, y, method = c("pearson", "kendall", "spearman"))
+ 
+ # cor.test(x, y, method=c("pearson", "kendall", "spearman"))
+ 
+ a) Verifique se existe relação entre a diversidade de gafanhotos e o número de
+anos após a aplicação de um pesticida.
+ 
+```{r}
+ anos <- c(0, 1, 3, 5, 9, 12, 13, 15, 21, 25)
+gafanhotos <- c(0.00, 0.19, 0.15, 1.49, 1.10, 1.12, 1.61, 1.42, 1.48, 1.92)
+cor.test(anos,gafanhotos, method="spearman",alternative="two.sided")
+```
+
+ou ainda,
+
+```{r}
+cor.test(anos,gafanhotos, method="kendall",alternative="two.sided")
+```
+
+
+ - Para obter a correlacao de Spearman parcial:
+
+```{r}
+y.data <- data.frame(
+  hl=c(7,15,19,15,21,22,57,15,20,18),
+  disp=c(0.000,0.964,0.000,0.000,0.921,0.000,0.000,1.006,0.000,1.011),
+  deg=c(9,2,3,4,1,3,1,3,6,1),
+  BC=c(1.78e-02,1.05e-06,1.37e-05,7.18e-03,0.00e+00,0.00e+00,0.00e+00
+       ,4.48e-03,2.10e-06,0.00e+00))
+
+# Exemplo da biblioteca.
+# correlação parcail entre as variaveis "hl" e "disp", elimando o efeito das 
+# variaveis "deg" and "BC"
+
+pcor.test(y.data$hl,y.data$disp,y.data[,c("deg","BC")])
+pcor.test(y.data[,1],y.data[,2],y.data[,c(3:4)])
+pcor.test(y.data[,1],y.data[,2],y.data[,-c(1:2)])
+```
+
+O que podemos concluir?
+
+b) Considere os dados abaixo. Existe correlação parcial entre as variáveis?
+```{r}
+x <- c(200, 204, 202, 205, 199, 200, 198, 200, 202, 201)
+y <- c(180, 185, 179, 180, 175, 184, 180, 181, 178, 181)
+z <- c(152, 150, 149, 148, 152, 150, 150, 148, 153, 150)
+```
+ 
+```{r}
+plot(x,y)
+plot(x,z)
+plot(y,z)
+```

@@ -1,0 +1,91 @@
+---
+title: "Métodos Não Paramétricos"
+author: "Profa. Teresa Cristina"
+date: "01/2025"
+output:
+  
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Configurações globais do documento
+library(ggplot2)
+library(dplyr)
+library(PMCMRplus)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Orientações
+
+- O desenvolvimento desta atividade deve ser realizada de forma individual. 
+
+- É necessário devolver o arquivo em Rmd e em pdf. 
+
+- Valor da atividade: 10 pontos. 
+
+\vspace{1cm}
+
+## Métodos Não Paramétricos - Atividade Avaliativa - Módulo IV
+
+\vspace{1cm} 
+
+* Exercício 1
+
+No artigo 
+**Eficácia de ação educativa com reeducandas de cadeia pública de Mato Grosso sobre o vírus HPV** 
+(Corsino, P. K. D. *et al.*, Saúde e Pesquisa, 2018) os autores analisaram o impacto de ações educativas, sobre o vírus HPV, em reeducandas de Cadeia Pública Feminina de Mato Grosso. Entre outras variáveis, eles registraram idade, estado civil, grau de escolaridade, quantidade de filhos, motivo de estarem detidas e tempo de detenção, para cada uma das detentas participantes do estudo. 
+
+a) Classifique, usando os tipo de variáveis e escala de medidas, as variáveis como se você fosse o pesquisador (como se a pesquisa fosse **sua** e como achar importante registrar os valores). Justifique **suas** escolhas de registro. 
+
+b) Para verificar o efeito da ação educativa sobre o vírus HPV, as detentas responderam um questionário antes e após as ações educativas (filmes, palestras, *etc.*). Neste estudo, a respeito dos locais/meios onde as detentas adquiraram conhecimento sobre HPV antes/após a ação educativa, considere duas situações Escola e, Comunicação em mídia e redes socias). Escolha entre uma entre as duas formas: 
+**Escola** ou **Comunicação em mídia e redes sociais**. A realização da ação educativa contribuiu significativamente com a informação dessas mulheres sobre o HPV? Descreva as suposiçoes, hipóteses, aplique o teste de hipóteses adequado e apresente uma conclusão.
+
+![](/Users/cris/Google Drive/miscelania/curso especializacao UFG/Atividade avaliativa/exercicio_1_prova.png){width=35%}
+
+
+\newpage
+
+* Exercício 2
+
+Suponha que 100 pacientes, selecionados aleatoriamente (sob certas condições) sejam avaliados, quanto à dor. Dos que ingeriram placebo, 35 dos pacientes relataram algum alívio, mas os 65 restantes não. Sob um novo medicamento, 55 dos pacientes relataram algum alívio, enquanto 45 não. Das 65 pessoas que não relataram alívio sob o placebo, 30 também não relataram alívio sob o novo medicamento. Podemos dizer que existe evidência, nesta amostra, de que placebo e o novo medicamento tem efeitos diferentes? Descreva as suposiçoes hipóteses, aplique o teste de hipótese adequado e apresente uma conclusão.
+
+\newpage
+
+* Exercício 3
+
+Agar-agar, um gel preparado a partir das paredes celulares de várias algas vermelhas, é usado como meio de cultura em laboratórios e também como espessante, estabilizante ou adesivo nas indústrias de alimentos,cosméticos e fármacos. Geyer *et al.* (1990) estudaram como o teor de agar-agar extraído da alga *Pterocladia capillacea (Rhodophyceae)* variava com a localidade onde as amostras eram colhidas, na costa próxima à Arraial do Cabo (RJ). Os resultados foram:
+
+Local A: (39.75, 36.40, 33.88, 27.85, 31.42, 34.40, 36.62, 36.50, 38.40, 23.80)
+
+Local B: (42.37, 45.23, 34.14, 37.00, 29.96, 31.82, 34.58, 42.58, 42.38)
+
+Existe diferença entre os teores de agar-agar, considerando as duas localidades? Descreva as suposições, hipóteses, aplique o teste de hipótese adequado e apresente uma conclusão.
+
+\newpage
+
+* Exercício 4 
+
+Para avaliar o efeito de anestésicos, um estudo foi realizado aplicando quatro diferentes tipos de anestésico em determinada espécie de animal. Neste estudo, 19 animais, desta espécie, receberam inicialmente o medicamento pentobarbital. Cada animal recebeu dióxido de carbono (CO2) em cada um dos dois níveis de pressão (alta e baixa). Em seguida, halotano (H) foi adicionado e a administração de CO2 foi repetida. Os batimentos cardíacos (em milissegundos) foram registrados para as quatro combinações de tratamento:
+
+Tratamento A: Alta pressão de CO2 sem halotano
+
+Tratamento B: Baixa pressão de CO2 sem halotano
+
+Tratamento C: Alta pressão de CO2 com halotano
+
+Tratamento D: Baixa pressão de CO2 com halotano
+
+Os resultados foram:
+
+![](/Users/cris/Google Drive/miscelania/curso especializacao UFG/Atividade avaliativa/exercicio4_prova.png){width=40%}
+</center>
+
+(como descrito em Johnson, R. A.; Wichern, D. W. "Applied multivariate statistical analysis", 2002).
+
+a) Apresente uma análise descritiva (tipos e variáveis envolvidas, gráficos e medidas resumo).
+
+b) Sob a abordagem não paramétrica, é possível afirmar, nesta amostra, que os diferentes tipos de anestésicos sao semelhantes? Se sim, quais pares apresentam resultados diferentes? Descreva as suposições, hipóteses, aplique o teste de hipótese adequado e apresente uma conclusão.
+    

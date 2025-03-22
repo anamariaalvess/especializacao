@@ -1,0 +1,102 @@
+---
+title: "Métodos Não Paramétricos"
+author: "Profa. Teresa Cristina"
+date: "01/2025"
+output:
+  
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Configurações globais do documento
+library(ggplot2)
+library(dplyr)
+library(PMCMRplus)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Teste de Mann-Whitney  
+
+1. *Teste do relógio: pontuaçoes para dois grupos: jovens (18 a 29 anos) e adultos (50 a 59 anos)*
+
+
+```{r}
+pontuacoes <- matrix(c(11, 13, 15, 15, 17, 19, 20, 21, 21, 22,
+                        8, 9, 10, 11, 12, 13, 5, 17, 19, 23),
+                        ncol = 2, byrow=FALSE)
+
+grupos <- matrix(c(rep("jovens", 10), rep("adultos", 10)), ncol = 2, 
+                 byrow = FALSE)
+df <- data.frame(pontuacoes, grupos)
+```
+
+
+Pelo gráfico de pontos, podemos observar o comportamento das pontuações. 
+```{r}
+stripchart(pontuacoes ~ grupos, col = c("magenta","green"),  
+           pch = c(19, 19), method = "stack", xlab = "pontuacoes")
+```
+
+Aplicando o teste de Mann-Whitney, obtemos:
+```{r}
+jovens <- c(11, 13, 15, 15, 17, 19, 20, 21, 21, 22)
+adultos <- c(8, 9, 10, 11, 12, 13, 5, 17, 19, 23)
+```
+
+```{r}
+wilcox.test(jovens, adultos, alternative = c("greater"), 
+            paired = FALSE, correct = FALSE)
+```
+
+Considerando o p-valor $= 0,02234$, podemos dizer que não existe evidências, nos dados, para aceitar $H_0$ (ou seja, rejeitamos $H_0$ com base nas evidências da amostra). 
+
+### Vamos conferir a estatística teste do exemplo
+    
+- obtendo os postos para a amostra combinada
+
+```{r}
+pontuacoes <- matrix(c(11, 13, 15, 15, 17, 19, 20, 21, 21, 22,
+                       8, 9, 10, 11, 12, 13, 5, 17, 19, 23),
+                       ncol = 1, byrow=FALSE)
+
+grupos <- matrix(c(rep("jovens", 10), rep("adultos", 10)), ncol = 1, 
+                 byrow = FALSE)
+df <- data.frame(pontuacoes, grupos, rank(pontuacoes))
+df
+attach(df)
+```
+
+\newpage
+   
+- ordenando os postos
+    
+```{r}
+df%>%arrange(pontuacoes)
+```
+
+- extraindo postos para o grupo jovens e obtendo a estatística teste.
+
+```{r}
+posto.j <-df[df$grupos == "jovens",]
+posto.j
+R.j <- sum(posto.j$rank.pontuacoes)
+T <- R.j - (length(jovens))*(length(jovens)+1)/2
+T
+```
+
+Observe que $T$ é a estatística $W$ obtida acima.
+
+\newpage
+## Exercício:  *Dieta de porcos*
+(Gibbons, J. D.; Subhabrata C. Nonparametric statistical inference: revised and expanded. CRC press, 2014.)
+
+Um dos problemas para pequenos fazendeiros que compram porcos jovens para engordar e vender para abate é se há alguma diferença no ganho de peso para porcos machos e fêmeas, quando os dois gêneros são submetidos a tratamentos de alimentação idênticos. Se houver diferença, o fazendeiro pode otimizar a produção comprando apenas um gênero de porcos para engorda. Como um serviço público, uma estação experimental agrícola decidiu executar um experimento controlado para determinar se o gênero é um fator importante no ganho de peso. Eles colocaram oito porcos machos jovens em um curral e oito fêmeas jovens em outro curral e no curral, os tratamentos de alimentação eram idênticos por um período fixo de tempo. Os pesos iniciais estavam todos entre 35 e 50 lb (1 libra = 0,453592 Kg), e as quantidades de ganho de peso em libras para os dois gêneros são registradas abaixo. Infelizmente, uma das porcas morreu e,  apenas sete observações naquele grupo.  Os pesos registrados foram:
+
+ fêmeas: (9.31, 9.57; 10.21, 8.86, 8.52, 10.53, 9.21)
+ 
+ machos: (9.14, 9.98, 8.46, 8.93, 10.14, 10.17, 11.04, 9.43)
+
+O que podemos concluir sobre a dieta dos porcos machos e fêmeas? 
+

@@ -1,0 +1,249 @@
+---
+title: "Métodos Não Paramétricos"
+author: "Profa. Teresa Cristina"
+date: "01/2025"
+output:
+  
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Configurações globais do documento
+library(ggplot2)
+library(dplyr)
+library(PMCMRplus)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Teste de Kruskal-Wallis  
+
+1. *Teste do psicólogo: ruídos e aprendizado*
+
+Um psicólogo conduz um estudo para determinar se o ruído pode ou não inibir o aprendizado. Cada um das 15 pessoas é, aleatoriamente, designada para um dos três grupos. Cada pessoa tem 20 minutos para memorizar uma lista de 10 sílabas sem sentido, as quais serão usadas no teste no dia seguinte.
+
+ - Grupo1 - condição sem ruído: cinco pessoas estudam a lista de sílabas enquanto estão em uma sala silenciosa
+
+ - Grupo 2 - condição de ruído moderado: cinco pessoas estudam a lista 
+de sílabas enquanto ouvem música clássica
+
+ - Grupo 3 - condição de ruído extremo: cinco pessoas estudam a lista de sílabas  enquanto ouvem música rock. 
+
+O número de sílabas sem sentido lembradas corretamente pelas 15 pessoas é:
+
+Grupo 1: (8, 10, 9, 10, 9)
+
+Grupo 2: (7, 8, 5, 8, 5)
+
+Grupo 3: (4, 8, 7, 5, 7) 
+
+\vspace{1cm}
+
+Os dados indicam que o ruído influenciou o desempenho dos sujeitos?
+
+Vamos analisar os dados!
+
+\vspace{1cm}
+
+```{r}
+silabas <- matrix(c(8, 10, 9, 10, 9, 7, 8, 5, 8, 5, 4, 8, 7, 5, 7),
+                    ncol = 3, byrow=FALSE)
+
+grupos <- matrix(c(rep("G1", 5), rep("G2", 5), rep("G3", 5)), ncol = 3,
+                 byrow = FALSE)
+
+df <- data.frame(silabas, grupos)
+```
+
+Pelo gráfico de pontos, podemos observar o comportamento do número de sílabas lembradas corretamente.
+
+```{r}
+stripchart(silabas ~ grupos, col = c("magenta","green", "blue"),  
+           pch = c(19, 19,19), method = "stack", xlab = "silabas")
+```
+
+Para aplicação do teste de Kruskal-Wallis, fazemos:
+
+```{r}
+G1 <- c(8, 10, 9, 10, 9)
+G2 <- c(7, 8, 5, 8, 5)
+G3<- c(4, 8, 7, 5, 7)
+kruskal.test(list(G1, G2, G3))
+```
+
+\vspace{0.8cm} 
+
+Podemos dizer, que não existe evidências na amostra para aceitar $H_0$, para p-valor $= 0,0126$.
+
+### Vamos conferir a estatística teste!
+    
+- obtendo os postos para a amostra combinada
+
+```{r}
+silabas <- matrix(c(8, 10, 9, 10, 9, 7, 8, 5, 8, 5, 4, 8, 7, 5, 7),
+                    ncol = 1, byrow=FALSE)
+
+grupos <- matrix(c(rep("G1", 5), rep("G2", 5), rep("G3", 5)), ncol = 1,
+                 byrow = FALSE)
+
+df <- data.frame(silabas, grupos, rank(silabas))
+```
+
+\newpage
+
+```{r}
+df
+attach(df)
+```
+
+- ordenando os postos
+    
+```{r}
+df%>%arrange(silabas)
+```
+
+\newpage
+
+- extraindo postos para os três grupos
+
+```{r}
+posto.G1 <-df[df$grupos == "G1",]
+posto.G1
+R.1 <- sum(posto.G1$rank.silabas)
+R.1
+
+posto.G2 <-df[df$grupos == "G2",]
+posto.G2 
+R.2 <- sum(posto.G2$rank.silabas)
+R.2
+
+posto.G3 <-df[df$grupos == "G3",]
+posto.G3
+R.3 <- sum(posto.G3$rank.silabas)
+R.3
+
+```
+
+- calculando a estatística teste
+```{r}
+T <- (12/(15*16)) * ((R.1^2)/5 + (R.2^2)/5 + (R.3^2)/5) - 3*16
+T
+```
+
+Observe que $T$ é um valor muito próximo da estatística do teste Kruskal-Wallis obtida acima.
+
+\newpage
+## Exercício:  *Marcadores de células endoteliais anti-CD34 e anti-fator VIII*
+
+Objetivo: comparar a acurácia do marcador de células endoteliais anti-CD34 e anti-fator VIII em neoplasia cervical uterina, em lesões intra-epiteliais e no colo normal.
+ 
+Amostra:
+
+   - Grupo A: mulheres com diagnóstico anatomopatológico de neoplasia escamosa invasiva
+   
+   - Grupo B: neoplasia intra-epitelial de alto grau
+   
+   - Grupo C: neoplasia intra-epitelial de baixo grau
+   
+   - Grupo D: mulheres sem qualquer processo neoplásico
+
+Os valores correspondentes ao número de vasos avaliados nos carcinomas invasivos de colo uterino (A), lesões intra-epiteliais de alto grau (B) e de baixo grau (C) e colos uterinos normais (D) utilizando a técnica imuno-histoquímica para identificação de estruturas vasculares com anti-CD34, são:
+
+Grupo A: (161,160,128,168,131,107,219,147,175,119,190,203,107,153,128,
+          209,142,124)
+
+Grupo B: (128,131,125,141,157,132,143,112,131,128,139,135,127,121,168)
+
+Grupo C: (121,98,81,128,91,117,136,95,105,128,90,151,129,95,112)
+
+Grupo D: (109,65,97,96,110,67,106,102,80,96)
+
+\vspace{0.8cm}
+
+O que podemos concluira respeito do número de vasos avaliados nos carcinomas nos diferentes grupos?
+
+\vspace{0.8cm}
+
+Vamos analisar os dados!
+
+ - leitura dos valores:
+
+```{r}
+GA <- c(161,160,128,168,131,107,219,147,175,119,190,203,107,153,128,209,142,124)
+
+GB <- c(128,131,125,141,157,132,143,112,131,128,139,135,127,121,168)
+
+GC <- c(121,98,81,128,91,117,136,95,105,128,90,151,129,95,112)
+
+GD <- c(109,65,97,96,110,67,106,102,80,96)
+```
+
+- construção da matriz de dados:
+
+```{r}
+vasos.corados <- matrix(c(GA, GB, GC, GD),ncol = 1, byrow = FALSE)
+
+grupos <- matrix(c(rep("GA", length(GA)), rep("GB", length(GB)), 
+                   rep("GC", length(GC)), rep("GD", length(GD))), 
+                   ncol = 1, byrow = FALSE)
+```
+
+- contrução do gráfico de pontos:
+
+```{r}
+stripchart(vasos.corados ~ grupos, col = c("magenta","green", "blue", 
+           "red"),pch = c(19, 19, 19, 19), method = "stack", 
+            xlab = "numero de vasos corados")
+
+kruskal.test(list(GA, GB, GC, GD))
+```
+
+Podemos dizer, para estes resultados, que os grupos apresentam comportamento diferentes, para p-valor $= 1,653e-06$.
+
+### Vamos conferir a estatística teste para esta aplicação
+
+- construção do dataframe e obtenção dos postos:
+
+```{r}
+df <- data.frame(vasos.corados, grupos, rank(vasos.corados))
+head(df, n=6L)
+tail(df, n=6L)
+
+df%>%arrange(vasos.corados)
+
+posto.GA <-df[df$grupos == "GA",]
+#posto.GA
+R.A <- sum(posto.GA$rank.vasos.corados)
+R.A
+
+posto.GB <-df[df$grupos == "GB",]
+#posto.GB
+R.B <- sum(posto.GB$rank.vasos.corados)
+R.B
+
+posto.GC <-df[df$grupos == "GC",]
+#posto.GC
+R.C <- sum(posto.GC$rank.vasos.corados)
+R.C
+
+posto.GD <-df[df$grupos == "GD",]
+#posto.GD
+R.D <- sum(posto.GD$rank.vasos.corados)
+R.D
+```
+
+- cálculo da estatística do teste:
+
+```{r}
+N = sum(length(GA), (length(GB)), length(GC), length(GD)) 
+N
+T <- (12/(N*(N+1))) * ((R.A^2)/length(GA) + (R.B^2)/length(GB) + 
+                  (R.C^2)/length(GC) + (R.D^2)/length(GD)) - 3*(N + 1)
+T
+```
+
+Observe o valor da estatística obtida no teste.
+
+... Mas, e agora?
+

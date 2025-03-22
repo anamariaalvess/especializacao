@@ -1,0 +1,211 @@
+---
+title: "Métodos Não Paramétricos"
+author: "Profa. Teresa Cristina"
+date: "01/2025"
+output:
+  
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+
+# Teste de Friedman #
+
+
+## Aplicações apresentadas na aula 08: teste de Friedman
+
+1. *Situações emocionais*  
+
+Em um estudo sobre hipnose, oito pessoas  receberam uma tensão elétrica na superfície da pele (em milivolts), em quatro situações emocionais distintas: medo, alegria, tristeza e calma. Podemos afirmar que existe diferença na tensão entre os diferentes estados emocionais?
+
+- dados: as oito das pessoas receberam o choque e as tensões, para cada
+  emoção, foram registrados.
+
+- análise descritiva:
+
+```{r}
+sensacoes <- matrix(c(23.1, 57.6, 10.5, 23.6, 11.9, 54.6, 21.0, 20.3,
+              22.7, 53.2,  9.7, 19.6, 13.8, 47.1, 13.6, 23.6,
+              22.5, 53.7, 10.8, 21.1, 13.7, 39.2, 13.7, 16.3,
+              22.6, 53.1,  8.3, 21.6, 13.3, 37.0, 14.8, 14.8), 
+              ncol = 4,byrow=FALSE, dimnames = list(1:8,
+              c("medo", "alegria", "tristeza", "calma")))
+
+sensacoes
+```
+
+
+Obtemos as principais estatísticas descritivas:
+
+```{r}
+summary(sensacoes)
+```
+
+\newpage
+
+Para o cálculo do coeficiente de variação, por variedade, fazemos:
+```{r}
+dp    <- apply(sensacoes, 2, sd)
+media <- apply(sensacoes, 2, mean)
+
+cv <- round((dp/media) * 100, 2)
+cv
+```
+
+% Ou ainda, para cada uma das sensações:  
+% cv_sensacoes_medo <- sd(sensacoes[, "medo"]) / mean(sensacoes[, % "medo"]) * 100
+% cv_sensacoes_medo
+
+
+O gráfico de pontos pode ser construído para observar o comportamento dos valores registrados. Para a construção do gráfico, considerando cada as diferentes sensações, rescrevemos as respostas da seguinte forma:
+
+```{r}
+respostas <- matrix(c(23.1, 57.6, 10.5, 23.6, 11.9, 54.6, 21.0, 20.3,
+                      22.7, 53.2,  9.7, 19.6, 13.8, 47.1, 13.6, 23.6,
+                      22.5, 53.7, 10.8, 21.1, 13.7, 39.2, 13.7, 16.3,
+                      22.6, 53.1,  8.3, 21.6, 13.3, 37.0, 14.8, 14.8), 
+                     ncol = 4, byrow = FALSE)
+respostas
+
+grupos <- matrix(c(rep("medo", 8), rep("alegria", 8), 
+             rep("tristeza", 8), rep("calma", 8)), ncol = 4, 
+             byrow = FALSE)
+
+grupos
+```
+
+\newpage
+Desta forma, o gráfico obtido é:
+
+```{r}
+stripchart(respostas ~ grupos, col = c("red","blue","green", "magenta"),  
+           pch = c(19, 19, 19, 19), method = "stack", xlab = "valores da variável tensão")
+```
+
+
+- aplicação do teste de Friedman:
+
+```{r}
+friedman.test(sensacoes)
+```
+
+Observando o resultado o gráfico e as medidas resumo, parece que não existe diferença entre os valores registrados. Pelo teste, dizemos que não existe evidência na amostra para rejeitar $H_0$, considerando p-valor $= 0,09166$.
+
+\newpage
+
+2. *Plantação de cana-de-acúcar*
+
+Em um estudo sobre variedades de cana-de-açúcar, foram registrados a produção (em toneladas por hectare), dos seis canteiros para as cinco variedades da cana. O que podemos concluir sobre as cinco variedades de cana?
+
+
+- dados: nos seis canteiro foram plantadas as cinco variedades de cana e, a produção, para cada canteiro foi registrada.
+
+- análise descritiva:
+
+```{r}
+producao <- matrix(c(110.6, 119.5, 120.1, 105.3, 130.8, 138.1,
+                     116.7, 128.4, 131.5, 114.8, 146.8, 155.5,
+                     128.7, 140.2, 130.3, 138.7, 146.0, 149.8,
+                     140.3, 150.0, 150.9, 144.7, 153.9, 156.0,
+                     143.4, 153.8, 151.5, 144.1, 154.6, 159.3),
+                     ncol = 5, byrow=FALSE, dimnames = list(1:6,
+                     c("V.1", "V.2", "V.3", "V.4", "V.5")))
+
+producao
+```
+
+
+```{r}
+summary(producao)
+```
+
+Para o cálculo do coeficiente de variação, por variedade, fazemos:
+```{r}
+dp    <- apply(producao, 2, sd)
+media <- apply(producao, 2, mean)
+
+cv <- round((dp/media) * 100, 2)
+cv
+```
+
+O gráfico de pontos pode ser construído para observar o comportamento dos valores registrados. Para a construção do gráfico, considerando cada tipo de variedade de cana-de-açucar, rescrevemos as respostas da seguinte forma:
+
+```{r}
+respostas <- matrix(c(110.6, 119.5, 120.1, 105.3, 130.8, 138.1,
+                     116.7, 128.4, 131.5, 114.8, 146.8, 155.5,
+                     128.7, 140.2, 130.3, 138.7, 146.0, 149.8,
+                     140.3, 150.0, 150.9, 144.7, 153.9, 156.0,
+                     143.4, 153.8, 151.5, 144.1, 154.6, 159.3),
+                     ncol = 5, byrow=FALSE)
+
+grupos <- matrix(c(rep("V.1", 6), rep("V.2", 6), rep("V.3", 6), 
+                   rep( "V.4", 6), rep("V.5", 6)), ncol = 5, 
+                    byrow = FALSE)
+```
+ 
+Desta forma, o gráfico obtido é:
+
+```{r}
+stripchart(respostas ~ grupos, col = c("red","blue","green", "magenta", "yellow"),  
+           pch = c(19, 19, 19, 19, 19), method = "stack", xlab = "produção")
+```
+
+- aplicação do teste de Friedman:
+
+```{r}
+friedman.test(producao)
+```
+
+Observando o gráfico de pontos, notamos diferença na variabilidade e no intervalo que dos valores registrados e, observando também as medidas resumo, parece existir diferença entre as variedades (produção). Pelo teste, podemos dizer que existe evidência na amostra para rejeitar a hipótese $H_0$, isto seja, de que a variedades têm a mesma produção,  considerando p-valor $< 0,001$.
+
+\newpage
+
+*Comentário*: Vamos confirmar o valor da estatística, aplicando a fórmula (apresentada na aula 08: teste de Friedman). Neste exemplo temos:
+
+```{r}
+respostas <- matrix(c(110.6, 119.5, 120.1, 105.3, 130.8, 138.1,
+                     116.7, 128.4, 131.5, 114.8, 146.8, 155.5,
+                     128.7, 140.2, 130.3, 138.7, 146.0, 149.8,
+                     140.3, 150.0, 150.9, 144.7, 153.9, 156.0,
+                     143.4, 153.8, 151.5, 144.1, 154.6, 159.3),
+                     ncol = 5, byrow=FALSE)
+```
+
+ - atribuindo postos para cada um dos blocos, obtemos
+
+```{r}
+b.1 <- rank(respostas[1,]) # atribuicao de postos na linha 1
+b.2 <- rank(respostas[2,])
+b.3 <- rank(respostas[3,])
+b.4 <- rank(respostas[4,])
+b.5 <- rank(respostas[5,])
+b.6 <- rank(respostas[6,])
+todos.postos <- rbind(b.1, b.2, b.3, b.4, b.5, b.6)
+todos.postos
+```
+
+  - somando os postos por tipo de variedade
+  
+```{r}
+postos <- cbind(sum(todos.postos[,1]), sum(todos.postos[,2]),
+                     sum(todos.postos[,3]), sum(todos.postos[,4]),
+                     sum(todos.postos[,5]))
+postos
+
+soma.postos <- sum(postos)
+soma.postos
+
+postos^2
+
+soma.postos.2 <- sum(postos^2)
+soma.postos.2
+```
+ 
+ - verificando o valor do teste:
+ 
+```{r}
+teste.Friedman <- (12/(6*5*6))*soma.postos.2 - 3*6*6
+teste.Friedman
+```
+
