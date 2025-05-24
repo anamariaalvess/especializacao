@@ -1,0 +1,610 @@
+---
+title: "Exercício: Análise de Cluster"
+author: "Ricardo Limongi"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: united
+    highlight: tango
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 7
+)
+```
+
+# Introdução
+
+Este exercício prático demonstra como aplicar técnicas de análise de cluster para segmentar pacientes com base em indicadores de saúde. A identificação de subgrupos de pacientes pode ajudar no desenvolvimento de intervenções personalizadas, otimização de recursos e melhoria nos cuidados de saúde.
+
+## Contexto do Problema
+
+Uma clínica especializada em saúde metabólica deseja identificar padrões entre seus pacientes para desenvolver programas de tratamento mais personalizados. A clínica coletou dados de diversos indicadores de saúde e agora precisa de uma análise para identificar grupos naturais de pacientes com características similares.
+
+## Objetivos do Exercício
+
+1. Identificar subgrupos significativos de pacientes com base em indicadores de saúde
+2. Determinar o número ideal de grupos usando métodos estatísticos
+3. Caracterizar cada grupo e suas necessidades clínicas específicas
+4. Propor intervenções personalizadas para cada grupo identificado
+
+## Carregando os Pacotes Necessários
+
+```{r pacotes}
+# Pacotes para manipulação e visualização de dados
+library(tidyverse)  # Manipulação e visualização de dados
+library(cluster)    # Algoritmos de clustering
+library(factoextra) # Visualização de clusters
+library(NbClust)    # Determinar número ótimo de clusters
+library(fpc)        # Estatísticas de validação de cluster
+library(corrplot)   # Visualização de matrizes de correlação
+library(gridExtra)  # Organização de múltiplos gráficos
+library(psych)      # Estatísticas descritivas
+
+# Definir a semente aleatória para reprodutibilidade
+set.seed(123)
+```
+
+# Dados de Pacientes
+
+Para este exercício, utilizaremos um conjunto de dados simulados que representa perfis de saúde de pacientes.
+
+```{r simular-dados}
+# Número de pacientes
+n <- 400
+
+# Simular diferentes perfis de pacientes
+# Perfil 1: Pacientes com maior risco cardiovascular
+grupo1 <- data.frame(
+  idade = rnorm(n/4, mean = 62, sd = 8),
+  imc = rnorm(n/4, mean = 32, sd = 4),  # Obesidade
+  pressao_sistolica = rnorm(n/4, mean = 148, sd = 15),  # Hipertensão
+  glicose_jejum = rnorm(n/4, mean = 105, sd = 15),  # Normal alto
+  hdl = rnorm(n/4, mean = 38, sd = 5),  # Baixo
+  ldl = rnorm(n/4, mean = 155, sd = 20),  # Alto
+  triglicerideos = rnorm(n/4, mean = 190, sd = 45),  # Alto
+  a1c = rnorm(n/4, mean = 6.0, sd = 0.7),  # Normal alto
+  proteina_c_reativa = rnorm(n/4, mean = 4.5, sd = 2.5),  # Elevada (inflamação)
+  atividade_fisica = rnorm(n/4, mean = 2, sd = 1.5)  # Baixa (horas/semana)
+)
+
+# Perfil 2: Pacientes com diabetes não controlado
+grupo2 <- data.frame(
+  idade = rnorm(n/4, mean = 55, sd = 10),
+  imc = rnorm(n/4, mean = 31, sd = 3.5),  # Obesidade
+  pressao_sistolica = rnorm(n/4, mean = 135, sd = 10),  # Ligeiramente elevada
+  glicose_jejum = rnorm(n/4, mean = 180, sd = 30),  # Muito alta
+  hdl = rnorm(n/4, mean = 42, sd = 6),  # Ligeiramente baixo
+  ldl = rnorm(n/4, mean = 130, sd = 25),  # Moderado
+  triglicerideos = rnorm(n/4, mean = 160, sd = 40),  # Moderadamente alto
+  a1c = rnorm(n/4, mean = 8.5, sd = 1.2),  # Elevado
+  proteina_c_reativa = rnorm(n/4, mean = 3.0, sd = 1.8),  # Moderada
+  atividade_fisica = rnorm(n/4, mean = 3, sd = 2)  # Moderada
+)
+
+# Perfil 3: Jovens com fatores de risco
+grupo3 <- data.frame(
+  idade = rnorm(n/4, mean = 35, sd = 7),
+  imc = rnorm(n/4, mean = 27, sd = 3.5),  # Sobrepeso
+  pressao_sistolica = rnorm(n/4, mean = 125, sd = 10),  # Normal
+  glicose_jejum = rnorm(n/4, mean = 98, sd = 10),  # Normal
+  hdl = rnorm(n/4, mean = 45, sd = 8),  # Moderado
+  ldl = rnorm(n/4, mean = 125, sd = 20),  # Limítrofe
+  triglicerideos = rnorm(n/4, mean = 150, sd = 35),  # Limítrofe
+  a1c = rnorm(n/4, mean = 5.5, sd = 0.3),  # Normal
+  proteina_c_reativa = rnorm(n/4, mean = 2.0, sd = 1.0),  # Normal
+  atividade_fisica = rnorm(n/4, mean = 3.5, sd = 2.5)  # Moderada
+)
+
+# Perfil 4: Pacientes saudáveis
+grupo4 <- data.frame(
+  idade = rnorm(n/4, mean = 45, sd = 12),
+  imc = rnorm(n/4, mean = 23, sd = 2),  # Saudável
+  pressao_sistolica = rnorm(n/4, mean = 115, sd = 8),  # Ótima
+  glicose_jejum = rnorm(n/4, mean = 85, sd = 7),  # Normal
+  hdl = rnorm(n/4, mean = 58, sd = 7),  # Bom
+  ldl = rnorm(n/4, mean = 95, sd = 15),  # Ótimo
+  triglicerideos = rnorm(n/4, mean = 95, sd = 25),  # Normal
+  a1c = rnorm(n/4, mean = 5.2, sd = 0.2),  # Normal
+  proteina_c_reativa = rnorm(n/4, mean = 0.8, sd = 0.5),  # Baixa
+  atividade_fisica = rnorm(n/4, mean = 7, sd = 2)  # Alta
+)
+
+# Combinar todos os grupos
+pacientes <- rbind(grupo1, grupo2, grupo3, grupo4)
+
+# Assegurar que os valores sejam realistas
+pacientes <- pacientes %>%
+  mutate(
+    imc = pmax(16, pmin(45, imc)),  # Limitar IMC entre 16 e 45
+    pressao_sistolica = pmax(90, pmin(220, pressao_sistolica)),  # Limitar pressão
+    glicose_jejum = pmax(60, pmin(300, glicose_jejum)),  # Limitar glicose
+    hdl = pmax(20, pmin(90, hdl)),  # Limitar HDL
+    ldl = pmax(50, pmin(250, ldl)),  # Limitar LDL
+    triglicerideos = pmax(40, pmin(400, triglicerideos)),  # Limitar triglicerídeos
+    a1c = pmax(4.0, pmin(12.0, a1c)),  # Limitar A1C
+    proteina_c_reativa = pmax(0.1, pmin(10.0, proteina_c_reativa)),  # Limitar PCR
+    atividade_fisica = pmax(0, pmin(14, atividade_fisica))  # Limitar atividade física
+  )
+
+# Adicionar um ID para cada paciente
+pacientes$id_paciente <- 1:nrow(pacientes)
+
+# Verificar a estrutura dos dados
+glimpse(pacientes)
+
+# Estatísticas descritivas dos dados
+summary(pacientes)
+```
+
+# Exercício 1: Exploração e Preparação dos Dados
+
+## 1.1 Análise Exploratória
+
+```{r exploracao}
+# Estatísticas descritivas detalhadas
+describe(pacientes[, 1:10])  # Excluir a coluna de ID
+
+# Matriz de correlação
+matriz_cor <- cor(pacientes[, 1:10])
+corrplot(matriz_cor, method = "circle", type = "upper", 
+         tl.col = "black", tl.cex = 0.7, tl.srt = 45,
+         title = "Matriz de Correlação dos Indicadores de Saúde")
+
+# Histogramas das variáveis
+pacientes %>%
+  select(-id_paciente) %>%
+  gather() %>%
+  ggplot(aes(value)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "black", alpha = 0.7) +
+  facet_wrap(~ key, scales = "free") +
+  theme_minimal() +
+  labs(title = "Distribuição dos Indicadores de Saúde",
+       x = "Valor", y = "Frequência")
+
+# Verificação de valores faltantes
+sum(is.na(pacientes))
+```
+
+## 1.2 Preparação dos Dados para Clustering
+
+```{r preparacao}
+# Selecionar apenas as variáveis relevantes para clustering
+dados_cluster <- pacientes[, 1:10]  # Todas as variáveis exceto o ID
+
+# Padronização dos dados (Z-score)
+dados_padronizados <- scale(dados_cluster)
+summary(dados_padronizados)
+
+# Verificar se a padronização foi bem-sucedida
+colMeans(dados_padronizados)  # Deve ser próximo de 0
+apply(dados_padronizados, 2, sd)  # Deve ser próximo de 1
+
+# Avaliação da tendência de clustering
+# Nota: A função hopkins() pode não estar disponível em algumas instalações
+# Vamos verificar se o pacote clustertend está carregado e, se necessário, usar uma abordagem alternativa
+if(!requireNamespace("clustertend", quietly = TRUE)) {
+  cat("O pacote 'clustertend' não está instalado. Usando método alternativo.\n")
+  
+  # Método alternativo: comparar a distribuição de distâncias original com uma aleatória
+  set.seed(123)
+  dist_original <- as.vector(dist(dados_padronizados))
+  
+  # Criar um conjunto de dados aleatório com a mesma dimensionalidade
+  dados_aleatorios <- matrix(runif(prod(dim(dados_padronizados))), 
+                             nrow = nrow(dados_padronizados))
+  dist_aleatorio <- as.vector(dist(dados_aleatorios))
+  
+  # Calcular a diferença nas médias das distâncias
+  media_orig <- mean(dist_original)
+  media_aleat <- mean(dist_aleatorio)
+  tendencia_valor <- media_aleat / (media_orig + media_aleat)
+  
+  cat("Estatística de tendência clustering alternativa:", round(tendencia_valor, 3), "\n")
+} else {
+  # Usar a função hopkins do pacote clustertend se disponível
+  library(clustertend)
+  set.seed(123)
+  tendencia <- clustertend::hopkins(dados_padronizados, n = nrow(dados_padronizados) * 0.1)
+  tendencia_valor <- as.numeric(tendencia)
+  cat("Estatística de Hopkins:", round(tendencia_valor, 3), "\n")
+}
+
+cat("Interpretação: Valores acima de 0.5 sugerem tendência de clustering.\n",
+    "Quanto mais próximo de 1, maior a tendência.\n")
+```
+
+# Exercício 2: Determinação do Número Ótimo de Clusters
+
+## 2.1 Métodos Visuais
+
+```{r numero-clusters-visual}
+# Método do cotovelo (Elbow Method)
+fviz_nbclust(dados_padronizados, kmeans, method = "wss", k.max = 10) +
+  labs(title = "Método do Cotovelo (Elbow Method)",
+       subtitle = "Soma dos quadrados dentro dos clusters vs. Número de clusters")
+
+# Método da silhueta
+fviz_nbclust(dados_padronizados, kmeans, method = "silhouette", k.max = 10) +
+  labs(title = "Método da Silhueta",
+       subtitle = "Largura média da silhueta vs. Número de clusters")
+
+# Gap statistic
+# Nota: Pode ser computacionalmente intensivo
+# Usar uma amostra para tornar o cálculo mais rápido
+set.seed(123)
+amostra_indices <- sample(1:nrow(dados_padronizados), 100)
+gap_stat <- clusGap(dados_padronizados[amostra_indices, ], 
+                    FUN = kmeans, 
+                    nstart = 25,
+                    K.max = 10, 
+                    B = 50)
+fviz_gap_stat(gap_stat) +
+  labs(title = "Gap Statistic",
+       subtitle = "Gap statistic vs. Número de clusters")
+```
+
+**Pergunta**: Com base nos métodos usados, qual você acredita ser o número ideal de clusters para este conjunto de dados de pacientes? Justifique sua resposta.
+
+# Exercício 3: Aplicação de Algoritmos de Clustering
+
+## 3.1 K-means Clustering
+
+```{r kmeans}
+# Aplicar K-means com o número selecionado de clusters (suponha k=4)
+set.seed(123)
+k_selecionado <- 4  # Ajuste este valor conforme sua análise acima
+kmeans_resultado <- kmeans(dados_padronizados, centers = k_selecionado, nstart = 25)
+
+# Adicionar os clusters ao dataframe original
+pacientes$cluster_kmeans <- kmeans_resultado$cluster
+
+# Visualizar os clusters
+fviz_cluster(kmeans_resultado, data = dados_padronizados,
+             palette = "jco",
+             ellipse.type = "convex",
+             repel = TRUE,
+             ggtheme = theme_minimal()) +
+  labs(title = "Clusters de Pacientes (K-means)",
+       subtitle = paste("K =", k_selecionado))
+
+# Avaliação da qualidade do clustering - Silhueta
+silhueta_kmeans <- silhouette(kmeans_resultado$cluster, dist(dados_padronizados))
+fviz_silhouette(silhueta_kmeans) +
+  labs(title = "Análise de Silhueta para K-means")
+
+# Média da silhueta por cluster
+media_silhueta <- mean(silhueta_kmeans[, "sil_width"])
+cat("Coeficiente de silhueta médio:", round(media_silhueta, 3), "\n")
+```
+
+## 3.2 Clustering Hierárquico
+
+```{r hierarquico}
+# Cálculo da matriz de distância
+dist_matriz <- dist(dados_padronizados, method = "euclidean")
+
+# Aplicar clustering hierárquico usando o método de Ward
+hc_ward <- hclust(dist_matriz, method = "ward.D2")
+
+# Visualizar o dendrograma
+plot(hc_ward, main = "Dendrograma - Método de Ward", 
+     xlab = "", sub = "", cex = 0.6)
+rect.hclust(hc_ward, k = k_selecionado, border = 2:5)
+
+# Cortar o dendrograma para obter clusters
+clusters_hc <- cutree(hc_ward, k = k_selecionado)
+
+# Adicionar os clusters ao dataframe original
+pacientes$cluster_hc <- clusters_hc
+
+# Visualizar os clusters
+fviz_cluster(list(data = dados_padronizados, cluster = clusters_hc),
+             palette = "jco",
+             ellipse.type = "convex",
+             repel = TRUE,
+             ggtheme = theme_minimal()) +
+  labs(title = "Clusters de Pacientes (Hierárquico)",
+       subtitle = paste("K =", k_selecionado))
+
+# Avaliação da qualidade - Silhueta
+silhueta_hc <- silhouette(clusters_hc, dist_matriz)
+fviz_silhouette(silhueta_hc) +
+  labs(title = "Análise de Silhueta para Clustering Hierárquico")
+
+# Média da silhueta
+media_silhueta_hc <- mean(silhueta_hc[, "sil_width"])
+cat("Coeficiente de silhueta médio (Hierárquico):", round(media_silhueta_hc, 3), "\n")
+```
+
+## 3.3 Comparação entre K-means e Hierárquico
+
+```{r comparacao}
+# Tabela de contingência entre os dois métodos
+tabela_comp <- table(K_means = pacientes$cluster_kmeans, 
+                     Hierarquico = pacientes$cluster_hc)
+print(tabela_comp)
+
+# Índice Rand Ajustado (ARI) - necessita do pacote mclust
+if (!requireNamespace("mclust", quietly = TRUE)) {
+  cat("Pacote 'mclust' não disponível. Não é possível calcular o Índice Rand Ajustado.\n")
+  
+  # Alternativa simples: calcular a proporção de concordância
+  n_total <- nrow(pacientes)
+  concordancia <- sum(diag(prop.table(tabela_comp)))
+  cat("Proporção de concordância entre métodos:", round(concordancia, 3), "\n")
+  cat("Interpretação: Valores próximos de 1 indicam alta concordância entre os métodos.\n")
+} else {
+  # Usar a função adjustedRandIndex do pacote mclust
+  ari <- mclust::adjustedRandIndex(pacientes$cluster_kmeans, pacientes$cluster_hc)
+  cat("Índice Rand Ajustado:", round(ari, 3), "\n")
+  cat("Interpretação: Valores próximos de 1 indicam alta concordância entre os métodos.\n")
+}
+
+# Para fins deste exercício, continuaremos com os resultados do K-means
+pacientes$cluster_final <- pacientes$cluster_kmeans
+```
+
+**Pergunta**: Qual dos dois métodos (K-means ou Hierárquico) você acredita que produziu clusters mais coerentes para este conjunto de dados? Justifique com base nas visualizações e métricas de avaliação.
+
+# Exercício 4: Caracterização e Interpretação dos Clusters
+
+## 4.1 Perfil dos Clusters
+
+```{r perfil-clusters}
+# Estatísticas por cluster
+perfil_clusters <- pacientes %>%
+  select(-id_paciente, -cluster_kmeans, -cluster_hc) %>%
+  group_by(cluster_final) %>%
+  summarise(across(everything(), list(média = mean, dp = sd)),
+            n_pacientes = n(),
+            prop_pacientes = n() / nrow(pacientes) * 100)
+
+# Exibir o perfil de cada cluster
+print(perfil_clusters)
+
+# Visualização do perfil dos clusters - valores médios
+perfil_viz <- pacientes %>%
+  select(-id_paciente, -cluster_kmeans, -cluster_hc) %>%
+  group_by(cluster_final) %>%
+  summarise(across(everything(), mean)) %>%
+  pivot_longer(cols = -cluster_final, 
+               names_to = "variavel", 
+               values_to = "valor")
+
+# Padronizar os valores para o gráfico de radar
+perfil_viz_norm <- perfil_viz %>%
+  group_by(variavel) %>%
+  mutate(valor_padronizado = (valor - min(valor)) / (max(valor) - min(valor)))
+
+# Gráfico de radar para comparar os perfis dos clusters
+ggplot(perfil_viz_norm, 
+       aes(x = variavel, y = valor_padronizado, 
+           group = factor(cluster_final), 
+           color = factor(cluster_final))) +
+  geom_line() +
+  geom_point() +
+  coord_polar() +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "bottom") +
+  labs(title = "Perfil dos Clusters de Pacientes",
+       subtitle = "Valores médios padronizados",
+       color = "Cluster") +
+  scale_color_brewer(palette = "Set1")
+```
+
+## 4.2 Análise Detalhada de Cada Variável por Cluster
+
+```{r boxplots}
+# Função para criar boxplot para uma variável específica
+criar_boxplot <- function(var_nome) {
+  ggplot(pacientes, aes(x = factor(cluster_final), y = .data[[var_nome]], 
+                        fill = factor(cluster_final))) +
+    geom_boxplot() +
+    theme_minimal() +
+    labs(title = paste("Distribuição de", var_nome, "por Cluster"),
+         x = "Cluster", y = var_nome) +
+    scale_fill_brewer(palette = "Set1") +
+    theme(legend.position = "none")
+}
+
+# Criar boxplots para cada variável
+variaveis <- names(pacientes)[1:10]  # Primeiras 10 variáveis (excluindo IDs e clusters)
+boxplots <- lapply(variaveis, criar_boxplot)
+
+# Organizar os boxplots em uma grade (2x5)
+do.call(gridExtra::grid.arrange, c(boxplots, ncol = 2))
+```
+
+## 4.3 Interpretação Clínica dos Clusters
+
+Com base nas análises acima, vamos interpretar cada um dos clusters no contexto clínico:
+
+```{r interpretacao, echo=FALSE}
+# Tabela de interpretação clínica
+interpretacao <- data.frame(
+  Cluster = 1:k_selecionado,
+  Caracteristicas = c(
+    "Preencher com base nos resultados",
+    "Preencher com base nos resultados",
+    "Preencher com base nos resultados",
+    "Preencher com base nos resultados"
+  ),
+  Intervencoes_Sugeridas = c(
+    "Preencher com base nos resultados",
+    "Preencher com base nos resultados",
+    "Preencher com base nos resultados",
+    "Preencher com base nos resultados"
+  )
+)
+
+# Exibir a tabela
+knitr::kable(interpretacao, caption = "Interpretação Clínica dos Clusters")
+```
+
+**Exercício**: Complete a tabela acima com:
+1. As principais características de cada cluster, baseado nas análises realizadas.
+2. Intervenções clínicas personalizadas que você recomendaria para cada grupo.
+
+# Exercício 5: Adicional
+
+## 5.1 Validação Cruzada (opcional)
+
+```{r validacao-cruzada, eval=FALSE}
+# Função para realizar validação cruzada do clustering
+validacao_cruzada_kmeans <- function(dados, k, n_folds = 5) {
+  set.seed(123)
+  n <- nrow(dados)
+  fold_indices <- sample(rep(1:n_folds, length.out = n))
+  
+  resultados <- data.frame(fold = 1:n_folds, silhueta = NA)
+  
+  for (i in 1:n_folds) {
+    # Dividir dados em treino e teste
+    dados_treino <- dados[fold_indices != i, ]
+    dados_teste <- dados[fold_indices == i, ]
+    
+    # Treinar modelo em dados de treino
+    modelo <- kmeans(dados_treino, centers = k, nstart = 25)
+    
+    # Atribuir clusters para dados de teste
+    distancias <- matrix(NA, nrow = nrow(dados_teste), ncol = k)
+    for (j in 1:nrow(dados_teste)) {
+      for (l in 1:k) {
+        distancias[j, l] <- sqrt(sum((dados_teste[j, ] - modelo$centers[l, ])^2))
+      }
+    }
+    clusters_teste <- apply(distancias, 1, which.min)
+    
+    # Calcular silhueta nos dados de teste
+    dist_teste <- dist(dados_teste)
+    sil <- silhouette(clusters_teste, dist_teste)
+    resultados$silhueta[i] <- mean(sil[, "sil_width"])
+  }
+  
+  return(resultados)
+}
+
+# Aplicar validação cruzada para k=4
+vc_resultados <- validacao_cruzada_kmeans(dados_padronizados, k = k_selecionado)
+print(vc_resultados)
+
+# Calcular média e desvio padrão da silhueta entre os folds
+cat("Média da silhueta (validação cruzada):", mean(vc_resultados$silhueta), "\n")
+cat("Desvio padrão da silhueta:", sd(vc_resultados$silhueta), "\n")
+```
+
+## 5.2 Análise de Sensibilidade
+
+Como o algoritmo K-means depende da inicialização aleatória, é importante verificar a estabilidade dos resultados.
+
+```{r sensibilidade}
+# Função para executar K-means múltiplas vezes
+executar_kmeans_multiplas <- function(dados, k, n_execucoes = 30) {
+  resultados <- data.frame(execucao = 1:n_execucoes, 
+                           wcss = NA,  # Within-cluster sum of squares
+                           silhueta = NA)
+  
+  clusters_matriz <- matrix(NA, nrow = nrow(dados), ncol = n_execucoes)
+  
+  for (i in 1:n_execucoes) {
+    set.seed(i * 100)  # Sementes diferentes para cada execução
+    km <- kmeans(dados, centers = k, nstart = 25)
+    
+    resultados$wcss[i] <- km$tot.withinss
+    
+    sil <- silhouette(km$cluster, dist(dados))
+    resultados$silhueta[i] <- mean(sil[, "sil_width"])
+    
+    clusters_matriz[, i] <- km$cluster
+  }
+  
+  # Calcular concordância entre pares de execuções
+  if (!requireNamespace("mclust", quietly = TRUE)) {
+    # Alternativa se mclust não estiver disponível
+    ari_matriz <- matrix(NA, nrow = n_execucoes, ncol = n_execucoes)
+    for (i in 1:n_execucoes) {
+      for (j in 1:n_execucoes) {
+        if (i != j) {
+          # Calcular proporção de concordância como alternativa ao ARI
+          tabela <- table(clusters_matriz[, i], clusters_matriz[, j])
+          ari_matriz[i, j] <- sum(diag(prop.table(tabela)))
+        } else {
+          ari_matriz[i, j] <- 1  # Diagonal (mesma execução)
+        }
+      }
+    }
+    metrica_nome <- "Proporção de Concordância"
+  } else {
+    # Usar adjustedRandIndex se mclust estiver disponível
+    ari_matriz <- matrix(NA, nrow = n_execucoes, ncol = n_execucoes)
+    for (i in 1:n_execucoes) {
+      for (j in 1:n_execucoes) {
+        if (i != j) {
+          ari_matriz[i, j] <- mclust::adjustedRandIndex(
+            clusters_matriz[, i], clusters_matriz[, j])
+        } else {
+          ari_matriz[i, j] <- 1  # Diagonal (mesma execução)
+        }
+      }
+    }
+    metrica_nome <- "Índice Rand Ajustado"
+  }
+  
+  return(list(
+    resultados = resultados,
+    ari_matriz = ari_matriz,
+    ari_medio = mean(ari_matriz[lower.tri(ari_matriz)]),
+    metrica_nome = metrica_nome
+  ))
+}
+
+# Executar análise de sensibilidade
+sensibilidade <- executar_kmeans_multiplas(dados_padronizados, k = k_selecionado, n_execucoes = 10)
+
+# Visualizar os resultados
+ggplot(sensibilidade$resultados, aes(x = execucao)) +
+  geom_line(aes(y = wcss, color = "WCSS")) +
+  geom_line(aes(y = silhueta * max(sensibilidade$resultados$wcss) * 2, color = "Silhueta")) +
+  scale_y_continuous(
+    name = "WCSS",
+    sec.axis = sec_axis(~. / (max(sensibilidade$resultados$wcss) * 2), name = "Silhueta")
+  ) +
+  theme_minimal() +
+  labs(title = "Análise de Sensibilidade para K-means",
+       subtitle = paste("Média do", sensibilidade$metrica_nome, "entre execuções:", 
+                        round(sensibilidade$ari_medio, 3)),
+       x = "Execução", color = "Métrica") +
+  scale_color_manual(values = c("WCSS" = "red", "Silhueta" = "blue"))
+
+# Visualizar matriz de concordância
+corrplot(sensibilidade$ari_matriz, 
+         method = "circle", 
+         type = "upper",
+         title = paste(sensibilidade$metrica_nome, "entre Múltiplas Execuções"),
+         mar = c(0, 0, 1, 0))
+```
+
+**Pergunta**: Com base na análise de sensibilidade, quão estáveis são os resultados do K-means para este conjunto de dados? Isso afeta sua confiança nas interpretações clínicas?
+
+# Conclusão e Recomendações
+
+Neste exercício, você aplicou técnicas de análise de cluster para segmentar pacientes com base em indicadores de saúde. Os resultados podem ajudar a clínica a desenvolver programas de tratamento personalizados e otimizar recursos.
+
+**Exercícios Finais**: 
+
+1. Escreva um resumo de uma página sobre os principais achados desta análise, incluindo:
+   - Número ideal de clusters e justificativa
+   - Caracterização de cada grupo de pacientes
+   - Recomendações clínicas específicas para cada grupo
+   - Limitações da análise e sugestões para estudos futuros
+
+2. Como esta abordagem de segmentação de pacientes poderia ser implementada na prática clínica? Quais desafios você antecipa e como eles poderiam ser superados?
+
+3. Que variáveis adicionais poderiam ser incorporadas para melhorar a segmentação dos pacientes? Como essas variáveis poderiam impactar os resultados?

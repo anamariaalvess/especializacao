@@ -1,0 +1,383 @@
+---
+title: 'Análise de Sobrevivência '
+subtitle: '0.4 - Aula Prática'
+author: "Prof. Dr. Eder Angelo Milani"
+date: "05/04/2025"
+output: pdf_document
+--- 
+
+
+# Leitura dos dados 
+
+
+As linhas de cógido a seguir executam as seguintes tarefas: 
+
+- leitura dos dados filtrados para CID C34;
+
+- breve visualização do conjunto de dados;
+
+- modificar a escala de tempo para ano, em vez de dia;
+
+- excluir os tempos iguis a zero. 
+
+```{r}
+# limpando o que tem na memoria
+rm(list=ls())
+
+# local onde esta o arquivo com os dados 
+setwd("G:\\Meu Drive\\UFG\\Especializacao\\Aulas Análise Sobrevivência\\Códigos")
+
+### leitura 
+dados <- read.csv("cancer_c34.csv")
+head(dados)
+
+# mudança na variável tempo - de dias para ano 
+dados$TEMPO <- dados$TEMPO/365
+
+# excluir os tempos iguais a zero 
+ind_tempo_zero <- which(dados$TEMPO == 0)
+ind_tempo_zero 
+
+dados$TEMPO[256]
+
+dados <- dados[-ind_tempo_zero,]
+
+# outra forma de filtrar 
+# dados <- dados %>% filter(TEMPO != 0)
+
+```
+
+
+# Ajuste de modelos paramétricos  
+
+
+As linhas de cógido a seguir executam as seguintes tarefas: 
+
+- ajusta o modelo exponencial ao conjunto de dados;
+
+- obtenção da estimativa do parâmetro $\alpha$ do modelo exponencial; 
+
+- ajusta o modelo Weibull ao conjunto de dados;
+
+- obtenção da estimativa dos parâmetros ($\alpha, \gamma$) do modelo Weibull;
+
+- ajusta o modelo log-normal ao conjunto de dados;
+
+- obtenção da estimativa dos parâmetros ($\mu, \sigma$) do modelo log-normal. 
+
+
+```{r}
+require(survival)
+
+# modelo exponencial 
+ajuste_exp <- survreg(Surv(TEMPO, CENSURA) ~ 1, 
+                      dist='exponential', data = dados)
+
+ajuste_exp
+
+alpha <- exp(ajuste_exp$coefficients[1])
+
+cat("a estimativa do parâmetro alpha é ", alpha, "\n") 
+
+# modelo Weibull
+ajuste_w <- survreg(Surv(TEMPO, CENSURA)~1, 
+                    dist='weibull', data = dados)
+
+ajuste_w
+
+alpha_w <- exp(ajuste_w$coefficients[1])
+gama_w <- 1/ajuste_w$scale
+
+# obs.: o R utiliza uma parametrizacao diferente da adotada no livro que estamos utilizando
+
+cat("a estimativa dos parâmetro alpha e gama são ", alpha_w, ", ", gama_w, "\n")
+
+
+# modelo lognormal
+
+ajuste_ln <- survreg(Surv(TEMPO, CENSURA)~1, 
+                     dist='lognorm', data = dados)
+
+ajuste_ln
+
+mu <- ajuste_ln$coefficients[1]
+sigma <- ajuste_ln$scale
+
+cat("a estimativa dos parâmetro mu e sigma são ", mu, ", ", sigma, "\n")
+
+```
+
+
+# Adequação do modelo probabilístico
+
+
+Para verificar a adequação dos modelos probabilísticos apresentamos a equação da função de sobrevivência estimada para cada um dos três modelos, que são: 
+
+- modelo exponencial $$\widehat{S}_{e}(t)= \exp(-t/`r alpha`)$$
+
+- modelo Weibull $$\widehat{S}_{W}(t)= \exp[-(t/`r alpha_w`)^{`r gama_w`}]$$
+
+- modelo log-normal $$\widehat{S}_{ln}(t)= \Phi\Big(\frac{-log(t)`r mu`}{`r sigma`}\Big)$$
+
+
+As linhas de cógido a seguir executam as seguintes tarefas: 
+
+- estima a função de sobrevivência utilizando o estimador de Kaplan-Meier;
+
+- estima a função de sobrevivência a partir do modelos exponencial, Weibull e log-normal;
+
+- elabora os gráfico $\widehat{S}(t)$ versus $t$, juntamente com a curva $\widehat{S}_{Exp}(t)$ versus $t$. E para os modelos Weibull e log-normal  
+
+- elabora o gráfico $\widehat{S}(t)$ versus $\widehat{S}_{Exp}(t)$, e para os modelos Weibull e log-normal
+
+
+Comparando os valores da sobrevivência estimado pelo Kaplan-Meier e os três modelos definidos anteriormente. 
+
+
+```{r}
+# funcao de sobrevivência estimada via Kaplan-Meier
+ekm <- survfit(Surv(TEMPO, CENSURA) ~ 1, data = dados)
+
+# criando um vetor de tempo onde as funcoes de sobrevivencia serao calculadas
+t <- seq(0, 8, length.out = length(ekm$time))
+
+# funcao de sobrevivência estimada pelo modelo exponencial
+s_exp <- exp(-t/alpha)
+
+# funcao de sobrevivência estimada pelo modelo weibull
+s_w <- exp(-(t/alpha_w)^gama_w)
+
+# funcao de sobrevivência estimada pelo modelo log-normal
+s_ln <- pnorm((-log(t)+mu)/sigma)
+
+# graficos 
+
+# para o modelo exponencial
+
+plot(ekm, lty=1, xlab= "Tempo (Ano)", ylab="S(t)", mark.time = F,  conf.int = F)
+lines(t, s_exp, col="red")
+legend(5, 0.8, lty=c(1,1), c("Kaplan-Meier", "Exponencial"), col=c("black", "red"), bty="n")
+
+# para o modelo weibull 
+
+plot(ekm, lty=1, xlab= "Tempo (Ano)", ylab="S(t)", mark.time = F,  conf.int = F)
+lines(t, s_w, col="red")
+legend(5, 0.8, lty=c(1,1), c("Kaplan-Meier", "Weibull"), col=c("black", "red"), bty="n")
+
+
+# para o modelo log-normal 
+
+plot(ekm, lty=1, xlab= "Tempo (Ano)", ylab="S(t)", mark.time = F,  conf.int = F)
+lines(t, s_ln, col="red")
+legend(5, 0.8, lty=c(1,1), c("Kaplan-Meier", "Log-normal"), col=c("black", "red"), bty="n")
+
+# outro modelo de grafico 
+
+# para o modelo exponencial
+
+plot(ekm$surv, s_exp, lty=1, xlab= "S(t) - Kaplan-Meier", ylab="S(t) - Exponencial")
+abline(a=0, b=1)
+
+# para o modelo Weibull
+
+plot(ekm$surv, s_w, lty=1, xlab= "S(t) - Kaplan-Meier", ylab="S(t) - Weibull")
+abline(a=0, b=1)
+
+# para o modelo log-normal
+
+plot(ekm$surv, s_ln, lty=1, xlab= "S(t) - Kaplan-Meier", ylab="S(t) - Log-normal")
+abline(a=0, b=1)
+
+```
+
+# Modelo de regressão paramétrico 
+
+
+As linhas de cógido a seguir executam as seguintes tarefas: 
+
+- modifica a variável SEXO de 1-Masculino e 2-Feminino para 0-Masculino e 1-Feminino
+
+- estima os parâmetros $\beta_0$ e $\beta_1$ dos modelos exponencial, Weibull e log-normal, considerando a variável SEXO como explicativa para o evento de interesse
+
+
+```{r}
+require(survival)
+
+table(dados$SEXO)
+
+dados$SEXO <- dados$SEXO -1
+
+table(dados$SEXO)
+
+# modelo exponencial 
+ajuste_exp <- survreg(Surv(TEMPO, CENSURA) ~ SEXO, 
+                      dist='exponential', data = dados)
+
+ajuste_exp
+
+alpha_0 <- exp(ajuste_exp$coefficients[1])
+alpha_1 <- exp(ajuste_exp$coefficients[1] + ajuste_exp$coefficients[2])
+
+cat("a estimativa do parâmetro alpha é ", c(alpha_0, alpha_1), "\n") 
+
+# modelo Weibull
+ajuste_w <- survreg(Surv(TEMPO, CENSURA) ~ SEXO, 
+                    dist='weibull', data = dados)
+
+ajuste_w
+
+alpha_w_0 <- exp(ajuste_w$coefficients[1])
+alpha_w_1 <- exp(ajuste_w$coefficients[1] + ajuste_w$coefficients[2])
+gama_w <- 1/ajuste_w$scale
+
+# obs.: o R utiliza uma parametrizacao diferente da adotada no livro que estamos utilizando
+
+cat("a estimativa dos parâmetro alpha e gama são ", c(alpha_w_0, alpha_w_1, gama_w), "\n")
+
+
+# modelo lognormal
+
+ajuste_ln <- survreg(Surv(TEMPO, CENSURA) ~ SEXO, 
+                     dist='lognorm', data = dados)
+
+ajuste_ln
+
+mu_0 <- ajuste_ln$coefficients[1]
+mu_1 <- ajuste_ln$coefficients[1] + ajuste_ln$coefficients[2]
+sigma <- ajuste_ln$scale
+
+cat("a estimativa dos parâmetro mu e sigma são ", c(mu_0, mu_1, sigma), "\n")
+
+```
+
+# Adequação do modelo ajustado 
+
+As linhas de cógido a seguir executam as seguintes tarefas: 
+
+- calcula a função de sobrevivência estimada para ambos os sexos e considerando os três modelos
+
+- elabora o gráfico $\widehat{S}(t)$ versus $t$, juntamente com a curva $\widehat{S}_{Exp}(t)$ versus $t$, para ambos os sexos, e para os modelos Weibull e log-normal  
+
+- calcula o resíduo de Cox-Snell para os três modelos 
+
+```{r}
+# funcao de sobrevivência estimada via Kaplan-Meier
+ekm <- survfit(Surv(TEMPO, CENSURA) ~ SEXO, data = dados)
+
+# criando um vetor de tempo onde as funcoes de sobrevivencia serao calculadas
+t <- seq(0, 8, length.out = length(ekm$time))
+
+# funcao de sobrevivência estimada pelo modelo exponencial
+s_exp_0 <- exp(-t/alpha_0) # para o sexo masculino
+s_exp_1 <- exp(-t/alpha_1) # para o sexo feminino
+
+# funcao de sobrevivência estimada pelo modelo weibull
+s_w_0 <- exp(-(t/alpha_w_0)^gama_w) # para o sexo masculino
+s_w_1 <- exp(-(t/alpha_w_1)^gama_w) # para o sexo feminino
+
+# funcao de sobrevivência estimada pelo modelo log-normal
+s_ln_0 <- pnorm(-(log(t)-mu_0)/sigma) # para o sexo masculino
+s_ln_1 <- pnorm(-(log(t)-mu_1)/sigma) # para o sexo feminino
+
+# graficos 
+
+# para o modelo exponencial
+
+plot(ekm, lty=c(1, 2), xlab= "Tempo (Ano)", ylab="S(t)", mark.time = F,  conf.int = F)
+lines(t, s_exp_0, col="blue")
+lines(t, s_exp_1, col="red")
+legend(6, 0.8, col=c("blue", "red", "black", "black"), 
+       c("Mas - Exp", "Fem - Exp", "Mas - KM", "Fem - KM"), lty=c(1,1, 1, 2), bty ="n")
+
+# para o modelo weibull 
+
+plot(ekm, lty=c(1, 2), xlab= "Tempo (Ano)", ylab="S(t)", mark.time = F,  conf.int = F)
+lines(t, s_w_0, col="blue")
+lines(t, s_w_1, col="red")
+legend(6, 0.8, col=c("blue", "red", "black", "black"), 
+       c("Mas - Wei", "Fem - Wei", "Mas - KM", "Fem - KM"), lty=c(1,1, 1, 2), bty ="n")
+
+
+# para o modelo log-normal 
+
+plot(ekm, lty=c(1, 2), xlab= "Tempo (Ano)", ylab="S(t)", mark.time = F,  conf.int = F)
+lines(t, s_ln_0, col="blue")
+lines(t, s_ln_1, col="red")
+legend(6, 0.8, col=c("blue", "red", "black", "black"), 
+       c("Mas - LN", "Fem - LN", "Mas - KM", "Fem - KM"), lty=c(1,1, 1, 2), bty ="n")
+
+# residuos de Cox_Snell
+
+# modelo exponencial 
+
+residuo_exp <- dados$TEMPO*exp(-ajuste_exp$coefficients[1]
+                           - ajuste_exp$coefficients[2]*dados$SEXO)
+
+summary(residuo_exp)
+
+ekm_residuo_exp <- survfit(Surv(residuo_exp, dados$CENSURA) ~ 1)
+
+# grafico de curvas de sobrevivencia sobrepostas 
+plot(ekm_residuo_exp, lty=1, xlab= "Residuo", ylab="S(t)", mark.time = F,  conf.int = F)
+points(residuo_exp, exp(-residuo_exp), col="red")
+# exp(-residuo_exp) e o calculo da sobrevivencia nos residuos de Cox-Snell
+
+
+# modelo Weibull  
+
+residuo_w <- (dados$TEMPO*exp(-ajuste_w$coefficients[1]
+                           - ajuste_w$coefficients[2]*dados$SEXO))^(1/ajuste_w$scale)
+
+summary(residuo_w)
+
+ekm_residuo_w <- survfit(Surv(residuo_w, dados$CENSURA) ~ 1)
+
+# grafico de curvas de sobrevivencia sobrepostas 
+plot(ekm_residuo_w, lty=1, xlab= "Residuo", ylab="S(t)", mark.time = F,  conf.int = F)
+points(residuo_w, exp(-residuo_w), col="red")
+# exp(-residuo_w) e o calculo da sobrevivencia nos residuos de Cox-Snell
+
+
+# modelo log-normal  
+
+residuo_ln <- -log(1 - pnorm((log(dados$TEMPO) - ajuste_ln$coefficients[1]
+                           - ajuste_ln$coefficients[2]*dados$SEXO) / ajuste_ln$scale))
+
+summary(residuo_ln)
+
+ekm_residuo_ln <- survfit(Surv(residuo_ln, dados$CENSURA) ~ 1)
+
+# grafico de curvas de sobrevivencia sobrepostas 
+plot(ekm_residuo_ln, lty=1, xlab= "Residuo", ylab="S(t)", mark.time = F,  conf.int = F)
+points(residuo_ln, exp(-residuo_ln), col="red")
+# exp(-residuo_ln) e o calculo da sobrevivencia nos residuos de Cox-Snell
+
+```
+
+
+# Interpretação 
+
+A interpretação pode ser feita utilizando o tempo mediano ou o cálculo da função de sobrevivência em diferentes tempos. As linhas de códigos a seguir apresenta as duas formas de interpretação dos resultados.
+
+
+A razão dos tempos medianos de dois pacientes, do sexo feminino e do masculino, é dada por
+$$\frac{t_{0,5}(\boldsymbol{x=1})}{t_{0,5}(\boldsymbol{x=0})}=\exp(\widehat{\beta_1}).$$
+
+```{r}
+# tempo mediano 
+exp(ajuste_ln$coefficients[2])
+
+# calculo da funcao de sobrevivencia 
+
+# sexo masculino e tempo = 2 anos 
+pnorm((-log(2)+ajuste_ln$coefficients[1]) / ajuste_ln$scale) 
+
+# sexo feminino e tempo = 2 anos 
+pnorm((-log(2) + (ajuste_ln$coefficients[1] + ajuste_ln$coefficients[2])) / ajuste_ln$scale) 
+
+```
+Obtemos que a razão do tempo mediano de paciente do sexo feminino pelo sexo masculino é aproximadamente igual a 1,5, ou seja, o tempo mediano de pacientes do sexo feminino é 1,5 vezes o tempo mediano de paciente do sexo masculino.  
+
+Na segunda análise, obtemos que a função de sobrevivência para pacientes do sexo masculino calculado no tempo de 2 anos é igual a 0,27, enquanto que do sexo feminino é igual a 0,35. Ou seja, espera-se que 27% dos pacientes do sexo masculino estejam vivos após 2 anos do diagnóstico, já para pacientes do sexo feminino é esperado 35%. 
+
+

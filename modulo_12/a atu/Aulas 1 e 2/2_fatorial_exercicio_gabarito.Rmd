@@ -1,0 +1,108 @@
+---
+title: "Gabarito - Exercício de Análise Fatorial"
+author: "Professor(a)"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    number_sections: true
+    theme: flatly
+---
+
+# **Respostas e Explicações**
+
+## **Passo 1: Pacotes Utilizados**
+
+```{r setup_libraries, message=FALSE, warning=FALSE}
+library(psych)       # Análise fatorial exploratória
+library(GPArotation) # Métodos de rotação
+library(lavaan)      # Análise fatorial confirmatória
+library(dplyr)       # Manipulação de dados
+```
+
+## **Passo 2: Carregar o Conjunto de Dados**
+
+```{r}
+data("bfi", package = "psych")
+
+# Selecionar apenas as variáveis do questionário
+bfi_sub <- bfi[, 1:25] 
+
+# Visualizar as primeiras observações
+dplyr::glimpse(bfi_sub)
+```
+
+### **Pergunta 1:** Quais são as escalas de medida das variáveis do conjunto de dados? Por que isso é importante na análise fatorial?
+
+**Resposta:**
+As variáveis do `bfi` são do tipo Likert, ou seja, ordinais. É importante conhecer a escala das variáveis porque a análise fatorial pressupõe que as variáveis sejam contínuas e sigam uma distribuição normal. Caso contrário, pode ser necessário aplicar métodos específicos para variáveis categóricas (ex.: análise fatorial policórica).
+
+## **Passo 3: Verificar os Pressupostos para AFE**
+
+```{r}
+# Teste de Kaiser-Meyer-Olkin
+KMO(bfi_sub) 
+
+# Teste de Bartlett
+cortest.bartlett(bfi_sub)
+```
+
+### **Pergunta 2:** Interprete os resultados dos testes KMO e Bartlett. O que indicam sobre a adequação dos dados?
+
+**Resposta:**
+- O teste de **Kaiser-Meyer-Olkin (KMO)** deve ser superior a 0.6 para que a análise fatorial seja recomendada.
+- O **teste de Bartlett** verifica se a matriz de correlações é significativamente diferente de uma matriz identidade. Se o p-valor for menor que 0.05, a análise fatorial é justificável.
+
+Se os valores não forem adequados, recomenda-se excluir variáveis com baixas correlações ou tentar técnicas de normalização.
+
+## **Passo 4: Realizar a Análise Fatorial Exploratória (AFE)**
+
+```{r}
+# Realizar AFE com extração de máxima verossimilhança e rotação Varimax
+fa_result <- fa(bfi_sub, nfactors = 5, rotate = "varimax", fm = "ml")
+
+# Exibir os resultados
+print(fa_result, digits = 3)
+fa.diagram(fa_result)  # Visualização gráfica
+```
+
+### **Pergunta 3:** Como interpretar a matriz de cargas fatoriais? Quais variáveis possuem maior peso em cada fator?
+
+**Resposta:**
+A matriz de cargas fatoriais indica a relação entre cada variável e os fatores extraídos. Uma variável pertence a um fator quando sua carga fatorial é superior a 0.4 nesse fator e baixa nos demais. Se houver cargas cruzadas elevadas (>0.3 em múltiplos fatores), pode ser necessário revisar o número de fatores ou utilizar rotações diferentes.
+
+## **Passo 5: Realizar a Análise Fatorial Confirmatória (AFC)**
+
+```{r}
+# Verificar os nomes das variáveis
+colnames(bfi_sub)
+
+# Definir modelo baseado nos fatores obtidos
+modelo_afc <- ' 
+F1 =~ A1 + A2 + A3 + A4 + A5
+F2 =~ C1 + C2 + C3 + C4 + C5
+'
+
+# Ajustar modelo
+ajuste <- cfa(modelo_afc, data = bfi_sub)
+summary(ajuste, fit.measures = TRUE, standardized = TRUE)
+```
+
+### **Pergunta 4:** Quais são os principais indicadores de ajuste do modelo AFC? Como interpretá-los?
+
+**Resposta:**
+Os principais indicadores são:
+- **CFI (Comparative Fit Index)**: Deve ser maior que 0.90 para um bom ajuste.
+- **TLI (Tucker-Lewis Index)**: Deve ser maior que 0.90.
+- **RMSEA (Root Mean Square Error of Approximation)**: Deve ser menor que 0.08.
+- **SRMR (Standardized Root Mean Square Residual)**: Deve ser menor que 0.08.
+
+Se o modelo não atingir esses critérios, pode ser necessário modificar a estrutura dos fatores ou incluir correlações entre erros.
+
+## **Conclusão**
+
+Após realizar a AFE e AFC, os alunos devem comparar os resultados e refletir sobre a adequação do modelo e possíveis melhorias. Eles devem discutir quais variáveis se agruparam e se os fatores fazem sentido do ponto de vista teórico.
+
+---
+
+Este gabarito serve como guia para a avaliação dos exercícios dos alunos.

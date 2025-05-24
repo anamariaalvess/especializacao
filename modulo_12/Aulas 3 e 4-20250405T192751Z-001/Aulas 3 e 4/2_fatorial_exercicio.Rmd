@@ -1,0 +1,500 @@
+---
+title: 'Exercício de Análise Fatorial'
+author: "Ricardo Limongi"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: united
+    highlight: tango
+  pdf_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+# Configurações globais
+knitr::opts_chunk$set(
+  echo = TRUE, warning = FALSE, message = FALSE, fig.width = 10, fig.height = 6
+)
+
+# Pacotes necessários
+pacotes_necessarios <- c(
+  "psych",       # Análise Fatorial Exploratória (AFE)
+  "GPArotation", # Métodos de rotação
+  "tidyverse",   # Manipulação de dados
+  "lavaan",      # Análise Fatorial Confirmatória (AFC)
+  "semPlot",     # Visualização de Modelos
+  "corrplot",    # Gráficos de correlação
+  "polycor"      # Correlações policóricas (para dados ordinais)
+)
+
+# Instalar pacotes se necessário - com mirror CRAN definido
+to_install <- pacotes_necessarios[!(pacotes_necessarios %in% installed.packages())]
+if(length(to_install)) {
+  # Definir um mirror CRAN para a instalação
+  repos <- "https://cran.rstudio.com/"
+  install.packages(to_install, repos = repos)
+}
+
+# Carregar pacotes
+invisible(lapply(pacotes_necessarios, library, character.only = TRUE))
+```
+
+# Introdução
+
+Este exercício demonstra a aplicação da Análise Fatorial em dados de saúde mental e qualidade de vida. Utilizaremos um conjunto de dados simulados baseado no questionário WHOQOL-BREF, um instrumento da Organização Mundial da Saúde (OMS) para avaliar a qualidade de vida.
+
+## Objetivo do Exercício
+
+1. Realizar uma Análise Fatorial Exploratória (AFE) para examinar a estrutura subjacente do questionário
+2. Confirmar a estrutura fatorial através de Análise Fatorial Confirmatória (AFC)
+3. Interpretar os resultados em contexto de saúde
+4. Avaliar a adequação do modelo e possíveis melhorias
+
+# Simulação dos Dados
+
+```{r simular-dados}
+# Configurar uma semente para reproduzibilidade
+set.seed(12345)
+
+# Número de observações
+n <- 500
+
+# Simular dados baseados na estrutura teórica do WHOQOL-BREF
+# O WHOQOL-BREF possui 4 domínios:
+# 1. Físico (7 itens)
+# 2. Psicológico (6 itens)
+# 3. Relações Sociais (3 itens)
+# 4. Meio Ambiente (8 itens)
+# Mais 2 itens gerais
+
+# Criar matriz de correlação para cada domínio
+criar_itens_correlacionados <- function(n, n_itens, correlacao_media, sd_item = 1) {
+  # Correlação entre itens dentro do mesmo fator
+  sigma <- matrix(correlacao_media, n_itens, n_itens)
+  diag(sigma) <- 1
+  
+  # Criar dados correlacionados
+  dados <- MASS::mvrnorm(n, mu = rep(0, n_itens), Sigma = sigma)
+  
+  # Transformar para escala Likert (1-5)
+  dados <- scale(dados)  # Padronizar
+  dados <- dados * sd_item + 3  # média 3, desvio padrão ajustável
+  dados <- pmin(pmax(round(dados), 1), 5)  # Arredondar e limitar entre 1 e 5
+  
+  return(dados)
+}
+
+# Simulando os 4 domínios
+fisico <- criar_itens_correlacionados(n, 7, 0.6, 1.2)
+psicologico <- criar_itens_correlacionados(n, 6, 0.55, 1.1)
+social <- criar_itens_correlacionados(n, 3, 0.65, 1)
+ambiente <- criar_itens_correlacionados(n, 8, 0.5, 0.9)
+geral <- criar_itens_correlacionados(n, 2, 0.7, 1.3)
+
+# Adicionar ruído e correlações cruzadas menores entre os domínios
+adicionar_correlacoes_cruzadas <- function(dominio1, dominio2, forca = 0.2) {
+  n <- nrow(dominio1)
+  k1 <- ncol(dominio1)
+  k2 <- ncol(dominio2)
+  
+  ruido <- matrix(rnorm(n * k1, 0, 0.5), n, k1)
+  influencia <- dominio2[, sample(1:k2, 1)] * forca
+  
+  resultado <- dominio1 + ruido + influencia
+  resultado <- pmin(pmax(round(resultado), 1), 5)  # Restringir a 1-5
+  
+  return(resultado)
+}
+
+# Adicionar correlações cruzadas
+fisico <- adicionar_correlacoes_cruzadas(fisico, psicologico, 0.15)
+psicologico <- adicionar_correlacoes_cruzadas(psicologico, fisico, 0.15)
+social <- adicionar_correlacoes_cruzadas(social, psicologico, 0.2)
+ambiente <- adicionar_correlacoes_cruzadas(ambiente, fisico, 0.1)
+
+# Juntar os dados e nomear as colunas
+dados_whoqol <- data.frame(
+  Q1 = geral[,1],
+  Q2 = geral[,2],
+  Q3 = fisico[,1],
+  Q4 = fisico[,2],
+  Q5 = psicologico[,1],
+  Q6 = psicologico[,2],
+  Q7 = psicologico[,3],
+  Q8 = ambiente[,1],
+  Q9 = ambiente[,2],
+  Q10 = fisico[,3],
+  Q11 = psicologico[,4],
+  Q12 = ambiente[,3],
+  Q13 = ambiente[,4],
+  Q14 = ambiente[,5],
+  Q15 = fisico[,4],
+  Q16 = fisico[,5],
+  Q17 = fisico[,6],
+  Q18 = fisico[,7],
+  Q19 = psicologico[,5],
+  Q20 = social[,1],
+  Q21 = social[,2],
+  Q22 = social[,3],
+  Q23 = ambiente[,6],
+  Q24 = ambiente[,7],
+  Q25 = ambiente[,8],
+  Q26 = psicologico[,6]
+)
+
+# Visualizar estrutura dos dados
+glimpse(dados_whoqol)
+
+# Resumo dos dados
+summary(dados_whoqol)
+```
+
+## Pré-processamento dos Dados
+
+```{r preprocessamento}
+# Selecionando apenas as questões (do Q1 a Q26)
+questoes <- dados_whoqol
+
+# Verificar valores ausentes
+sum(is.na(questoes))
+
+# Verificar as correlações entre as variáveis
+corrplot(cor(questoes), method = "circle", type = "upper", 
+         tl.col = "black", tl.cex = 0.7, tl.srt = 45)
+```
+
+# Análise Fatorial Exploratória (AFE)
+
+## Verificação de Adequação dos Dados
+
+```{r adequacao}
+# Teste de Kaiser-Meyer-Olkin (KMO)
+# Valores acima de 0.6 são considerados adequados
+KMO(questoes)
+
+# Teste de esfericidade de Bartlett
+# Deve ser significativo (p < 0.05)
+cortest.bartlett(cor(questoes), n = nrow(questoes))
+```
+
+## Determinação do Número de Fatores
+
+```{r scree-plot}
+# Análise paralela para determinar o número de fatores
+fa.parallel(questoes, fa = "fa", n.iter = 100)
+```
+
+## Execução da Análise Fatorial Exploratória
+
+```{r afe-execucao}
+# Com base na análise paralela, execute a AFE com o número sugerido de fatores
+# Vamos supor que foram sugeridos 4 fatores (baseado na estrutura simulada)
+num_fatores <- 4  # Ajuste conforme resultado da análise paralela
+
+# Execução da AFE com rotação varimax
+afe_result <- fa(questoes, 
+                 nfactors = num_fatores, 
+                 rotate = "varimax", 
+                 fm = "ml")
+
+# Exibir cargas fatoriais (apenas as maiores que 0.3)
+print(afe_result$loadings, cutoff = 0.3)
+
+# Visualização das cargas fatoriais
+fa.diagram(afe_result)
+
+# Estatísticas por fator
+afe_result
+```
+
+## Interpretação dos Fatores
+
+```{r afe-interpretacao}
+# Calcular a variância explicada por cada fator
+sum(afe_result$values) # Variância total
+afe_result$values # Eigenvalues
+afe_result$Vaccounted # Proporção da variância explicada
+
+# Visualizar as comunalidades (proporção da variância explicada pelos fatores para cada variável)
+afe_result$communality
+```
+
+# Análise Fatorial Confirmatória (AFC)
+
+## Definição do Modelo
+
+```{r afc-modelo}
+# Criação do modelo AFC com base nos resultados da AFE
+# Nota: Este modelo deve ser ajustado conforme os resultados da AFE
+modelo_afc <- '
+  # Definição dos fatores baseados na estrutura teórica do WHOQOL-BREF
+  FisicoSaude =~ Q3 + Q4 + Q10 + Q15 + Q16 + Q17 + Q18
+  Psicologico =~ Q5 + Q6 + Q7 + Q11 + Q19 + Q26
+  RelacoeSociais =~ Q20 + Q21 + Q22
+  MeioAmbiente =~ Q8 + Q9 + Q12 + Q13 + Q14 + Q23 + Q24 + Q25
+  QualidadeGeral =~ Q1 + Q2
+'
+```
+
+## Execução da AFC
+
+```{r afc-execucao}
+# Ajustar o modelo AFC
+afc_result <- cfa(modelo_afc, data = questoes)
+
+# Resumo dos resultados com medidas de ajuste
+summary(afc_result, fit.measures = TRUE, standardized = TRUE)
+
+# Visualização do modelo
+semPaths(afc_result, whatLabels = "std", layout = "tree", 
+         edge.label.cex = 0.7, normalize = FALSE)
+```
+
+## Verificação do Ajuste do Modelo
+
+```{r afc-ajuste}
+# Medidas de ajuste
+fitMeasures(afc_result, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr"))
+
+# Índices de modificação para possíveis melhorias no modelo
+mi <- modificationindices(afc_result)
+head(mi[order(mi$mi, decreasing = TRUE), ], 10)
+```
+
+# Modelo Refinado 
+
+```{r afc-refinado}
+# Modelo refinado com base nos índices de modificação
+# Exemplo: adicionar covariâncias entre erros residuais de itens específicos
+modelo_refinado <- '
+  # Mantém a estrutura original
+  FisicoSaude =~ Q3 + Q4 + Q10 + Q15 + Q16 + Q17 + Q18
+  Psicologico =~ Q5 + Q6 + Q7 + Q11 + Q19 + Q26
+  RelacoeSociais =~ Q20 + Q21 + Q22
+  MeioAmbiente =~ Q8 + Q9 + Q12 + Q13 + Q14 + Q23 + Q24 + Q25
+  QualidadeGeral =~ Q1 + Q2
+  
+  # Adiciona covariâncias entre erros (essas serão baseadas nos índices de modificação)
+  # Aqui usamos apenas exemplos; você deve substituir por aqueles sugeridos pelos índices
+  Q3 ~~ Q4
+  Q5 ~~ Q6
+  Q8 ~~ Q9
+'
+
+# Ajustar o modelo refinado
+afc_refinado <- cfa(modelo_refinado, data = questoes)
+
+# Resumo dos resultados
+summary(afc_refinado, fit.measures = TRUE, standardized = TRUE)
+
+# Comparar ajuste com o modelo original
+anova(afc_result, afc_refinado)
+
+# Visualização do modelo refinado
+semPaths(afc_refinado, whatLabels = "std", layout = "tree", 
+         edge.label.cex = 0.7, normalize = FALSE)
+```
+
+# Análise de Confiabilidade
+
+```{r confiabilidade}
+# Calcular o alfa de Cronbach para cada domínio
+alpha_fisico <- psych::alpha(questoes[, c("Q3", "Q4", "Q10", "Q15", "Q16", "Q17", "Q18")])
+alpha_psico <- psych::alpha(questoes[, c("Q5", "Q6", "Q7", "Q11", "Q19", "Q26")])
+alpha_social <- psych::alpha(questoes[, c("Q20", "Q21", "Q22")])
+alpha_ambiente <- psych::alpha(questoes[, c("Q8", "Q9", "Q12", "Q13", "Q14", "Q23", "Q24", "Q25")])
+alpha_geral <- psych::alpha(questoes[, c("Q1", "Q2")])
+
+# Exibir resultados
+alpha_fisico$total
+alpha_psico$total
+alpha_social$total
+alpha_ambiente$total
+alpha_geral$total
+```
+
+# Conclusão e Interpretação Clínica
+
+Nesta seção, você deve interpretar os resultados e discutir as implicações para a compreensão da qualidade de vida em contextos de saúde.
+
+1. Discuta como os fatores encontrados se alinham (ou não) com as dimensões teóricas do WHOQOL-BREF
+2. Avalie a confiabilidade e validade da estrutura fatorial
+3. Considere as limitações do estudo e sugira pesquisas futuras
+4. Discuta a aplicabilidade dos resultados para profissionais de saúde
+
+# Exercícios Propostos
+
+1. Calcule a consistência interna (alfa de Cronbach) para cada um dos fatores encontrados na AFE (não apenas para os teóricos)
+2. Realize a AFE com rotação oblíqua (promax ou oblimin) e compare os resultados com a rotação varimax
+3. Teste um modelo alternativo na AFC com um número diferente de fatores (por exemplo, um modelo de 3 ou 5 fatores)
+4. Crie uma variável de agrupamento (por exemplo, "sexo" com valores 1 e 2) e investigue se existe invariância fatorial entre esses grupos
+5. Propor e testar um modelo refinado baseado nos índices de modificação obtidos, justificando teoricamente cada modificação
+
+# Gabarito : Análise Fatorial em Dados de Saúde Mental
+
+Este gabarito interpreta os resultados esperados da análise fatorial aplicada aos dados simulados baseados no questionário WHOQOL-BREF, um instrumento validado pela Organização Mundial da Saúde que avalia qualidade de vida.
+
+## 1. Simulação e Exploração dos Dados
+
+Nesta etapa, simulamos dados que refletem a estrutura teórica do WHOQOL-BREF com 26 questões distribuídas em quatro domínios principais, mais um domínio geral:
+- Saúde Física (7 itens): Q3, Q4, Q10, Q15, Q16, Q17, Q18
+- Psicológico (6 itens): Q5, Q6, Q7, Q11, Q19, Q26
+- Relações Sociais (3 itens): Q20, Q21, Q22
+- Meio Ambiente (8 itens): Q8, Q9, Q12, Q13, Q14, Q23, Q24, Q25
+- Qualidade de Vida Geral (2 itens): Q1, Q2
+
+**Interpretação:** 
+- A matriz de correlação visualizada deve mostrar blocos de correlações mais fortes entre itens do mesmo domínio, confirmando a estrutura fatorial subjacente
+- Também devem ser visíveis correlações cruzadas moderadas entre alguns domínios, especialmente entre o domínio físico e psicológico, simulando as complexidades reais dos dados de saúde
+- A escala Likert de 1-5 em todos os itens reflete a estrutura do instrumento original
+
+## 2. Análise Fatorial Exploratória (AFE)
+
+### Adequação dos Dados
+
+**Teste KMO (Kaiser-Meyer-Olkin):**
+- Valores esperados: Entre 0.7 e 0.9, indicando boa adequação dos dados simulados para análise fatorial
+- Interpretação: Um valor KMO elevado confirma que os padrões de correlações simulados são apropriados para a análise fatorial
+
+**Teste de Esfericidade de Bartlett:**
+- Valores esperados: p < 0.001, rejeitando a hipótese nula
+- Interpretação: A significância do teste confirma que as correlações entre variáveis são estatisticamente significativas, permitindo prosseguir com a análise
+
+### Determinação do Número de Fatores
+
+**Análise Paralela:**
+- Resultado esperado: Indicação de 4 ou 5 fatores, consistente com a estrutura simulada
+- Interpretação: O gráfico de scree-plot mostra que os eigenvalues reais dos primeiros 4-5 fatores estão acima dos eigenvalues aleatórios, sugerindo que devemos reter esses fatores
+
+### Execução da AFE
+
+**Cargas fatoriais (rotação varimax):**
+- Fator 1: Expectativa de cargas altas (>0.5) nas questões da dimensão Física
+- Fator 2: Expectativa de cargas altas nas questões da dimensão Psicológica
+- Fator 3: Expectativa de cargas altas nas questões da dimensão Relações Sociais
+- Fator 4: Expectativa de cargas altas nas questões da dimensão Meio Ambiente
+- Fator 5 (se presente): Expectativa de cargas altas nas questões de Qualidade de Vida Geral
+
+**Variância explicada:**
+- Expectativa: Aproximadamente 55-65% da variância total explicada pelos fatores retidos
+- Interpretação: Os fatores extraídos explicam uma proporção substancial da variância total, confirmando a adequação do modelo fatorial
+
+**Comunalidades:**
+- Expectativa: Valores majoritariamente acima de 0.4
+- Interpretação: Itens com comunalidades elevadas são bem explicados pelos fatores. Itens com comunalidades menores podem indicar maior especificidade ou influência de fatores não capturados
+
+## 3. Análise Fatorial Confirmatória (AFC)
+
+### Definição e Ajuste do Modelo
+
+O modelo proposto segue a estrutura teórica do WHOQOL-BREF com 5 fatores latentes (incluindo o fator de Qualidade Geral).
+
+**Índices de ajuste esperados:**
+- CFI (Comparative Fit Index): > 0.90 para ajuste aceitável, > 0.95 para bom ajuste
+- TLI (Tucker-Lewis Index): > 0.90 para ajuste aceitável, > 0.95 para bom ajuste
+- RMSEA (Root Mean Square Error of Approximation): < 0.08 para ajuste aceitável, < 0.05 para bom ajuste
+- SRMR (Standardized Root Mean Square Residual): < 0.08 para ajuste aceitável
+
+**Interpretação:**
+- O χ² será significativo (p < 0.05), o que é comum em amostras maiores
+- Cargas fatoriais padronizadas deverão estar acima de 0.4 para a maioria dos itens
+- Os fatores latentes devem mostrar correlações positivas moderadas (0.3-0.6), refletindo a natureza interrelacionada das dimensões da qualidade de vida
+
+### Índices de Modificação
+
+**Expectativa:** Alguns índices de modificação elevados (>10) devem surgir, especialmente:
+- Entre pares de itens do mesmo domínio (ex: Q3-Q4 no domínio físico)
+- Entre itens com conteúdo semelhante, mesmo que de domínios diferentes
+
+**Interpretação:**
+- Os índices de modificação sugerem covariâncias residuais não modeladas
+- Modificações no modelo podem ser justificadas quando refletem sobreposições de conteúdo entre itens ou efeitos de método
+
+## 4. Modelo Refinado
+
+**Abordagem:**
+- Adicionar covariâncias entre erros residuais para itens com alto índice de modificação e justificativa teórica
+- Manter a estrutura principal dos cinco fatores intacta
+
+**Comparação de modelos:**
+- Expectativa: Redução significativa no χ² com o modelo refinado
+- Melhoria nos índices de ajuste (aumento em CFI, TLI; redução em RMSEA, SRMR)
+- O teste ANOVA deve indicar uma melhoria estatisticamente significativa no ajuste
+
+## 5. Análise de Confiabilidade
+
+**Expectativa para o alfa de Cronbach:**
+- Saúde Física: α ≈ 0.75-0.85
+- Psicológico: α ≈ 0.70-0.80
+- Relações Sociais: α ≈ 0.65-0.75 (valor mais baixo devido ao menor número de itens)
+- Meio Ambiente: α ≈ 0.70-0.80
+- Qualidade Geral: α ≈ 0.65-0.75 (apenas 2 itens)
+
+**Interpretação:** 
+- Valores acima de 0.7 indicam boa consistência interna
+- Para escalas com poucos itens (como Relações Sociais e Qualidade Geral), valores acima de 0.6 são aceitáveis
+
+### 1. Consistência Interna dos Fatores da AFE
+
+**Abordagem:** Agrupar os itens por suas cargas fatoriais mais altas na AFE (não pela estrutura teórica) e calcular o alfa para cada conjunto.
+
+**Expectativa:** Os valores de alfa para os fatores empiricamente identificados devem ser semelhantes, ou ligeiramente, superiores aos dos fatores teóricos, já que os fatores da AFE são compostos por itens com correlações mais fortes entre si.
+
+### 2. AFE com Rotação Oblíqua
+
+**Expectativa:** 
+- Estrutura fatorial semelhante, mas com cargas mais "limpas" (menos cargas cruzadas)
+- Correlações moderadas entre os fatores (0.3-0.5)
+
+**Interpretação:** A rotação oblíqua é teoricamente mais apropriada para o WHOQOL-BREF, pois permite correlações entre os fatores. A matriz de correlação fatorial deve mostrar as relações mais fortes entre os domínios Físico e Psicológico, assim como entre Psicológico e Relações Sociais.
+
+### 3. Modelo Alternativo na AFC
+
+**Possibilidade:** Testar um modelo com 3 fatores combinando aspectos físicos e psicológicos.
+
+**Expectativa:** O modelo de 5 fatores deve apresentar melhor ajuste aos dados do que o modelo de 3 fatores, confirmando a distinção entre os domínios.
+
+**Interpretação:** 
+- Comparação pelos índices AIC e BIC (valores menores indicam melhor ajuste)
+- Diferença nos índices de ajuste (CFI, TLI, RMSEA)
+- Interpretabilidade teórica dos modelos
+
+### 4. Invariância Fatorial
+
+**Abordagem:** 
+1. Criar uma variável de agrupamento (ex: "sexo" com valores 1 e 2 aleatoriamente designados)
+2. Testar progressivamente:
+   - Invariância configuracional (mesma estrutura)
+   - Invariância métrica (mesmas cargas)
+   - Invariância escalar (mesmos interceptos)
+
+**Expectativa:** Como os dados foram simulados sem diferenças de grupo, devemos encontrar invariância em todos os níveis, com pequenas variações devidas ao acaso.
+
+### 5. Modelo Refinado Justificado
+
+**Sugestão típica:** Adicionar covariâncias residuais entre:
+- Q3 e Q4 - ambos relacionados a aspectos físicos básicos
+- Q5 e Q6 - aspectos de bem-estar psicológico
+- Q8 e Q9 - aspectos do ambiente físico
+
+**Justificativa:** Estas covariâncias refletem similaridade de conteúdo ou método de resposta. É crucial que as modificações sejam teoricamente fundamentadas, não apenas estatisticamente sugeridas.
+
+## Conclusão e Interpretação Clínica
+
+A análise fatorial dos dados simulados do WHOQOL-BREF confirma, em grande parte, a estrutura de quatro domínios principais mais um domínio geral:
+
+1. **Saúde Física:** Aspectos relacionados à dor, energia, mobilidade e capacidade para atividades
+2. **Psicológico:** Sentimentos positivos e negativos, autoestima, imagem corporal
+3. **Relações Sociais:** Suporte social, relacionamentos pessoais, sexualidade
+4. **Meio Ambiente:** Segurança, recursos financeiros, acesso a serviços, transporte
+5. **Qualidade de Vida Geral:** Avaliação global da qualidade de vida e satisfação com a saúde
+
+Esta estrutura fatorial proporciona aos profissionais de saúde uma avaliação multidimensional da qualidade de vida, permitindo:
+- Identificação de domínios específicos que precisam de intervenção
+- Monitoramento da eficácia de tratamentos não apenas em sintomas físicos, mas em aspectos mais amplos do bem-estar
+- Abordagem holística e centrada no paciente
+
+Para aplicação clínica, é importante reconhecer que os domínios não são completamente independentes. As intervenções dirigidas a um domínio (ex: físico) podem ter impacto em outros domínios (ex: psicológico), refletindo a natureza interconectada da qualidade de vida.

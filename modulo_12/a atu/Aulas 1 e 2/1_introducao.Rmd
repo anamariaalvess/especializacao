@@ -1,0 +1,636 @@
+---
+title: "Análise Multivariada"
+author: "Prof. Ricardo Limongi"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+  word_document:
+    toc: true
+  html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,        # Mostrar o código
+  message = FALSE,    # Ocultar mensagens
+  warning = FALSE,    # Ocultar avisos
+  fig.width = 10,     # Largura padrão de figuras
+  fig.height = 6,     # Altura padrão de figuras
+  fig.align = "center" # Centralizar figuras
+)
+```
+
+# Preparação de Dados para Análise Multivariada
+
+Este primeiro script abordará os seguintes aspectos para nosso módulo de Análise Multivariada:
+
+1. Introdução
+2. Identificação e tratamento de valores ausentes e outliers
+3. Métodos de padronização e transformação de dados
+4. Análise exploratória básica de dados multivariados
+
+Verificação e Instalação de Pacotes Necessários (será útil quando quiserem rodar durante os estudos)
+
+Primeiro, vamos verificar se os pacotes necessários estão instalados e, caso não estejam, realizaremos a instalação automaticamente:
+
+```{r verificar_instalar_pacotes}
+# Lista de pacotes necessários
+pacotes_necessarios <- c("tidyverse", "naniar", "VIM", "corrplot", "psych", 
+                         "outliers", "car", "GGally")
+
+# Função para verificar e instalar pacotes
+verificar_instalar_pacotes <- function(pacotes) {
+  pacotes_nao_instalados <- pacotes[!(pacotes %in% installed.packages()[,"Package"])]
+  
+  if(length(pacotes_nao_instalados) > 0) {
+    cat("Instalando os seguintes pacotes:", paste(pacotes_nao_instalados, collapse = ", "), "\n")
+    install.packages(pacotes_nao_instalados, dependencies = TRUE)
+    cat("Instalação concluída!\n\n")
+  } else {
+    cat("Todos os pacotes necessários já estão instalados!\n\n")
+  }
+  
+  # Carregar todos os pacotes
+  cat("Carregando pacotes...\n")
+  invisible(lapply(pacotes, require, character.only = TRUE))
+  cat("Todos os pacotes foram carregados com sucesso!\n")
+}
+
+# Verificar e instalar pacotes
+verificar_instalar_pacotes(pacotes_necessarios)
+```
+
+## 1. Introdução
+
+A análise estatística pode ser dividida em **univariada** e **multivariada**. Enquanto a **análise univariada** examina cada variável individualmente, a **análise multivariada** estuda múltiplas variáveis simultaneamente, identificando relações e padrões.
+
+A análise multivariada é fundamental na área da saúde porque grande parte dos fenômenos estudados envolve múltiplas variáveis inter-relacionadas. Pacientes não apresentam sintomas isolados, mas um conjunto de fatores fisiológicos, clínicos e laboratoriais que precisam ser analisados em conjunto para uma melhor compreensão do quadro clínico. Além disso, a medicina baseada em evidências depende da identificação de padrões em grandes volumes de dados para suportar diagnósticos e decisões terapêuticas.
+
+**Aplicações Práticas da Análise Multivariada na Saúde**
+
+- Identificação de Perfis de Pacientes: Técnicas como Análise de Cluster ajudam a segmentar pacientes com base em características clínicas e demográficas, permitindo abordagens terapêuticas personalizadas.
+- Redução de Dimensionalidade em Exames Médicos: A Análise de Componentes Principais (PCA) é usada para sintetizar grandes quantidades de informações em exames como ressonâncias magnéticas, reduzindo redundâncias sem perder informações críticas.
+- Diagnósticos Diferenciais: A Análise Discriminante auxilia na diferenciação de grupos de pacientes com doenças semelhantes, aumentando a precisão dos diagnósticos.
+- Predição de Riscos e Prognósticos: Modelos multivariados permitem prever riscos de doenças crônicas e avaliar a eficácia de intervenções médicas, contribuindo para a medicina preditiva.
+- Estudos Epidemiológicos: A análise fatorial é útil para identificar fatores de risco comuns em grandes populações, ajudando na formulação de políticas públicas.
+
+## Diferença entre Análise Univariada e Multivariada
+
+- **Análise Univariada**: Examina uma variável por vez. Estatísticas descritivas como média, mediana e desvio-padrão são utilizadas.
+- **Análise Multivariada**: Examina múltiplas variáveis ao mesmo tempo, buscando correlações e padrões complexos.
+
+## Conceitos Fundamentais 
+
+1. Tipos de Variáveis
+
+As variáveis em uma análise multivariada podem ser classificadas de acordo com suas características:
+
+1.	Variáveis Quantitativas (Numéricas)
+- Contínuas: Podem assumir qualquer valor dentro de um intervalo (exemplo: pressão arterial, altura, IMC).
+- Discretas: Assumem valores específicos e contáveis (exemplo: número de consultas médicas realizadas no último ano).
+
+2.	Variáveis Qualitativas (Categóricas)
+- Nominais: Sem ordem natural entre as categorias (exemplo: tipo sanguíneo, sexo).
+- Ordinais: Possuem uma ordem, mas a diferença entre os valores não é quantitativa (exemplo: nível de risco cardiovascular - baixo, moderado, alto).
+
+**Exemplo**: No contexto da saúde, “Colesterol” (mg/dL) é uma variável quantitativa contínua, enquanto “Diagnóstico” (hipertenso ou não) é uma variável qualitativa nominal.
+
+2. Escalas de Medida
+
+Cada variável possui uma escala de medida apropriada, que impacta nas análises estatísticas que podem ser aplicadas:
+	1.	Nominal: Apenas diferencia categorias (exemplo: tipo sanguíneo A, B, AB, O).
+	2.	Ordinal: Além de diferenciar categorias, há uma ordenação (exemplo: nível de dor em uma escala de 1 a 5).
+	3.	Intervalar: Mede a diferença entre valores, mas não possui um zero absoluto (exemplo: temperatura em Celsius).
+	4.	Razão: Mede diferenças e possui um zero absoluto (exemplo: glicemia em mg/dL).
+
+**Exemplo**: A pressão arterial (mmHg) e a glicemia (mg/dL) são medidas na escala de razão, enquanto o nível de risco cardiovascular (baixo, moderado, alto) segue uma escala ordinal.
+
+3. Representação Matricial dos Dados
+
+A análise multivariada frequentemente utiliza matrizes para organizar e processar os dados. Cada linha representa uma observação (paciente) e cada coluna representa uma variável.
+
+## Carregando Conjunto de Dados
+
+Usaremos o conjunto de dados de pacientes cardíacos da UCI Machine Learning Repository. Este conjunto contém 14 atributos relevantes para diagnóstico de doença cardíaca:
+
+```{r carregar_dados}
+# Carregando o conjunto de dados
+# Podemos usar o conjunto heart do pacote mlbench, mas vamos fazer download direto
+heart_data <- read.csv("https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data", 
+                      header = FALSE, na.strings = "?")
+
+# Nomeando as colunas
+colnames(heart_data) <- c("age", "sex", "cp", "trestbps", "chol", 
+                         "fbs", "restecg", "thalach", "exang", 
+                         "oldpeak", "slope", "ca", "thal", "num")
+
+# Verificando as primeiras linhas dos dados
+head(heart_data)
+
+# Estrutura dos dados
+str(heart_data)
+
+# Resumo estatístico básico
+summary(heart_data)
+```
+
+O conjunto de dados contém:
+- Variáveis demográficas: idade (age), sexo (sex)
+- Variáveis clínicas: tipo de dor no peito (cp), pressão arterial em repouso (trestbps), colesterol (chol), etc.
+- Variável alvo/dependente: presença de doença cardíaca (num)
+
+## Identificação de Valores Ausentes
+
+Antes de qualquer análise, é fundamental identificar e tratar valores ausentes:
+
+```{r valores_ausentes}
+# Verificando valores ausentes por coluna
+colSums(is.na(heart_data))
+
+# Visualizando o padrão de valores ausentes
+vis_miss(heart_data)
+
+# Visualização mais detalhada dos padrões de valores ausentes
+gg_miss_upset(heart_data)
+
+# Proporção de valores ausentes por variável
+gg_miss_var(heart_data)
+```
+
+### Tratamento de Valores Ausentes
+
+Existem várias abordagens para lidar com valores ausentes:
+
+1. **Exclusão**: Remover observações ou variáveis com muitos valores ausentes
+2. **Imputação por média/mediana**: Substituir valores ausentes pela média ou mediana
+3. **Imputação por KNN**: Usar k vizinhos mais próximos para estimar valores ausentes
+4. **Imputação múltipla**: Gerar múltiplas imputações e combinar resultados
+
+Vamos implementar algumas dessas abordagens:
+
+```{r tratar_ausentes}
+# 1. Exclusão de observações com valores ausentes (se forem poucos)
+heart_complete <- na.omit(heart_data)
+cat("Dimensões após remoção de valores ausentes:", dim(heart_complete), "\n")
+
+# 2. Imputação por média (apenas para variáveis numéricas)
+heart_imp_mean <- heart_data
+for(i in 1:ncol(heart_data)) {
+  if(is.numeric(heart_data[,i])) {
+    heart_imp_mean[is.na(heart_data[,i]), i] <- mean(heart_data[,i], na.rm = TRUE)
+  }
+}
+
+# 3. Imputação por KNN (mais sofisticado)
+heart_imp_knn <- kNN(heart_data, k = 5)
+
+# Comparando os métodos (para a variável 'ca', por exemplo)
+if(sum(is.na(heart_data$ca)) > 0) {
+  original_vals <- heart_data$ca[!is.na(heart_data$ca)]
+  mean_imp_vals <- heart_imp_mean$ca
+  knn_imp_vals <- heart_imp_knn$ca
+  
+  par(mfrow = c(1, 3))
+  boxplot(original_vals, main = "Valores Originais (sem NA)", ylab = "ca")
+  boxplot(mean_imp_vals, main = "Após Imputação por Média", ylab = "ca")
+  boxplot(knn_imp_vals, main = "Após Imputação por KNN", ylab = "ca")
+  par(mfrow = c(1, 1))
+}
+```
+
+## Identificação de Outliers
+
+Os outliers são observações que se desviam significativamente do padrão geral dos dados. Podem representar erros ou casos genuinamente incomuns.
+
+### Detecção Univariada de Outliers
+
+```{r outliers_univariados}
+# Vamos analisar algumas variáveis numéricas chave
+vars_numericas <- c("age", "trestbps", "chol", "thalach", "oldpeak")
+
+# Boxplots para detecção visual de outliers
+heart_long <- heart_complete %>%
+  select(all_of(vars_numericas)) %>%
+  pivot_longer(cols = everything(), 
+               names_to = "variable", 
+               values_to = "value")
+
+ggplot(heart_long, aes(x = variable, y = value)) +
+  geom_boxplot(fill = "lightblue") +
+  facet_wrap(~ variable, scales = "free") +
+  theme_minimal() +
+  labs(title = "Boxplots para Detecção de Outliers",
+       x = "Variável", y = "Valor")
+
+# Teste de Grubbs para detecção formal de outliers
+for(var in vars_numericas) {
+  cat("\nTeste de Grubbs para", var, ":\n")
+  test_result <- grubbs.test(heart_complete[[var]])
+  print(test_result)
+}
+```
+
+### Detecção Multivariada de Outliers
+
+A detecção multivariada considera a estrutura de correlação entre as variáveis:
+
+```{r outliers_multivariados}
+# Selecionando apenas variáveis numéricas para o cálculo da distância de Mahalanobis
+heart_num <- heart_complete %>%
+  select_if(is.numeric)
+
+# Calculando a distância de Mahalanobis
+mahal_dist <- mahalanobis(heart_num, 
+                         colMeans(heart_num), 
+                         cov(heart_num))
+
+# Adicionando as distâncias ao dataframe
+heart_complete$mahal_dist <- mahal_dist
+
+# Identificando outliers usando um limiar baseado na distribuição qui-quadrado
+# O grau de liberdade é igual ao número de variáveis
+dof <- ncol(heart_num)
+critical_value <- qchisq(0.95, df = dof)
+
+heart_complete$outlier <- ifelse(heart_complete$mahal_dist > critical_value, "Outlier", "Normal")
+
+# Visualizando as distâncias
+ggplot(heart_complete, aes(x = seq_along(mahal_dist), y = mahal_dist, color = outlier)) +
+  geom_point() +
+  geom_hline(yintercept = critical_value, linetype = "dashed", color = "red") +
+  scale_color_manual(values = c("Normal" = "blue", "Outlier" = "red")) +
+  labs(title = "Distância de Mahalanobis - Identificação de Outliers Multivariados",
+       x = "Índice de Observação", y = "Distância de Mahalanobis",
+       subtitle = paste("Linha vermelha: valor crítico (p=0.05) =", round(critical_value, 2))) +
+  theme_minimal()
+```
+
+### Tratamento de Outliers
+
+Existem várias abordagens para lidar com outliers:
+
+1. **Verificação**: Confirmar se são erros de medida ou entrada
+2. **Remoção**: Excluir os outliers (com cautela)
+3. **Transformação**: Aplicar transformações que reduzam o impacto de valores extremos
+4. **Winsorização**: Substituir valores extremos pelos percentis (ex: 5% e 95%)
+
+```{r tratar_outliers}
+# Exemplo: Winsorização da variável 'chol' (colesterol)
+chol_95 <- quantile(heart_complete$chol, 0.95)
+chol_05 <- quantile(heart_complete$chol, 0.05)
+
+heart_winsor <- heart_complete
+heart_winsor$chol_winsor <- heart_complete$chol
+heart_winsor$chol_winsor[heart_winsor$chol_winsor > chol_95] <- chol_95
+heart_winsor$chol_winsor[heart_winsor$chol_winsor < chol_05] <- chol_05
+
+# Comparando original vs. winsorizado
+par(mfrow = c(1, 2))
+hist(heart_complete$chol, main = "Colesterol - Original", 
+     xlab = "Colesterol", col = "lightblue")
+hist(heart_winsor$chol_winsor, main = "Colesterol - Winsorizado", 
+     xlab = "Colesterol", col = "lightgreen")
+par(mfrow = c(1, 1))
+```
+
+## Métodos de Padronização e Transformação
+
+Em análise multivariada, frequentemente precisamos padronizar ou transformar variáveis para garantir comparabilidade ou melhorar distribuições.
+
+### Padronização (Z-score)
+
+Transforma variáveis para média 0 e desvio padrão 1:
+
+```{r padronizacao}
+# Padronizando variáveis numéricas
+heart_scaled <- heart_complete %>%
+  select_if(is.numeric) %>%
+  scale() %>%
+  as.data.frame()
+
+# Comparando estatísticas antes e depois da padronização
+cat("Estatísticas antes da padronização:\n")
+apply(heart_complete %>% select_if(is.numeric), 2, function(x) c(mean = mean(x), sd = sd(x)))
+
+cat("\nEstatísticas após padronização:\n")
+apply(heart_scaled, 2, function(x) c(mean = mean(x), sd = sd(x)))
+
+# Visualizando o efeito da padronização
+heart_long_orig <- heart_complete %>%
+  select(age, trestbps, chol) %>%
+  pivot_longer(cols = everything(), 
+               names_to = "variable", 
+               values_to = "value") %>%
+  mutate(type = "Original")
+
+heart_long_scaled <- heart_scaled %>%
+  select(age, trestbps, chol) %>%
+  pivot_longer(cols = everything(), 
+               names_to = "variable", 
+               values_to = "value") %>%
+  mutate(type = "Padronizado")
+
+rbind(heart_long_orig, heart_long_scaled) %>%
+  ggplot(aes(x = value, fill = type)) +
+  geom_density(alpha = 0.5) +
+  facet_wrap(~ variable, scales = "free") +
+  theme_minimal() +
+  labs(title = "Comparação de Distribuições: Original vs. Padronizada",
+       x = "Valor", y = "Densidade")
+```
+
+### Transformações para Normalidade
+
+Quando a normalidade é importante, podemos aplicar transformações:
+
+```{r transformacoes}
+# Verificando a assimetria das variáveis
+skewness_values <- apply(heart_complete %>% select_if(is.numeric), 2, skew)
+print(skewness_values)
+
+# Aplicando diferentes transformações à variável 'oldpeak' (assimétrica)
+heart_transform <- heart_complete %>%
+  mutate(
+    oldpeak_log = log(oldpeak + 1),       # Log (adicionamos 1 para evitar log(0))
+    oldpeak_sqrt = sqrt(oldpeak),          # Raiz quadrada
+    oldpeak_inverse = 1/(oldpeak + 1),     # Inversa
+    oldpeak_boxcox = if(all(oldpeak > 0)) car::powerTransform(oldpeak)$y else oldpeak  # Box-Cox
+  )
+
+# Comparando distribuições
+oldpeak_trans <- heart_transform %>%
+  select(starts_with("oldpeak")) %>%
+  pivot_longer(cols = everything(), 
+               names_to = "transformation", 
+               values_to = "value")
+
+ggplot(oldpeak_trans, aes(x = value)) +
+  geom_density(fill = "lightblue", alpha = 0.7) +
+  facet_wrap(~ transformation, scales = "free") +
+  theme_minimal() +
+  labs(title = "Comparação de Transformações para 'oldpeak'",
+       x = "Valor Transformado", y = "Densidade")
+```
+
+### Normalização Min-Max
+
+Quando queremos valores em um intervalo específico (ex: 0 a 1):
+
+```{r normalizacao}
+# Função de normalização min-max
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+
+# Aplicando normalização min-max às variáveis numéricas
+heart_normalized <- heart_complete %>%
+  select_if(is.numeric) %>%
+  mutate(across(everything(), normalize)) %>%
+  as.data.frame()
+
+# Verificando o resultado da normalização
+summary(heart_normalized)
+
+# Exemplo de visualização
+heart_long_norm <- heart_normalized %>%
+  select(age, trestbps, chol) %>%
+  pivot_longer(cols = everything(), 
+               names_to = "variable", 
+               values_to = "value") %>%
+  mutate(type = "Normalizado")
+
+rbind(heart_long_orig, heart_long_norm) %>%
+  ggplot(aes(x = value, fill = type)) +
+  geom_density(alpha = 0.5) +
+  facet_wrap(~ variable, scales = "free") +
+  theme_minimal() +
+  labs(title = "Comparação de Distribuições: Original vs. Normalizado (Min-Max)",
+       x = "Valor", y = "Densidade")
+```
+
+## Análise Exploratória Básica
+
+Após o tratamento de valores ausentes, outliers e transformações, vamos realizar algumas análises exploratórias básicas:
+
+### Estatísticas Descritivas
+
+```{r estatisticas_descritivas}
+# Estatísticas descritivas detalhadas
+describe(heart_complete %>% select_if(is.numeric))
+
+# Análise por grupo (presença de doença cardíaca)
+heart_complete$num <- factor(heart_complete$num, 
+                            levels = c(0, 1, 2, 3, 4),
+                            labels = c("Ausente", "Leve", "Moderada", "Grave", "Muito Grave"))
+
+# Comparação das médias por grupo diagnóstico
+heart_complete %>%
+  group_by(num) %>%
+  summarise(across(all_of(c("age", "trestbps", "chol", "thalach")), 
+                   list(media = mean, dp = sd), 
+                   .names = "{.col}_{.fn}"))
+```
+
+### Análise de Correlações
+
+```{r correlacoes}
+# Matriz de correlação das variáveis numéricas
+cor_matrix <- cor(heart_complete %>% select_if(is.numeric), 
+                 use = "pairwise.complete.obs")
+
+# Visualização da matriz de correlação
+corrplot(cor_matrix, method = "circle", type = "upper", 
+         tl.col = "black", tl.srt = 45,
+         title = "Matriz de Correlação - Dados Cardíacos")
+
+# Teste de significância das correlações
+cor_p <- cor.mtest(heart_complete %>% select_if(is.numeric))
+corrplot(cor_matrix, p.mat = cor_p$p, sig.level = 0.05, 
+         insig = "blank", method = "circle", type = "upper",
+         tl.col = "black", tl.srt = 45,
+         title = "Correlações Significativas (p < 0.05)")
+```
+
+### Visualizações Multivariadas
+
+```{r vis_multivariadas}
+# Matriz de gráficos de dispersão para algumas variáveis selecionadas
+pairs.panels(heart_complete %>% 
+              select(age, trestbps, chol, thalach, oldpeak),
+            method = "pearson",   # Método de correlação
+            hist.col = "lightblue",
+            density = TRUE,       # Mostrar densidade
+            ellipses = TRUE)      # Mostrar elipses de correlação
+```
+
+## Preparação Final para Análises Futuras
+
+Agora que realizamos o tratamento de valores ausentes, outliers e transformações, vamos preparar um conjunto de dados limpo para futuras análises multivariadas:
+
+```{r dados_finais}
+# Selecionando o conjunto final após todas as transformações
+# Usaremos os dados padronizados para variáveis numéricas
+heart_final <- heart_complete %>%
+  select(-mahal_dist, -outlier)  # Removendo colunas de diagnóstico
+
+# Convertendo variáveis categóricas para fatores
+heart_final$sex <- factor(heart_final$sex, levels = c(0, 1), labels = c("Feminino", "Masculino"))
+heart_final$cp <- factor(heart_final$cp, levels = c(1, 2, 3, 4), 
+                        labels = c("Angina Típica", "Angina Atípica", "Dor Não-Anginal", "Assintomático"))
+heart_final$fbs <- factor(heart_final$fbs, levels = c(0, 1), 
+                         labels = c("<=120 mg/dl", ">120 mg/dl"))
+heart_final$exang <- factor(heart_final$exang, levels = c(0, 1), 
+                           labels = c("Não", "Sim"))
+
+# Verificando a estrutura final dos dados
+str(heart_final)
+
+# Salvando o conjunto de dados preparado
+write.csv(heart_final, "heart_preparado.csv", row.names = FALSE)
+
+# Também salvamos uma versão com variáveis numéricas padronizadas
+heart_final_scaled <- heart_final
+heart_final_scaled[, sapply(heart_final, is.numeric)] <- scale(heart_final[, sapply(heart_final, is.numeric)])
+write.csv(heart_final_scaled, "heart_preparado_scaled.csv", row.names = FALSE)
+```
+
+## Resumo e Próximos Passos
+
+Este script demonstrou como:
+
+1. **Identificar e tratar valores ausentes**:
+   - Visualização de padrões de valores ausentes
+   - Remoção e imputação de valores ausentes
+
+2. **Identificar e tratar outliers**:
+   - Detecção univariada (boxplots, testes estatísticos)
+   - Detecção multivariada (distância de Mahalanobis)
+   - Winsorização para tratamento de valores extremos
+
+3. **Aplicar transformações e padronizações**:
+   - Padronização Z-score
+   - Transformações para normalidade (log, raiz quadrada, Box-Cox)
+   - Normalização min-max
+
+4. **Realizar análises exploratórias básicas**:
+   - Estatísticas descritivas
+   - Análise de correlações
+   - Visualizações multivariadas
+
+Os dados estão agora prontos para as seguintes análises multivariadas que iremos estudar ao longo da disciplina:
+- Análise de Componentes Principais (PCA)
+- Análise de Clusters
+- Análise Discriminante
+
+## Hora de Praticar
+
+Agora, vamos praticar o que aprendemos com um exercício guiado usando dados de saúde:
+
+### Exercício: Análise de Dados do Diabetes
+
+Para este exercício, utilizaremos o conjunto de dados "Pima Indians Diabetes", que contém informações sobre mulheres indígenas Pima com idade de pelo menos 21 anos e inclui variáveis relacionadas a fatores de risco para diabetes e o diagnóstico da doença.
+
+1. Carregue o conjunto de dados:
+   ```r
+   # Carregando dados de diabetes
+   url <- "https://raw.githubusercontent.com/jbrownlee/Datasets/master/pima-indians-diabetes.data.csv"
+   
+   # Alternativamente, se o URL não estiver acessível:
+   # install.packages("mlbench")
+   # library(mlbench)
+   # data(PimaIndiansDiabetes)
+   # diabetes <- PimaIndiansDiabetes
+   
+   # Carregar diretamente do URL
+   colunas <- c("pregnancies", "glucose", "blood_pressure", "skin_thickness", 
+                "insulin", "bmi", "diabetes_pedigree", "age", "outcome")
+   diabetes <- read.csv(url, header = FALSE, col.names = colunas)
+   
+   # Convertendo a variável de resultado para fator
+   diabetes$outcome <- factor(diabetes$outcome, levels = c(0, 1), 
+                             labels = c("Negativo", "Positivo"))
+   
+   # Examinando a estrutura dos dados
+   str(diabetes)
+   ```
+
+2. Realize as seguintes tarefas:
+
+   a) **Identificação e tratamento de valores ausentes**:
+      - Neste conjunto de dados, valores zero em certas variáveis fisiológicas (glucose, blood_pressure, skin_thickness, insulin, bmi) são biologicamente implausíveis e provavelmente representam valores ausentes.
+      - Identifique e trate esses valores como NA.
+      - Visualize o padrão de valores ausentes.
+      - Aplique um método apropriado de imputação.
+
+   b) **Identificação e tratamento de outliers**:
+      - Identifique outliers univariados em variáveis como glucose, insulin e bmi.
+      - Aplique a distância de Mahalanobis para detectar outliers multivariados.
+      - Proponha uma estratégia para lidar com os outliers identificados.
+
+   c) **Padronização e transformação**:
+      - Analise a distribuição das variáveis (especialmente insulin e diabetes_pedigree).
+      - Aplique transformações apropriadas para normalizar as distribuições assimétricas.
+      - Padronize todas as variáveis numéricas para comparabilidade.
+
+   d) **Análise exploratória básica**:
+      - Compare as estatísticas descritivas entre pacientes com e sem diabetes.
+      - Calcule e visualize a matriz de correlação das variáveis.
+      - Crie visualizações que mostrem as diferenças nas variáveis clínicas entre os dois grupos de diagnóstico.
+
+3. Prepare e salve o conjunto de dados processado para futuras análises multivariadas.
+
+4. Responda às seguintes perguntas:
+   - Quais variáveis apresentam as diferenças mais significativas entre pacientes com e sem diabetes?
+   - Quais variáveis estão mais fortemente correlacionadas com o diagnóstico de diabetes?
+   - Com base na análise exploratória, quais fatores de risco parecem ser mais importantes para o desenvolvimento de diabetes nesta população?
+   - Quais transformações foram mais eficazes para normalizar as distribuições das variáveis?
+
+### Código Inicial para Ajudar
+
+```r
+# Carregar dados
+url <- "https://raw.githubusercontent.com/jbrownlee/Datasets/master/pima-indians-diabetes.data.csv"
+colunas <- c("pregnancies", "glucose", "blood_pressure", "skin_thickness", 
+            "insulin", "bmi", "diabetes_pedigree", "age", "outcome")
+diabetes <- read.csv(url, header = FALSE, col.names = colunas)
+
+# Convertendo a variável de resultado para fator
+diabetes$outcome <- factor(diabetes$outcome, levels = c(0, 1), 
+                         labels = c("Negativo", "Positivo"))
+
+# Examinando a estrutura dos dados
+str(diabetes)
+summary(diabetes)
+
+# Verificando valores implausíveis (zeros em variáveis fisiológicas)
+zeros_implausives <- data.frame(
+  glucose = sum(diabetes$glucose == 0),
+  blood_pressure = sum(diabetes$blood_pressure == 0),
+  skin_thickness = sum(diabetes$skin_thickness == 0),
+  insulin = sum(diabetes$insulin == 0),
+  bmi = sum(diabetes$bmi == 0)
+)
+print(zeros_implausives)
+
+# Tratar zeros como NA nas variáveis fisiológicas
+diabetes_cleaned <- diabetes
+diabetes_cleaned$glucose[diabetes_cleaned$glucose == 0] <- NA
+diabetes_cleaned$blood_pressure[diabetes_cleaned$blood_pressure == 0] <- NA
+diabetes_cleaned$skin_thickness[diabetes_cleaned$skin_thickness == 0] <- NA
+diabetes_cleaned$insulin[diabetes_cleaned$insulin == 0] <- NA
+diabetes_cleaned$bmi[diabetes_cleaned$bmi == 0] <- NA
+
+# Verificando valores ausentes
+colSums(is.na(diabetes_cleaned))
+
+# Continue a partir daqui com:
+# 1. Visualização de valores ausentes
+# 2. Imputação
+# 3. Detecção de outliers
+# 4. Transformações
+# 5. Análise exploratória
+```

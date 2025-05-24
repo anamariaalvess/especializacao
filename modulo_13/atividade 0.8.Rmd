@@ -1,0 +1,302 @@
+---
+title: 'Análise de Sobrevivência '
+subtitle: '0.8 - Aula Prática'
+author: "Prof. Dr. Eder Angelo Milani"
+date: "26/04/2025"
+output: pdf_document
+--- 
+
+
+# Leitura dos dados 
+
+
+As linhas de cógido a seguir executam as seguintes tarefas: 
+- leitura dos dados filtrados para CID C34;
+
+- breve visualização do conjunto de dados;
+
+- modifica a escala de tempo para ano, em vez de dia;
+
+- excluir os tempos iguis a zero. 
+
+```{r}
+# limpando o que tem na memoria
+rm(list=ls())
+
+# local onde esta o arquivo com os dados 
+setwd("G:\\Meu Drive\\UFG\\Especializacao\\Aulas Análise Sobrevivência\\Códigos")
+
+### leitura 
+dados <- read.csv("cancer_c34.csv")
+head(dados)
+
+# mudança na variável tempo - de dias para ano 
+dados$TEMPO <- dados$TEMPO/365
+
+# excluir os tempos iguais a zero 
+ind_tempo_zero <- which(dados$TEMPO == 0)
+ind_tempo_zero 
+
+dados$TEMPO[256]
+
+dados <- dados[-ind_tempo_zero,]
+
+# outra forma de filtrar 
+# dados <- dados %>% filter(TEMPO != 0)
+
+```
+
+
+# Ajuste do modelo de Cox - variável quimioterapia
+
+
+Vamos repetir a análise mas agora utilizando a covariável quimioterapia - Quimio - em vez da variável sexo. 
+
+
+```{r}
+require(survival)
+
+table(dados$QUIMIO)
+
+cox_quimio <- coxph(Surv(TEMPO, CENSURA) ~ as.factor(QUIMIO), data = dados, x=TRUE)
+# x = TRUE salva a matriz das covariaveis para outras analises
+
+summary(cox_quimio) # apresenta uma serie de estatisticas de interesse
+
+# residuo de Cox-Snell 
+
+res_cs_quimio <- dados$CENSURA -  resid(cox_quimio, type = "martingale")
+
+summary(res_cs_quimio)
+
+# grafico
+
+ekm_cox_snell_quimio <- survfit(Surv(res_cs_quimio, dados$CENSURA) ~ 1)
+
+exp_res_cs_quimio <- exp(- ekm_cox_snell_quimio$time)
+
+# grafico de curvas de sobrevivencia sobrepostas 
+plot(ekm_cox_snell_quimio$surv, exp_res_cs_quimio, main= "Resíduos de Cox-Snell", ylab="S(t) - exponencial", xlab="S(t) - EKM")
+abline(a=0, b=1)
+
+
+# verificacao de proporcionalidade 
+
+# metodo grafico 
+
+mod1 <- coxph(Surv(TEMPO[QUIMIO==0],CENSURA[QUIMIO==0])~1,
+              data=dados, method="breslow")
+# Colosimo e Giolo sugerem a estimacao do 
+# risco utilizando o metodo de Nelson-Aalen-Breslow
+
+summary(mod1)
+ss <- survfit(mod1)
+H01 <- -log(ss$surv)
+time1 <- ss$time
+
+mod2 <- coxph(Surv(TEMPO[QUIMIO==1],CENSURA[QUIMIO==1])~1,
+              data=dados, method="breslow")
+summary(mod2)
+ss <- survfit(mod2)
+H02 <- -log(ss$surv)
+time2 <- ss$time
+
+plot(time1, log(H01), type='l', main="Tempo vs log(H)", lwd=2, xlab="Tempo", 
+     ylim=c(-6, 2), ylab="log(H(t))")
+lines(time2, log(H02), lty=2, col="red", lwd=2)
+
+# observe que existe indicios de NAO proporcionalidade
+
+
+# residuos de Schoenfeld 
+cox.zph(cox_quimio, transform = "identity")
+# observe que o teste de hipoteses REJEITA 
+# a hipotese nula de proporcionalidade 
+
+
+plot(cox.zph(cox_quimio, transform = "identity"))
+
+# observe que a curva estimada NAO e constante ao longo do tempo
+# indicando assim ausencia de proporcionalidade
+```
+**Observe que não verificamos proporcionalidade na covariável quimioterapia, indicando assim que o modelo de Cox não pode ser usado.** 
+
+
+# E na prática como funciona? 
+
+
+Como na prática temos várias covariáveis para proceder com o ajuste, vamos utilizar rotinas para a seleção de covariáveis, como por exemplo o stepwise. E na sequência verificar a questão da adequação do modelo de Cox aos dados. 
+
+
+```{r}
+head(dados)
+
+# TOPOGRUP nao sera analisada pois e 100% preenchida com C34
+
+# ANODIAG sera analisada como uma variavel categorica 
+dados$ANODIAG <- factor(dados$ANODIAG)
+table(dados$ANODIAG)
+is.factor(dados$ANODIAG)
+
+# IDADE e quantitativa 
+is.numeric(dados$IDADE)
+
+# SEXO e qualitativa 
+dados$SEXO <- factor(dados$SEXO)
+table(dados$SEXO)
+
+# CIRURGIA e qualitativa
+dados$CIRURGIA <- factor(dados$CIRURGIA)
+table(dados$CIRURGIA)
+
+# RADIO e qualitativa
+dados$RADIO <- factor(dados$RADIO)
+table(dados$RADIO)
+
+# QUIMIO e qualitativa
+dados$QUIMIO <- factor(dados$QUIMIO)
+table(dados$QUIMIO)
+
+# todas as variaveis ok, estamos prontos para seguir com o ajuste 
+#install.packages("MASS")
+library(MASS)
+
+# modelo inicial com todas as variaveis usando a distribuicao exponencial
+modelo_inicial_cox <- coxph(Surv(TEMPO, CENSURA) ~ ANODIAG + IDADE + SEXO+ 
+                            CIRURGIA + RADIO + QUIMIO,
+                          data = dados)
+
+summary(modelo_inicial_cox)
+
+# vamos agora aplicar a selecao stepwise baseada no AIC
+modelo_cox <- stepAIC(modelo_inicial_cox, direction = "both")
+
+# Resumo do modelo final
+summary(modelo_cox)
+
+# Adequacao do modelo ajustado
+
+# verificacao de proporcionalidade 
+
+cox.zph(modelo_cox, transform = "identity")
+# notemos que: 
+# idade - aceita a hipotese de proporcionalidade 
+# sexo - aceita a hipotese de proporcionalidade 
+# cirurgia - aceita a hipotese de proporcionalidade
+# note que no limite de 5% de significancia
+# radio - rejeita a hipotese de proporcionalidade 
+# quimio - rejeita a hipotese de proporcionalidade 
+# global - rejeita a hipotese de proporcionalidade 
+
+plot(cox.zph(modelo_cox, transform = "identity"))
+
+```
+
+
+Do fato que as variáveis radioterapia e quimioterapia não apresentaram riscos proporcionais, vamos eliminá-las do ajuste, pois ainda não sabemos como lidar com covariáveis com riscos não proporcionais e modelo de Cox. 
+
+
+```{r}
+# modelo final sem as covariaveis radioterapia e quimioterapia 
+
+modelo_final_cox <- coxph(Surv(TEMPO, CENSURA) ~ IDADE + SEXO + CIRURGIA,
+                          data = dados)
+
+# Resumo do modelo final
+summary(modelo_final_cox)
+
+# Adequacao do modelo ajustado
+
+# verificacao de proporcionalidade 
+
+cox.zph(modelo_final_cox, transform = "identity")
+# todas as variaveis apresentaram riscos proporcionais 
+# o teste global tambem indicou riscos proporcionais 
+
+plot(cox.zph(modelo_final_cox, transform = "identity"))
+
+# residuo de Cox-Snell 
+
+res_cs_final_cox <- dados$CENSURA -  resid(modelo_final_cox, type = "martingale")
+
+summary(res_cs_final_cox)
+
+# grafico
+
+ekm_cox_snell_final <- survfit(Surv(res_cs_final_cox, dados$CENSURA) ~ 1)
+
+exp_res_cs_final_cox <-  exp( - ekm_cox_snell_final$time)
+
+plot(ekm_cox_snell_final$surv, exp_res_cs_final_cox, main = "Resíduo de Cox-Snell", ylab="S(t) - exponencial", xlab="S(t) - EKM")
+abline(a=0, b=1)
+
+
+# Note que a idade nao foi significativa, vamos realizar a analise do residuo martingale.
+
+modelo_nulo <- coxph(Surv(TEMPO, CENSURA) ~ 1 , data = dados)
+res_nulo <- resid(modelo_nulo, type="martingale")
+plot(dados$IDADE, res_nulo)
+lines(lowess(dados$IDADE, res_nulo, iter = 0), lty=2)
+# iter = 0 -> para que a curva estimada não elimine os valores extremos 
+# e nao suavize demais os pontos aberrantes (outliers)
+lines(lowess(dados$IDADE, res_nulo), lty=3)
+legend(0, 1, lty=c(2,3), c("Com outlier", "Sem outlier"))
+# a estimativa da funcao suavizada indica uma linealizacao
+# mas a covariavel nao foi estatisticamente significativa, 
+# sendo assim, vamos excluir-la da modelagem 
+
+
+# modelo final v2 sem as covariaveis radioterapia, quimioterapia e idade 
+
+modelo_final_v2_cox <- coxph(Surv(TEMPO, CENSURA) ~ SEXO + CIRURGIA,
+                          data = dados)
+
+# Resumo do modelo final v2
+summary(modelo_final_v2_cox)
+
+# Adequacao do modelo ajustado
+
+# verificacao de proporcionalidade 
+
+cox.zph(modelo_final_v2_cox, transform = "identity")
+# todas as variaveis apresentaram riscos proporcionais 
+# o teste global tambem indicou riscos proporcionais 
+
+plot(cox.zph(modelo_final_v2_cox, transform = "identity"))
+
+# residuo de Cox-Snell 
+
+res_cs_final_v2_cox <- dados$CENSURA -  resid(modelo_final_v2_cox, type = "martingale")
+
+summary(res_cs_final_v2_cox)
+
+# grafico
+
+ekm_cox_snell_final <- survfit(Surv(res_cs_final_v2_cox, dados$CENSURA) ~ 1)
+
+exp_res_cs_final_v2_cox <- exp(- ekm_cox_snell_final$time)
+
+plot(ekm_cox_snell_final$surv, exp_res_cs_final_v2_cox, main= "Resíduo de Cox-Snell", ylab="S(t) - exponencial", xlab="S(t) - EKM")
+abline(a=0, b=1)
+```
+```{r}
+# retomando o modelo final 
+# para analisar os resultados 
+
+summary(modelo_final_v2_cox)
+```
+
+Do fato que o modelo de Cox se ajustou bem aos dados, podemos afirmar que: 
+
+- pacientes do sexo feminino e que realizaram cirurgia são fatores que diminuem o risco de morte (observe que a estimativa dos $\beta$'s são negativas);  
+
+- pacientes do sexo feminino apresentam 21% a menos do risco de morte do que pacientes do sexo masculino;
+
+- pacientes que realizaram cirurgia apresentam risco de óbito igual a 0,25 do risco daqueles que não realizaram cirurgia;
+
+- o modelo apresenta concordância igual a 0,601;
+
+- todos os testes de hipóteses indicam que os parâmetros $\beta$'s são diferentes de zero. 
+
+
+

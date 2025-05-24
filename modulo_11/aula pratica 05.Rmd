@@ -1,0 +1,45 @@
+---
+title: 'Aula 1: Aula prática 05'
+author: "Cynthia Tojeiro"
+date: "2025-02-06"
+output: pdf_document
+---
+
+# Inicialmente, vamos ajustar o modelo de regressão linear simples com a variável resposta peso e variável explicativa altura.
+
+# Para o ajuste de um modelo de regressão linear normal simples utilizamos a função "lm".
+
+# Ajustando o modelo
+
+fit.model<-lm(amed~pmed)
+
+summary(result)
+
+#colocando os resultados numa tabela 
+# vamos usar o pacote stargazer
+
+library(stargazer)
+
+stargazer(fit.model,type = "text")
+
+#O resumo indica que a variável peso esta associada a variável altura.
+
+#Os valores estimados para os parâmetros do modelo são:
+
+coefficients(fit.model)
+
+#E os intervalos com 95% de confiança para os Parâmetros do Modelo:
+
+confint(fit.model)
+
+#  Interpretação das Estimativas
+
+Para cada unidade de aumento de 1cm na variável altura, estima-se, em média, um aumento de
+
+aproximadamente 0,1508 kg unidades na variável peso.
+
+# Análise de variãncia (testes de hipóteses)
+
+anova(fit.model)
+
+

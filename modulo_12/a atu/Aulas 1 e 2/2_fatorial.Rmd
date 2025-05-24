@@ -1,0 +1,301 @@
+---
+title: "Análise Fatorial"
+author: "Equipe de Análise Multivariada"
+date: "`r Sys.Date()`"
+output:
+  word_document:
+    toc: true
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: united
+    highlight: tango
+---
+
+```{r configuracoes-iniciais, include=FALSE}
+# Configurações gerais do RMarkdown
+knitr::opts_chunk$set(
+  echo = TRUE, 
+  warning = FALSE, 
+  message = FALSE,
+  fig.width = 10,
+  fig.height = 6
+)
+
+# Pacotes necessários
+pacotes_necessarios <- c(
+  "psych",       # Análise fatorial
+  "GPArotation", # Métodos de rotação
+  "tidyverse",   # Manipulação de dados
+  "knitr",       # Geração de relatórios
+  "kableExtra",  # Tabelas elegantes
+  "haven",       # Leitura de diferentes formatos
+  "lavaan",      # Análise fatorial confirmatória
+  "semPlot",     # Visualização de modelos
+  "car",         # Transformações de dados
+  "MASS",        # Métodos robustos
+  "corrplot",    # Visualização de correlações
+  "mice"         # Imputação de dados
+)
+
+# Carregar pacotes
+invisible(lapply(pacotes_necessarios, library, character.only = TRUE))
+```
+
+# Introdução à Análise Fatorial
+
+## Definição Conceitual
+
+A análise fatorial é uma técnica estatística multivariada que visa identificar padrões de correlação entre um conjunto de variáveis, reduzindo-as a um número menor de dimensões ou fatores latentes.
+
+### Objetivos Principais
+
+1. Explorar estruturas subjacentes em conjuntos de dados complexos
+2. Simplificar a interpretação de múltiplas variáveis
+3. Descobrir constructos ou dimensões não observáveis diretamente
+
+## Tipos de Análise Fatorial
+
+### Análise Fatorial Exploratória (EFA)
+
+**Características:**
+- Descoberta de estruturas latentes
+- Sem definição prévia do número de fatores
+- Útil quando não há hipóteses prévias
+- Identificação de agrupamentos naturais de variáveis
+
+### Análise Fatorial Confirmatória (CFA)
+
+**Características:**
+- Teste de hipóteses sobre estruturas fatoriais
+- Verificação de ajuste de modelo teórico
+- Utilização de índices de ajuste
+- Validação de modelos predefinidos
+
+## Aplicações em Saúde
+
+### Contextos de Aplicação
+
+1. **Questionários de Qualidade de Vida**
+   - Identificação de dimensões subjacentes
+   - Validação de escalas de bem-estar
+   - Redução de número de itens
+
+2. **Escalas de Avaliação Clínica**
+   - Análise de constructos complexos
+   - Validação de instrumentos de diagnóstico
+   - Compreensão de inter-relações entre sintomas
+
+3. **Pesquisas Epidemiológicas**
+   - Identificação de fatores de risco
+   - Simplificação de análises multivariadas
+   - Criação de índices compostos de vulnerabilidade
+
+## Pressupostos da Análise Fatorial
+
+### Requisitos Fundamentais
+
+1. **Tamanho da Amostra**
+   - Mínimo recomendado: 100-200 observações
+   - Proporção: 5-10 observações por variável
+
+2. **Matriz de Correlação**
+   - Correlações significativas entre variáveis
+   - Testes de verificação:
+     * Teste de Esfericidade de Bartlett
+     * Índice Kaiser-Meyer-Olkin (KMO)
+
+3. **Distribuição dos Dados**
+   - Normalidade aproximada
+   - Verificação de assimetria e curtose
+   - Linearidade entre variáveis
+
+### Estratégias para Violação de Pressupostos
+
+- Transformação de variáveis
+- Remoção de outliers
+- Métodos robustos de análise
+- Reavaliação da seleção de variáveis
+
+# Preparação e Processamento de Dados
+
+## Função de Preparação de Dados
+
+```{r funcao-preparacao-dados}
+preparar_dados <- function(dados) {
+  # Remoção de valores missing
+  dados_limpos <- na.omit(dados)
+  
+  # Análise descritiva
+  descritiva <- describe(dados_limpos)
+  print(descritiva)
+  
+  return(dados_limpos)
+}
+
+# Dados simulados de exemplo
+set.seed(123)
+dados_saude <- data.frame(
+  depressao_1 = rnorm(200, mean = 3, sd = 1),
+  depressao_2 = rnorm(200, mean = 3, sd = 1),
+  ansiedade_1 = rnorm(200, mean = 2, sd = 1),
+  ansiedade_2 = rnorm(200, mean = 2, sd = 1),
+  estresse_1 = rnorm(200, mean = 4, sd = 1),
+  estresse_2 = rnorm(200, mean = 4, sd = 1)
+)
+```
+
+## Verificação de Pressupostos
+
+```{r verificacao-pressupostos}
+# Teste de Bartlett e KMO
+bartlett_teste <- cortest.bartlett(dados_saude)
+kmo_teste <- KMO(dados_saude)
+
+# Matriz de correlação
+correlacao <- cor(dados_saude)
+corrplot(correlacao, method = "color")
+```
+
+## Análise Fatorial Exploratória
+
+### Definição do Número de Fatores
+
+```{r selecao-fatores}
+# Análise paralela para sugestão de fatores
+fa.parallel(dados_saude, 
+            fm = "ml",   # Método de fatoração
+            fa = "fa")   # Análise fatorial
+
+# Scree plot
+scree(dados_saude)
+```
+
+### Extração e Rotação de Fatores
+
+```{r extracao-fatores}
+# Análise Fatorial Exploratória
+modelo_efa <- fa(dados_saude, 
+                 nfactors = 2,      # Número de fatores
+                 rotate = "varimax",# Método de rotação
+                 fm = "ml")          # Método de fatoração
+
+# Visualizar resultados
+print(modelo_efa)
+fa.diagram(modelo_efa)
+```
+
+## Análise Fatorial Confirmatória
+
+```{r analise-confirmatoria}
+# Modelo teórico
+modelo_cfa <- '
+  saude_mental =~ depressao_1 + depressao_2 + ansiedade_1 + ansiedade_2
+  estresse =~ estresse_1 + estresse_2
+'
+
+# Ajuste do modelo
+ajuste_cfa <- cfa(modelo_cfa, data = dados_saude)
+
+# Sumário do modelo
+summary(ajuste_cfa, fit.measures = TRUE)
+```
+
+# Técnicas Avançadas
+
+## Tratamento de Problemas Comuns
+
+### Dados Não Normais
+
+```{r transformacoes-dados}
+# Função de transformação
+transformar_dados <- function(dados) {
+  dados %>%
+    mutate(
+      log_var = log(abs(dados) + 1),
+      sqrt_var = sqrt(abs(dados)),
+      box_cox_var = car::powerTransform(dados)
+    )
+}
+
+# Verificar normalidade
+check_normality <- function(dados) {
+  sapply(dados, function(x) {
+    list(
+      assimetria = skew(x),
+      curtose = kurtosi(x)
+    )
+  })
+}
+```
+
+### Tratamento de Outliers
+
+```{r deteccao-outliers}
+detectar_outliers <- function(dados) {
+  # Método de Mahalanobis
+  maha_dist <- mahalanobis(dados, 
+                           colMeans(dados), 
+                           cov(dados))
+  
+  limite_outliers <- qchisq(0.975, df = ncol(dados))
+  outliers <- which(maha_dist > limite_outliers)
+  
+  list(
+    outliers = outliers,
+    dados_limpos = dados[-outliers, ]
+  )
+}
+```
+
+### Dados Faltantes
+
+```{r dados-faltantes}
+tratar_dados_faltantes <- function(dados) {
+  # Imputação múltipla
+  dados_imputados <- mice(
+    dados, 
+    m = 5,           # 5 conjuntos imputados
+    method = 'pmm',  # Preditive mean matching
+    seed = 123
+  )
+  
+  complete(dados_imputados, 1)
+}
+```
+
+## Métodos de Rotação
+
+```{r comparacao-rotacoes}
+rotacoes <- c("varimax", "quartimax", "promax", "oblimin")
+
+comparar_rotacoes <- function(dados, rotacoes) {
+  resultados <- lapply(rotacoes, function(rot) {
+    modelo <- fa(dados, nfactors = 2, rotate = rot)
+    modelo$loadings
+  })
+  
+  names(resultados) <- rotacoes
+  resultados
+}
+
+# Aplicar diferentes rotações
+resultado_rotacoes <- comparar_rotacoes(dados_saude, rotacoes)
+```
+
+# Considerações Finais
+
+## Boas Práticas
+
+1. **Validade de Constructo**
+   - Garantir representatividade dos fatores
+   - Validação por especialistas
+
+2. **Reprodutibilidade**
+   - Documentação detalhada
+   - Análises em subamostras
+
+3. **Interpretabilidade**
+   - Significado clínico/teórico
+   - Além dos resultados estatísticos

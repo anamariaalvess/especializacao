@@ -1,0 +1,258 @@
+---
+title: "Análise Discriminante - Exercício"
+author: "Ricardo Limongi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+# Carregando os Pacotes Necessários
+
+```{r pacotes}
+# Carregar pacotes necessários
+library(tidyverse)  # Para manipulação e visualização - carregar primeiro para evitar mascaramento
+library(MASS)       # Para funções lda() e qda()
+library(caret)      # Para validação
+library(klaR)       # Para visualização da análise discriminante
+```
+
+# Criando Dados Simulados
+
+```{r simular-dados}
+# Definir semente para reprodutibilidade
+set.seed(123)
+
+# Criar dados simulados para 3 grupos de risco cardiovascular
+criar_grupo <- function(n, risco, idade_media, pa_media, colesterol_medio, 
+                        hdl_medio, glicose_media, tabagismo_prob) {
+  
+  data.frame(
+    idade = rnorm(n, mean = idade_media, sd = 8),
+    pressao_sistolica = rnorm(n, mean = pa_media, sd = 12),
+    colesterol_total = rnorm(n, mean = colesterol_medio, sd = 25),
+    hdl = rnorm(n, mean = hdl_medio, sd = 7),
+    glicose = rnorm(n, mean = glicose_media, sd = 15),
+    tabagismo = factor(ifelse(runif(n) < tabagismo_prob, "Sim", "Não")),
+    risco = factor(risco, levels = c("Baixo", "Moderado", "Alto"))
+  )
+}
+
+# Criar os três grupos
+baixo_risco <- criar_grupo(200, "Baixo", 42, 120, 180, 55, 85, 0.05)
+moderado_risco <- criar_grupo(150, "Moderado", 55, 135, 210, 45, 100, 0.2)
+alto_risco <- criar_grupo(100, "Alto", 65, 155, 240, 35, 125, 0.4)
+
+# Combinar todos os dados
+dados_cardio <- rbind(baixo_risco, moderado_risco, alto_risco)
+
+# Converter variável categórica para dummy
+dados_cardio$tabagismo_sim <- ifelse(dados_cardio$tabagismo == "Sim", 1, 0)
+
+# Verificar a estrutura dos dados
+head(dados_cardio)
+```
+
+# Explorando os Dados
+
+```{r exploracao}
+# Estatísticas descritivas por grupo de risco
+dados_cardio %>%
+  group_by(risco) %>%
+  summarise(across(c(idade, pressao_sistolica, colesterol_total, hdl, glicose),
+                  list(média = mean, dp = sd)))
+
+# Boxplots para visualizar a distribuição das variáveis por grupo
+dados_cardio %>%
+  dplyr::select(risco, idade, pressao_sistolica, colesterol_total, hdl, glicose) %>%
+  pivot_longer(cols = -risco, names_to = "variavel", values_to = "valor") %>%
+  ggplot(aes(x = risco, y = valor, fill = risco)) +
+  geom_boxplot() +
+  facet_wrap(~ variavel, scales = "free_y") +
+  theme_minimal() +
+  labs(title = "Distribuição das Variáveis por Grupo de Risco") +
+  theme(legend.position = "none")
+
+# Tabela de frequência para tabagismo
+table(dados_cardio$risco, dados_cardio$tabagismo)
+```
+
+# Divisão dos Dados: Treino e Teste
+
+```{r divisao}
+# Selecionar variáveis para a análise
+dados_para_analise <- dados_cardio %>%
+  dplyr::select(idade, pressao_sistolica, colesterol_total, hdl, glicose, tabagismo_sim, risco)
+
+# Dividir em conjuntos de treino (70%) e teste (30%)
+set.seed(456)
+indices_treino <- createDataPartition(dados_para_analise$risco, p = 0.7, list = FALSE)
+dados_treino <- dados_para_analise[indices_treino, ]
+dados_teste <- dados_para_analise[-indices_treino, ]
+
+# Verificar distribuição das classes
+table(dados_treino$risco)
+table(dados_teste$risco)
+```
+
+# Análise Discriminante Linear (LDA)
+
+```{r lda}
+# Ajustar o modelo LDA
+lda_model <- lda(risco ~ ., data = dados_treino)
+
+# Resumo do modelo
+print(lda_model)
+
+# Calcular proporção de variância explicada
+prop_var <- lda_model$svd^2 / sum(lda_model$svd^2)
+print(prop_var)
+
+# Visualizar dados no espaço discriminante
+lda_treino <- predict(lda_model, dados_treino)
+dados_treino_lda <- data.frame(
+  LD1 = lda_treino$x[,1],
+  LD2 = lda_treino$x[,2],
+  risco = dados_treino$risco
+)
+
+# Gráfico de dispersão
+ggplot(dados_treino_lda, aes(x = LD1, y = LD2, color = risco)) +
+  geom_point(alpha = 0.7) +
+  stat_ellipse(type = "norm") +
+  theme_minimal() +
+  labs(title = "Projeção dos Dados no Espaço Discriminante (LDA)",
+       x = paste("LD1 (", round(prop_var[1] * 100, 1), "%)", sep = ""),
+       y = paste("LD2 (", round(prop_var[2] * 100, 1), "%)", sep = ""))
+
+# Importância das variáveis
+importancia <- data.frame(
+  Variavel = rownames(lda_model$scaling),
+  LD1 = abs(lda_model$scaling[,1]),
+  LD2 = abs(lda_model$scaling[,2])
+)
+
+# Ordenar por importância em LD1
+importancia <- importancia[order(-importancia$LD1),]
+print(importancia)
+
+# Visualizar importância das variáveis
+importancia %>%
+  pivot_longer(cols = c(LD1, LD2), names_to = "Função", values_to = "Importância") %>%
+  ggplot(aes(x = reorder(Variavel, Importância), y = Importância, fill = Função)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  coord_flip() +
+  theme_minimal() +
+  labs(title = "Importância das Variáveis nas Funções Discriminantes", x = "")
+```
+
+# Avaliar o Modelo LDA
+
+```{r avaliacao-lda}
+# Predição no conjunto de teste
+lda_pred <- predict(lda_model, newdata = dados_teste)
+
+# Matriz de confusão
+conf_matrix <- table(Atual = dados_teste$risco, Previsto = lda_pred$class)
+print(conf_matrix)
+
+# Calcular acurácia
+accuracy <- sum(diag(conf_matrix)) / sum(conf_matrix)
+cat("Acurácia do modelo LDA:", round(accuracy * 100, 2), "%\n")
+
+# Métricas por classe
+precision <- diag(conf_matrix) / colSums(conf_matrix)
+recall <- diag(conf_matrix) / rowSums(conf_matrix)
+f1 <- 2 * precision * recall / (precision + recall)
+
+metricas <- data.frame(
+  Classe = levels(dados_cardio$risco),
+  Precisão = round(precision, 3),
+  Recall = round(recall, 3),
+  F1_Score = round(f1, 3)
+)
+print(metricas)
+```
+
+# Análise Discriminante Quadrática (QDA)
+
+```{r qda}
+# Ajustar o modelo QDA
+qda_model <- qda(risco ~ ., data = dados_treino)
+
+# Predição no conjunto de teste
+qda_pred <- predict(qda_model, newdata = dados_teste)
+
+# Matriz de confusão
+conf_matrix_qda <- table(Atual = dados_teste$risco, Previsto = qda_pred$class)
+print(conf_matrix_qda)
+
+# Calcular acurácia
+accuracy_qda <- sum(diag(conf_matrix_qda)) / sum(conf_matrix_qda)
+cat("Acurácia do modelo QDA:", round(accuracy_qda * 100, 2), "%\n")
+
+# Comparar LDA e QDA
+comparison <- data.frame(
+  Modelo = c("LDA", "QDA"),
+  Acurácia = c(accuracy, accuracy_qda) * 100
+)
+
+ggplot(comparison, aes(x = Modelo, y = Acurácia, fill = Modelo)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = paste0(round(Acurácia, 1), "%")), vjust = -0.5) +
+  theme_minimal() +
+  labs(title = "Comparação de Acurácia: LDA vs QDA") +
+  ylim(0, 100)
+```
+
+# Classificar Novos Pacientes
+
+```{r novos-pacientes}
+# Criar dados para novos pacientes fictícios
+novos_pacientes <- data.frame(
+  idade = c(45, 62, 50),
+  pressao_sistolica = c(125, 145, 160),
+  colesterol_total = c(190, 230, 245),
+  hdl = c(50, 40, 35),
+  glicose = c(90, 105, 125),
+  tabagismo_sim = c(0, 0, 1)
+)
+
+# Classificar usando o modelo LDA
+lda_novos <- predict(lda_model, newdata = novos_pacientes)
+
+# Mostrar classificação e probabilidades
+resultados <- data.frame(
+  ID = paste("Paciente", 1:3),
+  Classificação = as.character(lda_novos$class),
+  Prob_Baixo = round(lda_novos$posterior[, "Baixo"], 3),
+  Prob_Moderado = round(lda_novos$posterior[, "Moderado"], 3),
+  Prob_Alto = round(lda_novos$posterior[, "Alto"], 3)
+)
+
+print(resultados)
+
+# Projetar os novos pacientes no espaço discriminante
+novos_viz <- data.frame(
+  ID = paste("Paciente", 1:3),
+  LD1 = lda_novos$x[, 1],
+  LD2 = lda_novos$x[, 2],
+  Classificação = lda_novos$class
+)
+
+# Visualizar os novos pacientes junto com os dados de treino
+ggplot() +
+  geom_point(data = dados_treino_lda, aes(x = LD1, y = LD2, color = risco), 
+             alpha = 0.3, size = 2) +
+  geom_point(data = novos_viz, aes(x = LD1, y = LD2), 
+             size = 4, color = "black", shape = 17) +
+  geom_text(data = novos_viz, aes(x = LD1, y = LD2, label = ID),
+            hjust = -0.3, size = 3) +
+  theme_minimal() +
+  labs(title = "Classificação de Novos Pacientes",
+       x = paste("LD1 (", round(prop_var[1] * 100, 1), "%)", sep = ""),
+       y = paste("LD2 (", round(prop_var[2] * 100, 1), "%)", sep = ""))
+```
+

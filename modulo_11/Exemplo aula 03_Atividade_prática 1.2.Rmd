@@ -1,0 +1,116 @@
+---
+title: "Exemplo aula 03_Atividade_prática 1.2"
+author: "Cynthia Tojeiro"
+date: "2025-02-12"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+#Modelos de Regressão Múltipla
+Inicialmente vamos carregar os dados no R, utilizando os códigos a seguir.  
+
+```{r, message=FALSE, warning=FALSE}
+# Limpa a memória
+
+#rm(list=ls())
+
+# Pacote necessario para leitura dos dados
+library(readxl) #para ler no excell
+
+# Dados referentes a diabetes mellitus tipo 1 (DM1)
+dados <- read.table("C:\\datascience\\exercicio1.txt")
+
+#Para ver as 6 primeiras linhas do conjunto de dados
+
+head(dados)
+attach(dados)
+```
+
+```{r, message=FALSE, warning=FALSE}
+
+sexo <- dados[,2]
+idade<-dados[,3]
+escolaridade<-dados[,4]
+imc<-dados[,5]
+tempodiabetes<-dados[,6]
+usoinsulina<-dados[,7]
+hemoglobina<-dados[,8]
+
+```
+
+#Modelos de Regressão Múltipla
+Vamos continuar com os mesmos dados, entretanto agora para fazer o ajuste
+do modelo de regressão múltipla usamos a função lm da seguinta forma:
+
+```{r, message=FALSE, warning=FALSE}
+fit.model<-result<-lm(hemoglobina~sexo+idade+escolaridade+imc+tempodiabetes+usoinsulina)
+summary(result)
+
+```
+
+# Método de Seleção de Modelos
+
+
+# backward, forward, stepwise
+
+step(result, direction = "backward")
+
+step(result, direction = "forward")
+
+step(result, direction = "both")
+
+# Teste F para comparar a qualidade dos modelos com e sem a variável imc.
+
+```{r, message=FALSE, warning=FALSE}
+result2 <- update(result, ~. - imc)
+
+summary(result2)
+
+anova(result2, result)
+```
+
+
+\begin{itemize}
+\item A comparação dos modelos indica que não existem indícios para rejeitar a hipótese nula de igualdade de qualidade dos modelos.
+\item Os modelos são semelhantes escolhendo-se, portanto, o modelo mais simples, pelo princípio da parcimónia.
+\end{itemize}
+
+
+# Teste da razão de verossimilhança
+
+#programa auxiliar
+```{r, message=FALSE, warning=FALSE}
+calc.estat.mod.comp.MRNLH <- function(result){ X <- model.matrix(result)
+  logLikr <- logLik(result)
+  n <- nrow(X)
+  p <- ncol(X) #+ 1
+  AICe <- AIC(result)
+  BICe <- BIC(result)
+  m2loglik <- -2*logLikr
+  resultE <- c(AICe,BICe,m2loglik)
+  names(resultE)<- c("AIC","BIC","-2log.lik")
+  return(resultE)
+  cat(estatísticac,resultE,"\n")
+}
+```
+
+
+```{r, message=FALSE, warning=FALSE}
+library(xtable)
+```
+
+
+
+```{r, message=FALSE, warning=FALSE}
+m.estat <- cbind(rbind(AIC(result),BIC(result),as.numeric(logLik(result))),rbind(AIC(result2),BIC(result2),as.numeric(logLik(result2))))
+TRV <-  -2*(as.numeric(logLik(result)) - as.numeric(logLik(result2)))
+pvalor <- 1-pchisq(TRV,df=1)
+
+estmodcom1 <- calc.estat.mod.comp.MRNLH(result)
+estmodcom2 <- calc.estat.mod.comp.MRNLH(result2)
+
+m.estat <- cbind(estmodcom1,estmodcom2,pvalor)
+xtable(m.estat)
+```
+

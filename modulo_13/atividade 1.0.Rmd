@@ -1,0 +1,160 @@
+---
+title: 'Análise de Sobrevivência '
+subtitle: '1.0 - Aula Prática'
+author: "Prof. Dr. Eder Angelo Milani"
+date: "26/04/2025"
+output: pdf_document
+--- 
+
+
+# Modelo de Cox estratificado 
+
+
+A análise dos dados de câncer CID-C34 apresentou violação da suposição de taxas de falha proporcionais para as covariáveis radioterapia e quimioterapia. Assim, uma possibilidade para a análise desses dados é a de estratificá-los de acordo com as categorias das covariáveis que violaram a suposição de riscos proporcionais. 
+
+
+Para exemplificar, vamos considerar o ajuste considerando a variável radioterapia, neste caso, o modelo de Cox estratificado fica representado por
+$$\lambda(t|x_{ij}) = \lambda_{0j}(t)\exp(x_{ij}'\beta),$$
+para $j=1, 2$, $i=1, \ldots, n_j$, com $n_j$ denotando o número de pacientes no $j$-ésimo estrato. 
+
+As linhas de cógido a seguir executam as seguintes tarefas: 
+
+- leitura dos dados filtrados para CID C34;
+
+- breve visualização do conjunto de dados;
+
+- modifica a escala de tempo para ano, em vez de dia;
+
+- excluir os tempos iguis a zero. 
+
+- modifica a variável SEXO de 1-Masculino e 2-Feminino para 0-Masculino e 1-Feminino;
+
+- ajusta o modelo de Cox estratificado.
+
+
+```{r}
+# limpando o que tem na memoria
+rm(list=ls())
+library(survival)
+
+# local onde esta o arquivo com os dados 
+setwd("G:\\Meu Drive\\UFG\\Especializacao\\Aulas Análise Sobrevivência\\Códigos")
+
+### leitura 
+dados <- read.csv("cancer_c34.csv")
+head(dados)
+
+# mudança na variável tempo - de dias para ano 
+dados$TEMPO <- dados$TEMPO/365
+
+# excluir os tempos iguais a zero 
+ind_tempo_zero <- which(dados$TEMPO == 0)
+ind_tempo_zero 
+
+dados$TEMPO[256]
+
+dados <- dados[-ind_tempo_zero,]
+
+# outra forma de filtrar 
+# dados <- dados %>% filter(TEMPO != 0)
+
+table(dados$SEXO)
+
+dados$SEXO <- dados$SEXO -1 
+
+dados$SEXO <- factor(dados$SEXO)
+dados$CIRURGIA <- factor(dados$CIRURGIA)
+dados$RADIO <- factor(dados$RADIO)
+
+cox_est <- coxph(Surv(TEMPO, CENSURA) ~ SEXO + CIRURGIA
+                 + strata(RADIO), data = dados, x=TRUE)
+                 
+summary(cox_est) # apresenta uma serie de estatisticas de interesse 
+
+# avaliacao do modelo 
+
+# residuo de Schoenfeld
+cox.zph(cox_est, transform = "identity")
+
+plot(cox.zph(cox_est, transform = "identity"))
+
+# residuo de Cox-Snell 
+
+res_cs_cox_est <- dados$CENSURA -  resid(cox_est, type = "martingale")
+summary(res_cs_cox_est)
+
+# grafico
+cox_snell <- survfit(Surv(res_cs_cox_est, dados$CENSURA) ~ 1)
+exp_res_cs_cox_est <- exp( - cox_snell$time) 
+plot(cox_snell$surv , exp_res_cs_cox_est, ylab="S(t) - exponencial", 
+     xlab="S(t) - EKM", main = "Resíduos de Cox-Snell")
+abline(a=0, b=1)
+
+# sobrevivencia estimada
+
+# Obter a função de sobrevivência basal
+sobre_basal <- survfit(cox_est)
+#summary(sobre_basal)
+
+# Plotar a função de sobrevivência basal
+plot(sobre_basal, main = "Função de Sobrevivência Basal", 
+     xlab = "Tempo", ylab = "S(t)", col=c("blue", "blue"), lty=1:2)
+title(sub = "Covariáveis: Sexo = 0 - Masc e Cirurgia = 0 - Não")
+legend(4, 0.8, legend = c("Não fez radio", "Fez radio"),
+       col = c("blue", "blue"), bty="n", lty=1:2)
+
+
+# Quero agora as 8 curvas de sobrevivencia estimada 
+
+covs <- expand.grid(
+  SEXO = c("0", "1"),
+  CIRURGIA = c("0", "1"),
+  RADIO = c("0", "1")
+)
+
+# variaveis como fatores 
+covs$SEXO     <- factor(covs$SEXO,     levels = levels(dados$SEXO))
+covs$CIRURGIA <- factor(covs$CIRURGIA, levels = levels(dados$CIRURGIA))
+covs$RADIO    <- factor(covs$RADIO,    levels = levels(dados$RADIO))
+
+covs
+
+# sobrevivencia estimada para cada combinacao 
+curvas <- survfit(cox_est, newdata = covs)
+
+# Cores e linhas para identificar
+cores <- c("blue", "red", "blue", "red", "blue","red", "blue", "red")
+tipos_linha <- c(1, 1, 2, 2, 3, 3, 4, 4)
+
+# Criar rotulos para legenda
+rotulos <- apply(covs, 1, function(linha) {
+  paste0("S", linha[["SEXO"]], 
+         ", C", linha[["CIRURGIA"]],
+         ", R", linha[["RADIO"]])
+})
+
+# rotulos
+
+plot(curvas, col = cores, lty = tipos_linha,
+     xlab = "Tempo", ylab = "S(t)",
+     main = "Funções de Sobrevivência para todas as combinações")
+
+legend(3, 1, legend = rotulos[1:4], col = cores[1:4], 
+       lty = tipos_linha[1:4], lwd = 2, horiz = F, cex = 0.8, bty = "n")
+
+legend(5, 1, legend = rotulos[5:8], col = cores[5:8], 
+       lty = tipos_linha[5:8], lwd = 2, horiz = F, cex = 0.8, bty = "n")
+```
+
+
+Observações: 
+
+
+(i) Note que as estimativas obtidas para os $\beta$'s são muito similares as obtidas sem considerar a estratificação. Com isso, as interpretações são também similares.
+
+(ii) Na formulação do modelo, independentemente da configuração das covariáveis, a razão das taxas de falhas sempre são constantes. 
+
+Mas observe que as curvas de sobrevivência para as covariáveis S1, C0, R0 e S0, C0, R1 se cruzam, isso só acontece se as taxas de falhas não são proporcionais, o mesmo também acontece para S1, C1, R0 e S0, C1, R1, isso ocorreu devido a utilização dos estratos que foram adotados seguindo a covariável RADIO.   
+
+(iii) Quando a quantidade de combinações das covariáveis são muitas, a construção do gráfico com todas as possíveis combinações é pouco informativo. A sugestão nesse caso é a construção do gráfico para algumas configurações. 
+

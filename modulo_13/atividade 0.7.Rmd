@@ -1,0 +1,202 @@
+---
+title: 'Análise de Sobrevivência '
+subtitle: '0.7 - Aula Prática'
+author: "Prof. Dr. Eder Angelo Milani"
+date: "25/04/2025"
+output: pdf_document
+--- 
+
+
+# Leitura dos dados 
+
+
+As linhas de cógido a seguir executam as seguintes tarefas: 
+- leitura dos dados filtrados para CID C34;
+
+- breve visualização do conjunto de dados;
+
+- modifica a escala de tempo para ano, em vez de dia;
+
+- excluir os tempos iguis a zero. 
+
+```{r}
+# limpando o que tem na memoria
+rm(list=ls())
+
+# local onde esta o arquivo com os dados 
+setwd("G:\\Meu Drive\\UFG\\Especializacao\\Aulas Análise Sobrevivência\\Códigos")
+
+### leitura 
+dados <- read.csv("cancer_c34.csv")
+head(dados)
+
+# mudança na variável tempo - de dias para ano 
+dados$TEMPO <- dados$TEMPO/365
+
+# excluir os tempos iguais a zero 
+ind_tempo_zero <- which(dados$TEMPO == 0)
+ind_tempo_zero 
+
+dados$TEMPO[256]
+
+dados <- dados[-ind_tempo_zero,]
+
+# outra forma de filtrar 
+# dados <- dados %>% filter(TEMPO != 0)
+
+```
+
+# Ajuste do modelo de Cox - variável sexo
+
+
+As linhas de cógido a seguir executam as seguintes tarefas:
+
+- modifica a variável SEXO de 1-Masculino e 2-Feminino para 0-Masculino e 1-Feminino;
+
+- ajusta o modelo de Cox utilizando a variável sexo.
+
+
+```{r}
+library(survival)
+
+table(dados$SEXO)
+
+dados$SEXO <- dados$SEXO -1 
+
+cox_sexo <- coxph(Surv(TEMPO, CENSURA) ~ as.factor(SEXO), data = dados, x=TRUE)
+# x = TRUE salva a matriz das covariaveis para outras analises
+
+summary(cox_sexo) # apresenta uma serie de estatisticas de interesse 
+
+# estimando a funcao de sobrevivencia
+
+# usando Kaplna-Meier
+ekm <- survfit(Surv(TEMPO, CENSURA) ~ as.factor(SEXO), data=dados)
+
+# usando o modelo de Cox
+novo_dados <- data.frame(SEXO = factor(c(0, 1)))
+is.factor(novo_dados$SEXO)
+
+sobre_est <- survfit(cox_sexo, newdata = novo_dados)
+#summary(sobre_est)
+
+plot(ekm, mark.time = F, conf.int = F, xlab="Tempo (ano)", ylab="S(t)")
+lines(sobre_est, col = c("blue", "red"))
+legend(4, 0.8, legend = c("Masculino", "Feminino"),
+       col = c("blue", "red"), lty = 1, bty = "n")
+
+```
+Observe que obtemos várias estatísticas, vamos a interpretação  dos resultados;
+
+- a coluna **coef** apresenta a estimativa dos parâmetros $\beta$'s, podemos destacar que valor positivo para $\beta$ indica que a variável aumenta o risco de óbito, enquanto que valores negativos de $\beta$ indica que a variável contribui para a redução do risco de óbito, quando comparado com o risco basal;
+
+- a coluna **se(coef)** mostra o erro padrão das estimativas;
+
+- a coluna **z** exibe a estatística do teste de hipóteses de Wald, com hipótese nula dada por  $H_0: \ \beta_i = 0$;
+
+- a coluna **Pr(>|z|)** expõe o p-valor do teste de hipótese de Wald;  
+
+-  a coluna **exp(coef)** calcula o valor $\exp(\beta_i)$, que é interpretado como a razão dos riscos. A coluna **exp(-coef)** indica o inverso de **exp(coef)**;  
+
+- as colunas **lower .95** e  **upper .95** indicam os limites inferior e superior do intervalo de confiança de 95% para a razão dos riscos. 
+
+
+Neste exemplo, temos que a estimativa do parãmetro $\beta$ referente a covariável Sexo é igual a -0,28, indicando assim que se o paciente for do sexo feminino diminui o risco de óbito. Além disso, o teste de hipóteses apresenta evidências a favor de rejeitar a hipótese nula, ao nível de significãncia de 5%, ou seja, que $\hat{\beta} \neq 0$, pois o p-valor é menor que 5\%. 
+
+
+Agora quando comparamos o sexo masculino com o feminino, a partir da razão dos riscos, temos que 
+
+$$\frac{\lambda(t|x = \mbox{Fem})}{\lambda(t| x = \mbox{Mas})}= \exp(\hat{\beta}) = 0,75;$$
+ou seja, a razão dos riscos é igual a 0,75, indicando que o risco do sexo feminino de ir a óbito é 0,75 vezes o risco do sexo de masculino de ir a óbito, ou ainda, o risco do sexo feminino é 25\% menor do que risco do sexo masculino. 
+
+
+Caso o interesse esteja em usar o sexo masculino como referência, observe que temos que inverter a razão dada acima, o que resulta em analisar **exp(-coef)**, assim temos que o sexo masculino tem risco de óbito de 1,33 vezes o risco do sexo feminino, ou ainda, 33\% a mais do que o sexo feminino. 
+
+
+O intervalo de confiança de 95\% é dado por (0,718; 0,791), observamos que o valor 1 não pertence ao intervalo de confiança, indicando assim que a razão é diferente de 1, logo podemos concluir que o risco atribuido ao sexo feminino é diferente do risco do sexo masculino.
+
+
+**Obs.: note que já realizamos a interpretação dos parâmetros estimados pelo modelo de Cox, no entanto, essa interpretação só deve ser realizada após a verificação da adequação do modelo aos dados.**
+
+
+## Adequação do modelo de Cox
+
+
+```{r}
+# verificacao de proporcionalidade 
+
+# metodo grafico 
+
+mod1 <- coxph(Surv(TEMPO[SEXO==0],CENSURA[SEXO==0])~1,
+              data=dados, method="breslow")
+# estimacao do modelo de Cox sem covariaveis 
+# Colosimo e Giolo sugerem a estimacao do 
+# risco utilizando o metodo de Nelson-Aalen-Breslow
+
+summary(mod1)
+ss <- survfit(mod1)
+H01 <- -log(ss$surv)
+# relacao entre a S(t) e H(t)
+# S(t) = exp(-H(t))
+# -log(S(t)) = -log(exp(-H(t))) = H(t)
+time1 <- ss$time
+
+mod2 <- coxph(Surv(TEMPO[SEXO==1],CENSURA[SEXO==1])~1,
+              data=dados, method="breslow")
+summary(mod2)
+ss <- survfit(mod2)
+H02 <- -log(ss$surv)
+time2 <- ss$time
+
+plot(time1, log(H01), type='l', main="Tempo vs log(H)", lwd=2, xlab="Tempo", ylab="log(H)")
+lines(time2, log(H02), lty=2, col="red", lwd=2)
+
+# observe que existe indicios de proporcionalidade
+
+
+# residuos de Schoenfeld 
+cox.zph(cox_sexo, transform = "identity")
+# observe que o teste de hipoteses nao rejeita 
+# a hipotese nula de proporcionalidade 
+
+
+plot(cox.zph(cox_sexo, transform = "identity"))
+
+# observe que a curva estimada fica quase que constante ao longo do tempo
+# e proximo do valor estimado do beta
+
+# residuo de Cox-Snell 
+
+res_cs_sexo <- dados$CENSURA -  resid(cox_sexo, type = "martingale")
+
+summary(res_cs_sexo)
+
+# grafico
+
+ekm_cox_snell_sexo <- survfit(Surv(res_cs_sexo, dados$CENSURA) ~ 1)
+
+exp_res_cs_sexo <- exp(- ekm_cox_snell_sexo$time)
+
+plot(ekm_cox_snell_sexo$surv, exp_res_cs_sexo, main = "Resíduo", ylab="S(t) - exponencial", xlab="S(t) - EKM")
+abline(a=0, b=1)
+
+
+# residuo martigale 
+
+res_mart_sexo <- resid(cox_sexo, type = "martingale")
+
+plot(res_mart_sexo)
+abline(h=0)
+# note que nao vemos pontos aberrantes/outliers 
+
+# probabilidade de concordancia 
+# teste de hipoteses 
+
+summary(cox_sexo)
+
+# concordancia de 0.533 - significa que a concordancia pode ser por acaso 
+# teste de hipoteses para beta_sexo = 0
+# TRV - rejeita a hipotese nula 
+# Wald - rejeita a hipotese nula 
+# Score - rejeita a hipotese nula 
+```

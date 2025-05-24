@@ -1,0 +1,856 @@
+---
+title: "Atividade Avaliativa"
+subtitle: "Análise de Regressão Linear"
+author: "Ana Maria Alves da Silva"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+  always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = 'center'  # centraliza todas as figuras
+)
+
+```
+
+```{r libraries, echo=FALSE, warning = FALSE, message=FALSE}
+
+library(readr)
+library(car)
+library(tidyverse)
+library(robustbase) #Boxplot robusto das variaveis
+library(dplyr) # Manipulação de dados
+library(ggplot2) # Visualização de dados
+library(MASS)# necessário para análise de multicolinearidade
+library(alr4)
+library(xtable)
+library(ggcorrplot)
+library(visdat)#visualização "mais elegante" dos dados
+library(skimr) #análise exploratória mais geral
+library(stargazer)#Tabelas
+library(plotly)#Box-plots com informações
+library(corrplot)
+library(lmtest)#teste de Breush-Pagan
+```
+
+
+\textbf{- O conjunto de dados trata-se de 11 características clínicas utilizadas para a previsão de possíveis eventos relacionados a pressão arterial.}
+
+\begin{itemize}
+\item  A hipertensão arterial (HA) representa o principal fator de risco para desenvolvimento de doenças cardiovasculares e mortalidade em todo
+o mundo. É uma doença multifatorial, caracterizada e diagnosticada por níveis elevados e sustentados de pressão arterial (PA), possuindo,
+como critério clínico, em indivíduos maiores de 18 anos, níveis tensionais iguais ou maiores a 140 mmHg × 90 mmHg1. 
+\item Há diversos fatores que podem ser responsáveis pelo desenvolvimento da doença. Entre eles podemos citar: idade, sexo, colesterol, açúcar no sangue em jejum, doença cardíaca, entre outros. O objetivo nesse trabalho é verificar dentre as variáveis disponíveis quais delas podem contribuir para a hipertensão arterial(RestingBP).
+\item Nesse estudo foram utilizados dados relacionados
+à variável dependente (pressão arterial) e
+às seguintes variáveis independentes: idade, sexo, colesterol sérico, açúcar no sangue em jejum, resultados de eletrocardiograma, doenças cardíacas , angina induzida por exercícios, frequência cardíaca, “OldPeak” e “ST” que é relacionada a inclinação do segmento ST do exercício de pico.
+\end{itemize}
+
+\textbf{- Questões para a atividade avaliativa:}
+
+
+## Item 1: (0.5 pts.) Realizar a Análise Descritiva dos Dados:
+Para se familiarizar com os dados, faça uma boa caracterização de todas as variáveis quantitativas e qualitativas do arquivo, uma a uma, usando medidas resumo adequados a cada variável. Comente!
+
+### Solução:
+
+Primeiramente, vamos carregar o conjunto de dados.
+
+```{r}
+setwd <- "/Users/anamaria/especializacao/modulo_11/Atividade Avaliativa"
+df <- read.csv("heart.csv", sep = ",")
+print(dim(df))
+print(is.data.frame(df))
+```
+Logo, o dataframe df possui 918 observações e 12 colunas. O código a seguir nos mostra os tipos de variávies presentes no dataframe.
+
+```{r}
+str(df) 
+```
+
+Para verificar se há valores ausentes, podemos usar a função colSums e is.na no dataframe, conforme o código abaixo.
+
+```{r}
+print(colSums(is.na(df)))
+```
+Ou ainda:
+
+```{r}
+print(colnames(df)[colSums(is.na(df)) > 0])
+```
+Em ambos os casos, vemos que não há valores ausentes. Se houvesse valores ausentes teriamos que trata-los de alguma maneira. Para obtermos a estatísticas descritivas (média, mediana, variância, frequências, etc.) podemos usar:
+
+```{r}
+print(summary(df))
+```
+
+Lembremos que as variáveis podem ser classificadas em dois grandes grupos:
+ 
+ -  Qualitativas: Representam categorias e podem ser nominais, isso é sem ordem natural, ou podem ser ordinais, isto é com uma ordem definida.
+ 
+ - Quantitativas: Representam números e podem ser discretas, valores inteiros, ou podem ser contínuas, isso é com valores em números reais.
+
+Além disso, as escalas de medida são:
+ 
+ - Nominal: Categorização sem ordem.
+
+ - Ordinal: Categorização com ordem definida.
+
+ - Intervalar: Diferenças entre valores fazem sentido, mas não há um zero absoluto.
+
+ - Razão: Diferenças e razões fazem sentido, e há um zero absoluto.
+
+Abaixo, classificamos as variáveis do estudo conforme seu tipo e escala de medida:
+
+
+#### 1) Variáveis Quantitativas
+
+##### 1.1 Age
+- **Tipo:** Quantitativa  
+- **Escala:** Razão  
+- **Justificativa:** Idade expressa quantidade de anos de vida. Zero implica ausência de idade (embora não seja observável em estudo de adultos), e faz sentido dizer que 60 anos é o dobro de 30 anos. Logo, há um zero absoluto e as razões são interpretáveis.
+
+##### 1.2 RestingBP
+- **Tipo:** Quantitativa  
+- **Escala:** Razão  
+- **Justificativa:** Pressão arterial (mmHg) pode teoricamente partir de zero (ausência de pressão) e se mantém como uma grandeza física mensurável. As diferenças e proporções fazem sentido (por exemplo, 140 mmHg é 2 vezes 70 mmHg).
+
+##### 1.3 Cholesterol
+- **Tipo:** Quantitativa  
+- **Escala:** Razão  
+- **Justificativa:** Valores de colesterol (mg/dL) também se baseiam em uma medida com zero absoluto (0 mg/dL = ausência de colesterol). Em geral, interpreta-se como uma quantidade mensurável, sendo assim razão.
+
+##### 1.4 MaxHR
+- **Tipo:** Quantitativa  
+- **Escala:** Razão  
+- **Justificativa:** Batimentos cardíacos máximos por minuto (bpm) também se interpretam em relação a um zero absoluto (0 bpm = ausência de batimentos). 160 bpm, por exemplo, é o dobro de 80 bpm. Logo, escala de razão.
+
+##### 1.5 Oldpeak
+- **Tipo:** Quantitativa  
+- **Escala:** Intervalo  
+- **Justificativa:** Oldpeak representa **desvio** (depressão ou elevação) do segmento ST em relação ao repouso, podendo ser **positivo ou negativo**. Isso indica que zero é um “ponto de referência” (nenhuma variação), mas não implica ausência de fenômeno. Assim, a interpretação é mais adequada como escala de intervalo (ex.: -2.0 vs. +2.0 são desvios distintos em direções opostas, mas não faz sentido dizer que +4.0 é o “dobro” de +2.0).
+
+
+#### 2) Variáveis Qualitativas
+
+##### 2.1 Sex
+- **Tipo:** Qualitativa  
+- **Escala:** Nominal  
+- **Justificativa:** Valores “M” ou “F” (ou “0”/“1”), sem ordem intrínseca. É apenas uma categorização (masculino e feminino).
+
+##### 2.2 ChestPainType
+- **Tipo:** Qualitativa  
+- **Escala:** Nominal (ou Ordinal, dependendo da codificação)  
+- **Justificativa:** Se for apenas um rótulo de tipos (ex.: “TA”, “ATA”, “NAP”, “ASY”), costuma ser nominal, pois não há necessariamente uma hierarquia. Se houvesse uma clara progressão de severidade, poderíamos considerar ordinal.
+
+##### 2.3 FastingBS
+- **Tipo:** Qualitativa (binária)  
+- **Escala:** Nominal  
+- **Justificativa:** Em geral é 0 ou 1 (ex.: “FastingBS>120 mg/dL” = 1). Não há ordem entre 0 e 1 que faça sentido em termos de magnitude; é apenas um indicador (sim ou não).
+
+##### 2.4 RestingECG
+- **Tipo:** Qualitativa  
+- **Escala:** Nominal (ou Ordinal, conforme a codificação clínica)  
+- **Justificativa:** Se codificado como “Normal”, “ST-T abnormality”, “Left ventricle hypertrophy” etc., normalmente não há uma ordem estrita. Entretanto, alguns preferem considerá-la ordinal se existir progressão de gravidade. Geralmente, trata-se de níveis de anormalidade sem escala numérica explícita, então nominal costuma ser o mais frequente.
+
+##### 2.5 ExerciseAngina
+- **Tipo:** Qualitativa (binária)  
+- **Escala:** Nominal  
+- **Justificativa:** Típico “Yes”/“No” (ou “Y”/“N”). Não há sentido em dizer que “Yes” é maior do que “No”. É um estado (presença ou ausência de angina).
+
+##### 2.6 ST_Slope
+- **Tipo:** Qualitativa (frequentemente)  
+- **Escala:** Ordinal, se os valores forem algo como “Up”, “Flat”, “Down”  
+- **Justificativa:** Em termos clínicos, “Up” < “Flat” < “Down” reflete gravidade crescente de anormalidade no segmento ST. Assim, há uma **ordem** plausível (“Up” é melhor que “Flat”, e “Flat” é melhor que “Down”). Se não houver registro dessa hierarquia, trataríamos como nominal, mas é comum interpretá-la como ordinal.
+
+##### 2.7 HeartDisease
+- **Tipo:** Qualitativa (binária)  
+- **Escala:** Nominal  
+- **Justificativa:** 0 ou 1 (ausência ou presença de doença). É um critério de classificação, sem noção de “maior” ou “menor”.
+
+
+#### Observações
+
+- Em alguns estudos, certas variáveis categóricas podem ter **ordem implícita** (por exemplo, graus de dor: leve, moderada, intensa), configurando uma escala **ordinal**.  
+- Já as variáveis numéricas que podem assumir **zero absoluto** e permitir comparação de razões (“o dobro, o triplo”) são da **escala de razão**.  
+- Variáveis em que se mede uma diferença em relação a um ponto de referência (podendo ter valores negativos) tendem a ser **intervalares**.  
+- Quando uma variável binária (0/1) se refere a “presença/ausência” (síndrome, condição, sintoma), a escala é nominal, pois não há valor maior ou menor, apenas categorias distintas.
+
+Essa classificação ajuda a **escolher as análises**, por exemplo, testes paramétricos vs. não paramétricos, regressões lineares vs. logísticas etc. E a forma de descrever cada variável, i.e., estatísticas para variáveis quantitativas, frequências para variáveis qualitativas.
+
+
+#### Transformando as variáveis categóricas em fator
+
+```{r}
+df$Sex <- factor(df$Sex, 
+                 levels = c("M", "F"),
+                 labels = c("Masculino", "Feminino"))
+
+df$ChestPainType <- factor(df$ChestPainType,
+                           levels = c("TA", "ATA", "NAP", "ASY"),
+                           labels = c("Tipica Angina", "Angina Atipica", 
+                                      "Dor Nao Anginosa", "Assintomatico"))
+
+df$FastingBS <- factor(df$FastingBS,
+                       levels = c(0, 1),
+                       labels = c("<=120", ">120"))
+
+df$RestingECG <- factor(df$RestingECG,
+                        levels = c("Normal", "ST", "LVH"),
+                        labels = c("Normal", "ST-T wave abnormality", 
+                                   "Left Ventricular Hypertrophy"))
+
+df$ExerciseAngina <- factor(df$ExerciseAngina,
+                            levels = c("N", "Y"),
+                            labels = c("Nao", "Sim"))
+
+df$ST_Slope <- factor(df$ST_Slope,
+                      levels = c("Up", "Flat", "Down"),
+                      ordered = TRUE)
+
+df$HeartDisease <- factor(df$HeartDisease,
+                          levels = c(0, 1),
+                          labels = c("Nao", "Sim"))
+
+```
+
+#### Tratamento de valores ausentes
+
+```{r , eval=F}
+df <- df %>%
+  mutate(across(c(RestingBP, Cholesterol,), ~ 
+ifelse(. == 0, mean(., na.rm = TRUE), .)))
+
+# Confirmando o tratamento
+summary(df)
+
+```
+#### Análise exploratória mais completa
+
+```{r , eval=F}
+skim(df)
+```
+
+## Item 2: (0.5 pts.) Faça uma análise descritiva gráfica dos dados usando boxplots e diagramas de dispersão. Comente!
+
+### Solução:
+
+#### 1) Bloxplot
+
+```{r}
+boxplot(RestingBP ~ HeartDisease,
+        data = df,
+        main = "Boxplot da Pressao Arterial por Doenca Cardiaca",
+        xlab = "Doenca Cardiaca (0 = Nao, 1 = Sim)",
+        ylab = "Pressao Arterial (mmHg)",
+        col = c("lightblue", "darkblue"),
+        names = c("Nao", "Sim"))
+```
+O boxplot indica que indivíduos com doença cardíaca tendem a apresentar valores medianos de pressão arterial ligeiramente mais elevados do que aqueles sem a doença. A amplitude interquartil é semelhante entre os grupos, porém o grupo com doença cardíaca apresenta mais valores extremos (outliers), sugerindo maior variabilidade. Essa diferença pode indicar que a pressão arterial elevada é mais comum em pacientes com problemas cardíacos.
+
+
+```{r}
+
+boxplot(Age ~ HeartDisease,
+        data = df,
+        main = "Boxplot da Idade por Presenca de Doenca Cardiaca",
+        xlab = "Doenca Cardiaca (0 = Nao, 1 = Sim)",
+        ylab = "Idade (anos)",
+        col = c("lightgreen", "darkgreen"),
+        names = c("Nao", "Sim"))
+```
+
+Observa-se que a mediana da idade dos indivíduos com doença cardíaca é superior à dos indivíduos sem a doença. O grupo com doença cardíaca também apresenta maior dispersão na idade, especialmente para idades mais avançadas. Isso sugere que a idade pode ser um fator de risco relevante, já que indivíduos mais velhos tendem a apresentar maior incidência de doença cardíaca.
+
+```{r}
+boxplot(Cholesterol ~ HeartDisease,
+        data = df,
+        main = "Boxplot de Colesterol por Doenca Cardiaca",
+        xlab = "Doenca Cardiaca (0 = Nao, 1 = Sim)",
+        ylab = "Colesterol (mg/dL)",
+        col = c("lightcoral", "lightpink"),
+        names = c("Nao", "Sim"))
+```
+
+Os níveis de colesterol apresentam distribuições semelhantes entre os dois grupos. A mediana é levemente superior no grupo com doença cardíaca, mas a diferença é pequena. No entanto, ambos os grupos possuem diversos outliers, indicando que existem pacientes com colesterol muito elevado em ambas as categorias. Isso pode indicar que colesterol alto, isoladamente, não é um fator determinante da doença, mas ainda pode contribuir em conjunto com outras variáveis.
+
+
+
+```{r} 
+boxplot(MaxHR ~ HeartDisease,
+        data = df,
+        main = "Boxplot de Frequencia Cardiaca Maxima por Doenca Cardiaca",
+        xlab = "Doenca Cardiaca (0 = Nao, 1 = Sim)",
+        ylab = "Frequencia Cardiaca Maxima (bpm)",
+        col = c("lightyellow", "orange"),
+        names = c("Nao", "Sim"))
+        
+```
+
+Indivíduos com doença cardíaca tendem a atingir uma frequência cardíaca máxima mais baixa do que aqueles sem a condição. Isso é evidenciado por uma mediana inferior e uma menor dispersão nos valores mais altos. Essa observação pode estar associada a limitações cardíacas durante o esforço físico em pessoas com doença cardíaca.
+
+
+
+
+```{r}
+boxplot(Oldpeak ~ HeartDisease,
+        data = df,
+        main = "Boxplot de Oldpeak por Doenca Cardiaca",
+        xlab = "Doenca Cardiaca (0 = Nao, 1 = Sim)",
+        ylab = "Desvio do Segmento ST (unidades)",
+        col = c("lightgray", "darkgray"),
+        names = c("Nao", "Sim"))
+```
+
+O desvio do segmento ST (Oldpeak), que é uma medida obtida durante testes de esforço, é visivelmente maior em pacientes com doença cardíaca. A mediana desse grupo é consideravelmente mais elevada, e a distribuição é mais dispersa. Isso indica que o desvio do segmento ST é um bom indicativo da presença da doença, sendo um marcador importante para diagnóstico clínico.
+
+#### 2) Gráficos de dispersão
+
+```{r}
+# Selecione apenas as variáveis numéricas de interesse:
+vars_num <- c("Age", "RestingBP", "Cholesterol", "MaxHR", "Oldpeak")
+
+# Gera a matriz de dispersão
+pairs(df[ , vars_num],
+      main = "Matriz de Dispersao das Variaveis Numericas",
+      pch = 19,      # símbolo de plotagem
+      cex = 0.5,     # tamanho dos pontos
+      col = "blue")  # cor dos pontos
+
+```
+
+
+Observando a matriz de dispersão acima, podemos extrair algumas impressões gerais sobre as relações e possíveis correlações entre as variáveis numéricas do conjunto:
+
+1. Age vs. MaxHR
+
+Nota-se uma tendência inversamente proporcional: à medida que a idade aumenta, a frequência cardíaca máxima tende a diminuir. Isso faz sentido fisiologicamente (máximo de batimentos por minuto costuma diminuir com o envelhecimento).
+
+2. Age vs. RestingBP / Age vs. Cholesterol
+
+Os pontos formam uma nuvem difusa, sem um alinhamento marcante que indique forte correlação linear. Pode haver leve tendência de aumento da pressão arterial com a idade, mas não é muito pronunciada pelos gráficos.
+
+3. RestingBP vs. Cholesterol
+
+Também exibe dispersão relativamente ampla. Não é possível visualizar um padrão claro de associação linear; há casos de colesterol elevado com pressão arterial tanto alta quanto moderada.
+
+4. Oldpeak vs. as demais variáveis
+
+A maioria dos pontos se concentra próxima ao valor 0 (sem grande depressão/elevação do ST), e surgem alguns outliers com valores altos ou negativos. Não se vê um padrão linear forte com Age, Cholesterol ou RestingBP, sugerindo pouca correlação direta.
+
+Com MaxHR também não há grande alinhamento.
+
+5. MaxHR vs. RestingBP / MaxHR vs. Cholesterol
+
+Observa-se grande espalhamento dos pontos, sem relação linear evidente. Podem existir tendências mais sutis ou não lineares, mas, se houver, não são claras no gráfico de dispersão.
+
+6. Dispersão geral
+
+A maioria dos pares apresenta nuvens de pontos sem alinhamento marcante, sugerindo associações fracas ou inexistentes em termos de linearidade. É claro que, para confirmar, seria ideal calcular coeficientes de correlação e eventualmente testar relações não lineares.
+
+## Item 3: (0.5 pts.) Calcule  correlações lineares de Pearson entre as variáveis contínuas (faça um gráfico de correlações), comente.
+
+### Solução:
+
+```{r}
+df_num <- df[, vars_num]
+
+corr_mat <- cor(df_num, method = "pearson", use = "complete.obs")
+
+library(corrplot)
+
+corrplot(corr_mat, method = "number", 
+         type = "upper",       
+         tl.col = "black",   
+         tl.srt = 45)       
+``` 
+
+
+Na matriz de correlação acima vemos que:
+
+1. Age vs. MaxHR  é a correlação de maior magnitude – ainda assim, moderada e negativa. Isso significa que pessoas mais velhas tendem a ter frequência cardíaca máxima menor.
+
+2. Age vs. RestingBP e Age vs. Oldpeak mostram correlações positivas porém fracas. Ou seja, a pressão arterial de repouso e o desvio ST podem aumentar levemente com a idade, mas sem grande intensidade.
+
+3. As demais correlações ficam entre -0,16 e +0,24, indicando relações lineares muito fracas, isso é, próximas de zero. Por exemplo, RestingBP e Cholesterol pouco se correlacionam, assim como Cholesterol e MaxHR .
+
+Nenhum par apresenta correlação forte acima de 0,7 ou abaixo de -0,7, sugerindo que não há multicolinearidade severa entre essas variáveis numéricas e que as associações lineares são em geral modestas.
+
+## Item 4: (0.5 pt.) Proponha um modelo de regressão normal linear com todas as variáveis explicativas.Comente!
+ 
+### Solução: 
+
+A ideia é considerar RestingBP como a variável resposta (dependente) e todas as outras variáveis  como explanatórias. 
+
+```{r}
+fit_full <- lm(RestingBP ~ Age + Sex + ChestPainType + Cholesterol + 
+                           FastingBS + RestingECG + MaxHR + ExerciseAngina + 
+                           Oldpeak + ST_Slope + HeartDisease,
+               data = df)
+
+summary(fit_full)
+```
+
+
+Note que Age, Cholesterol, ExerciseAngina, Oldpeak e o efeito linear de ST_Slope têm associação estatisticamente significativa com a pressão arterial de repouso, embora os coeficientes sejam em geral modestos. O modelo, apesar de estatisticamente significativo, explica apenas cerca de 10–11% da variação em RestingBP, sugerindo que muitos outros fatores (genéticos, ambiente, medicações, entre outros) influenciam essa medida. Em termos de aplicação, se o objetivo for prever RestingBP, esse modelo não é muito robusto (dada a baixa $R^2$). Se for para verificar que algumas variáveis (Age, Cholesterol, etc.) exercem algum efeito, ainda que modesto, então o modelo cumpre esse papel.
+
+## Item 5: (0.8 pts.) Faça uma análise de Multicolinearidade. Comente!
+
+### Solução:
+
+Como ja calculamos a matriz de correlação anteriormente, vamos calcular Fatores de inflação de variância (VFI)
+
+```{r}
+# 3. Cálculo dos VIFs
+library(car)
+vif_values <- vif(fit_full)
+print(vif_values)
+```
+Note que embora exista alguma correlação entre os preditores, os GVIFs indicam que nenhuma variável está excessivamente inflando a variância dos coeficientes. Portanto, a multicolinearidade não parece ser um grande obstáculo para este conjunto de dados.
+Agora, vamos calcular o Índice de Condição, que são autovalores da matriz de design (X) para obter o condition index, que também indica a presença de multicolinearidade (índices muito altos sugerem problemas).
+
+```{r}
+X <- model.matrix(fit_full)
+eigen_values <- eigen(t(X) %*% X)$values
+condition_index <- sqrt(max(eigen_values) / eigen_values)
+print(condition_index)
+
+```
+No vetores acima, há vários índices bastante altos (na casa de centenas ou milhares), o que sinaliza forte a severa multicolinearidade no modelo. Em outras palavras, há combinações de variáveis que são quase linearmente dependentes, deixando o modelo sensível com coeficientes instáveis, erros‐padrão inflado).
+Agora, vamos calcular a  Regressão Ridge.
+
+```{r}
+library(MASS)
+ridge_model <- lm.ridge(RestingBP ~ Age + Cholesterol + MaxHR + Oldpeak, 
+                        data = df, 
+                        lambda = seq(0, 0.2, 0.001))
+
+dim_coef <- dim(coef(ridge_model))
+print(dim_coef)
+print(length(ridge_model$lambda))
+
+df_coef <- as.data.frame(coef(ridge_model))
+df_coef$lambda <- ridge_model$lambda
+
+# Reorganiza as colunas para que lambda seja a primeira
+df_coef <- df_coef[, c("lambda", setdiff(names(df_coef), "lambda"))]
+
+# Visualize as primeiras linhas para conferir
+head(df_coef)
+
+# Cria o gráfico interativo com plotly:
+p <- plot_ly(df_coef, x = ~lambda)
+for(col in names(df_coef)[-1]) {
+  p <- p %>% add_lines(y = as.formula(paste0("~", col)), name = col)
+}
+p <- p %>% layout(title = "Trajetória dos Coeficientes na Regressão Ridge",
+                  xaxis = list(title = "Lambda"),
+                  yaxis = list(title = "Coeficientes"))
+```
+
+
+Age (coeficiente positivo): Indica que, a cada aumento de 1 ano de idade, a pressão arterial estimada (RestingBP) tende a subir em torno de “0.44 mmHg”, segurando as demais variáveis constantes. Cholesterol (coeficiente positivo, ~0.02): Sugere que cada aumento de 1 mg/dL de colesterol aumenta ligeiramente a pressão arterial. MaxHR (coeficiente negativo, ~-0.02): Cada batimento cardíaco máximo adicional está associado a uma redução pequena na pressão arterial estimada. Oldpeak (coeficiente positivo, ~1.61): Para cada 1 unidade de desvio ST, a pressão arterial de repouso aumenta, em média, cerca de 1.6 mmHg.
+
+Com os resultados acima e com a matriz de correlação calculada anteriormente, vemos que embora haja alguma correlação entre as variáveis explicativas, os resultados dos testes (VIF/GVIF, matrizes de correlação e índices de condição) sugerem que a multicolinearidade está em níveis aceitáveis. Isso significa que os coeficientes estimados podem ser interpretados com uma confiança razoável, sem que haja uma inflacão excessiva na variância dos estimadores.
+
+## Item 6: (0.8 pts.) Aplique o método do StepWise para verificar qual o melhor ajuste. Comente!
+
+### Solução: 
+```{r}
+step_model <- step(fit_full, direction = "both")
+
+# 3. Exibir o resumo do modelo selecionado
+summary(step_model)
+```
+
+O método Stepwise, aplicado com base no critério AIC, foi usado para reduzir o modelo completo e identificar um conjunto de preditores que, juntos, fornecem o melhor compromisso entre ajuste e simplicidade. O processo eliminou variáveis que não contribuíam significativamente para explicar a variação em RestingBP. O modelo final resultante inclui as seguintes variáveis:
+
+- Age
+
+- Cholesterol
+
+- FastingBS 
+
+- ExerciseAngina
+
+- Oldpeak
+
+- ST_Slope
+
+## Item 7: (0.8 pts.) No modelo escolhido pelo StepWise faça a interpretação dos parâmetros.
+
+### Solução:
+No modelo final escolhido pelo stepwise temos que:
+
+- Age:
+Para cada aumento de 1 ano na idade, mantendo as demais variáveis constantes, a pressão arterial em repouso aumenta, em média, cerca de 0.45 mmHg. Esse efeito é altamente significativo, indicando que a idade exerce um efeito positivo sobre a RestingBP.
+
+- Cholesterol:
+Para cada aumento de 1 mg/dL no colesterol sérico, a RestingBP aumenta em média 0.022 mmHg, mantendo as outras variáveis constantes. Embora o efeito seja pequeno por unidade, mudanças maiores em colesterol podem ter impacto acumulado, e o efeito é estatisticamente significativo.
+
+- FastingBS:
+Este parâmetro indica o efeito da categoria de FastingBS. Pacientes com FastingBS > 120 mg/dL têm, em média, uma RestingBP 2.63 mmHg maior do que aqueles com FastingBS <= 120 mg/dL, mantendo os demais fatores constantes. O p-valor é marginal, sugerindo efeito de tendência.
+
+- ExerciseAnginaSim:
+Indica que pacientes com angina induzida por exercício (sim) têm, em média, uma pressão arterial de repouso 3.40 mmHg maior do que os pacientes sem angina induzida, com os demais fatores controlados. Esse efeito é estatisticamente significativo.
+
+- Oldpeak:
+Cada aumento de 1 unidade em Oldpeak (o desvio do segmento ST) está associado a um acréscimo de aproximadamente 1.65 mmHg em RestingBP, mantendo as demais variáveis constantes. Esse efeito é estatisticamente significativo.
+
+- ST_Slope.L:
+O contraste linear da variável ordinal ST_Slope (que pode representar, por exemplo, uma ordem de “Up”, “Flat” e “Down”) apresenta um coeficiente negativo de -4.42. Isso significa que, conforme avançamos na ordem linear (ou seja, passando de uma categoria de melhor para pior, de acordo com a codificação dos contrastes), há uma redução de 4.42 mmHg na RestingBP, em média. Esse efeito é estatisticamente significativo.
+
+- ST_Slope.Q:
+O contraste quadrático para ST_Slope tem coeficiente -1.72, mas com p-valor de aproximadamente 0.154, indicando que o efeito não é estatisticamente significativo. Assim, o componente quadrático não contribui de forma relevante para o modelo.
+
+## Item 8: (0.8 pts.) Faça uma anova entre os 2 modelos, com todas as variáveis e aquele com as variáveis dependentes escolhidas pelo StepWise. Comente! 
+
+### Solução
+
+```{r}
+anova_result <- anova(step_model, fit_full)
+print(anova_result)
+```
+
+
+A hipótese nula nesse teste é de que o modelo reduzido (step_model) se ajusta tão bem quanto o modelo completo (fit_full) para explicar RestingBP. Como o p-value  é alto, não rejeitamos a hipótese nula, indicando que o modelo completo não é estatisticamente superior ao modelo reduzido.
+
+Isso significa que há ausência de ganho significativo de ajuste, isso é, as variáveis excluídas  não contribuem de forma significativa para reduzir o erro do modelo. Dado que o modelo reduzido não perde poder explicativo de forma estatisticamente relevante e ainda apresenta menor AIC, ele é mais parcimonioso. Logo, é preferível ao modelo completo.
+
+O modelo final com Age, Cholesterol, FastingBS, ExerciseAngina, Oldpeak e ST_Slope explica a variação em RestingBP tão bem quanto o modelo maior, sem sobrecarregar com variáveis que não agregam melhora significativa.
+
+## Item 9: (0.8 pts.) Para o modelo escolhido em 5) aplicar as análises de resíduos verificando as condições de normalidade e heterocedasticidade (Usar os programas postados na segunda aula).Comente todas elas!
+
+### Solução: 
+
+Acredito que a questão se refere ao modelo escolhido no item 6, após aplicar o stepwise.
+
+```{r}
+par(mfrow = c(2, 2))
+plot(step_model)
+
+# 2. Análise de Normalidade dos Resíduos
+
+## 2.1 Gráfico Q-Q (normal quantile-quantile plot)
+qqnorm(residuals(step_model), main = "Q-Q Plot dos Resíduos")
+qqline(residuals(step_model), col = "red")
+
+## 2.2 Teste de Shapiro-Wilk
+normality_test <- shapiro.test(residuals(step_model))
+print(normality_test)
+
+# 3. Análise de Homocedasticidade
+
+## 3.1 Gráfico de Resíduos vs. Valores Ajustados
+plot(fitted(step_model), residuals(step_model),
+     xlab = "Valores Ajustados",
+     ylab = "Resíduos",
+     main = "Resíduos vs. Valores Ajustados")
+abline(h = 0, col = "red")
+
+## 3.2 Teste de Breusch-Pagan
+library(lmtest)
+bp_test <- bptest(step_model)
+print(bp_test)
+
+
+```
+1. Normalidade de Resíduos:
+
+- Q-Q Plot: Observa-se que os pontos formam uma curva, desviando-se da linha reta nos extremos (caudas). Isso sugere que os resíduos não seguem exatamente uma distribuição normal.
+
+- Teste de Shapiro-Wilk possui um p-valor extremamente baixo indica que rejeitamos a hipótese nula de normalidade dos resíduos. Em outras palavras, os resíduos não são normais segundo esse teste.
+
+2. Homoscedasticidade (Variância Constante)
+
+- Resíduos vs. Valores Ajustados: Não se nota um padrão de “funil” ou crescimento/dispersão sistemática; a distribuição dos pontos é relativamente homogênea em torno de zero.
+
+- Teste de Breusch-Pagan: Como o p-valor é maior que 0,05, não há evidência de heterocedasticidade. Logo, não rejeitamos a hipótese de variância constante dos resíduos.
+
+Logo, temos que o *Pressuposto de Normalidade* foi  Violado. O modelo linear clássico (OLS) supõe resíduos normais, mas aqui esse pressuposto não foi atendido. Dependendo do tamanho da amostra, o Teorema Central do Limite pode amenizar esse problema para inferência.
+
+*Pressuposto de Homocedasticidade* foi atendido. Não há indicação de variância não constante ao longo dos valores ajustados.
+
+Em síntese, o modelo não apresenta problemas de heterocedasticidade, mas não satisfaz a normalidade dos resíduos, podendo demandar ajustes ou métodos alternativos para a análise mais rigorosa.
+
+```{r}
+
+source("anainflu_norm.R")
+
+# 1. Para identificar observações influentes e ver medidas associadas
+anainflu_norm(step_model)
+```
+Em relação a Medida h (Leverage),  temos que há observações muito acima da média  são consideradas de alta alavancagem. No gráfico, quase todos os pontos estão em valores baixos, sugerindo que não há muitas ou quase nenhuma observações com alavancagem extrema.
+
+Pontos com distância de Cook muito alta são altamente influentes. Neste caso, a maioria das distâncias está concentrada perto de 0, com algumas um pouco maiores, mas ainda distantes dos limiares usuais de alerta. Isso indica que nenhum ponto se destaca como fortemente influente para distorcer o ajuste.
+
+```{r}
+source("Diag2.norm.R")
+diag2norm(step_model)
+
+```
+- Resíduo Studentizado vs. Índice
+
+Mostra como os resíduos estão distribuídos ao longo das observações (índice). A maioria dos pontos se mantém na faixa de -2 a 2, porém há um ou outro ponto ligeiramente fora de $\pm 3$. Esses pontos podem ser considerados outliers em termos de resíduo e merecem investigação.
+A ausência de um padrão crescente ou decrescente indica que não há grandes problemas de correlação serial ou mudança sistemática ao longo das observações.
+
+```{r}
+source("Envel_norm.R")
+
+envelnorm(step_model)
+```
+
+
+
+Pelo gráfico acima vemos que a maior parte dos pontos está relativamente próxima da reta, sugerindo que os resíduos, no centro da distribuição, não se afastam tanto da normal.
+
+Entretanto, há pontos nas caudas que desviam bastante (particularmente na cauda esquerda em torno de –6 e na direita acima de +3), indicando outliers ou alguma assimetria nas caudas.
+
+Portanto, apesar de os resíduos não seguirem perfeitamente a distribuição normal (violando o pressuposto de normalidade), a condição de homocedasticidade está satisfeita. Isso significa que, embora o modelo apresente resíduos com distribuição não normal, a variância dos erros é constante. Dependendo do objetivo da análise e do tamanho da amostra, essa violação da normalidade pode ser menos preocupante para a predição, mas pode afetar a validade dos testes estatísticos. Em situações onde a normalidade é crucial, pode ser considerado aplicar transformações ou métodos robustos para melhorar o ajuste.
+
+## Item 10: (0.8 pts.) Caso algum pressuposto do modelo de regressão normal linear falhe, tente fazer alguma transformação (vistas em aula) com o objetivo de atingir os pressupostos do modelo. Comente!
+
+### Solução:
+
+Como podemos ver no item anterior, o pressuposto de normalidade não foi antendido. 
+
+1. Transformação Logaritmica:
+
+Uma estratégia bastante comum para resolver a violação do pressuposto de normalidade é transformar a variável resposta. No caso, como os resíduos do modelo original (com RestingBP) não seguem uma distribuição normal, podemos aplicar, por exemplo, uma transformação logarítmica à variável resposta. Essa abordagem foi discutida em aula e pode ser aplicada diretamente ao modelo.
+
+```{r}
+# Ajuste do modelo com a transformação logarítmica da variável resposta
+df_clean <- df[df$RestingBP > 0, ]
+
+step_model_log <- lm(log(RestingBP) ~ Age + Cholesterol + FastingBS 
+                     + ExerciseAngina + Oldpeak + ST_Slope, data = df_clean)
+
+# Exibir o resumo do novo modelo
+summary(step_model_log)
+
+# Análise dos resíduos do modelo transformado
+
+## 1. Gráficos de diagnóstico básicos
+par(mfrow = c(2, 2))
+plot(step_model_log)
+
+## 2. Gráfico Q-Q dos resíduos
+qqnorm(residuals(step_model_log), main = "Q-Q Plot dos Residuos (Log Transformado)")
+qqline(residuals(step_model_log), col = "red")
+
+## 3. Teste de Shapiro-Wilk para normalidade
+normality_test_log <- shapiro.test(residuals(step_model_log))
+print(normality_test_log)
+
+## 4. Gráfico de Resíduos vs. Valores Ajustados (para verificar homocedasticidade)
+plot(fitted(step_model_log), residuals(step_model_log),
+     xlab = "Valores Ajustados",
+     ylab = "Residuos",
+     main = "Residuos vs. Valores Ajustados (Log Transformado)")
+abline(h = 0, col = "red")
+
+## 5. Teste de Breusch-Pagan para homocedasticidade
+library(lmtest)
+bp_test_log <- bptest(step_model_log)
+print(bp_test_log)
+
+anainflu_norm(step_model_log)
+diag2norm(step_model_log)
+envelnorm(step_model_log)
+
+```
+
+
+Note que a transformação logarítmica melhorou a distribuição dos resíduos (em comparação ao modelo original), mas ainda não atingiu uma normalidade “ideal”. O modelo transformado segue estatisticamente significativo e mantém homocedasticidade, com interpretação dos coeficientes em termos de variação percentual na pressão arterial de repouso.
+
+2. Centralização das Variáveis:
+
+Outra alternativa é utilizar a centralização de variáveis, isto é, subtraindo a média de cada variável. Assim, os coeficientes terão uma interpretação onde o intercepto corresponde à média da RestingBP para um paciente “médio” (ou seja, com as variáveis centrais igual a zero). Em nosso caso, considerando o modelo selecionado pelo Stepwise:
+
+```{r}
+# Vamos supor que df_clean é o seu data frame já filtrado para RestingBP > 0
+df_center <- df_clean
+
+# Centralizando as variáveis numéricas
+df_center$Age_c <- df_center$Age - mean(df_center$Age, na.rm = TRUE)
+df_center$Cholesterol_c <- df_center$Cholesterol - mean(df_center$Cholesterol,
+                                                        na.rm = TRUE)
+df_center$Oldpeak_c <- df_center$Oldpeak - mean(df_center$Oldpeak,
+                                                na.rm = TRUE)
+
+# Podemos conferir as médias (elas devem ser próximas de zero)
+mean(df_center$Age_c, na.rm = TRUE)         # deve ser 0
+mean(df_center$Cholesterol_c, na.rm = TRUE)   # deve ser 0
+mean(df_center$Oldpeak_c, na.rm = TRUE)       # deve ser 0
+
+centered_model <- lm(RestingBP ~ Age_c + Cholesterol_c + FastingBS +
+                     ExerciseAngina + Oldpeak_c + ST_Slope,
+                     data = df_center)
+
+summary(centered_model)
+
+# Análise dos resíduos do modelo transformado
+
+## 1. Gráficos de diagnóstico básicos
+par(mfrow = c(2, 2))
+plot(centered_model)
+
+## 2. Gráfico Q-Q dos resíduos
+qqnorm(residuals(centered_model), main = "Q-Q Plot dos Residuos (Log Transformado)")
+qqline(residuals(centered_model), col = "red")
+
+## 3. Teste de Shapiro-Wilk para normalidade
+normality_test_center <- shapiro.test(residuals(centered_model))
+print(normality_test_center)
+
+## 4. Gráfico de Resíduos vs. Valores Ajustados (para verificar homocedasticidade)
+plot(fitted(centered_model), residuals(centered_model),
+     xlab = "Valores Ajustados",
+     ylab = "Residuos",
+     main = "Residuos vs. Valores Ajustados (Log Transformado)")
+abline(h = 0, col = "red")
+
+## 5. Teste de Breusch-Pagan para homocedasticidade
+library(lmtest)
+bp_test_center <- bptest(centered_model)
+print(bp_test_center)
+```
+
+A centralização cumpre seu papel de melhorar a interpretação do intercepto e possivelmente reduzir colinearidades entre variáveis, mas não resolve a violação da normalidade.
+
+A homocedasticidade permanece atendida, o que é positivo para a confiabilidade das estimativas de mínimos quadrados.
+
+## Item 11: (0.8 pts.) Caso nenhuma transformação funcione, tente utilizar Box-Cox. Comente!
+
+### Solução:
+
+```{r}
+
+# Ajuste o modelo completo com as variáveis selecionadas (usando df_clean)
+modelo_temp <- lm(RestingBP ~ Age + Cholesterol + FastingBS + ExerciseAngina 
+                  + Oldpeak + ST_Slope, data = df_clean)
+
+bc <- boxcox(modelo_temp, plotit = TRUE)
+# Encontre o lambda que maximiza o log-verossímil:
+lambda_opt <- bc$x[which.max(bc$y)]
+cat("Lambda ótimo:", lambda_opt, "\n")
+
+if(abs(lambda_opt) < 0.001) {
+  df_clean$Trans_RestingBP <- log(df_clean$RestingBP)
+} else {
+  df_clean$Trans_RestingBP <- (df_clean$RestingBP^lambda_opt - 1) / lambda_opt
+}
+
+# Ajuste o modelo utilizando a variável resposta transformada
+bc_model <- lm(Trans_RestingBP ~ Age + Cholesterol + FastingBS + ExerciseAngina 
+               + Oldpeak + ST_Slope, data = df_clean)
+summary(bc_model)
+
+# Análise dos resíduos do modelo transformado:
+par(mfrow = c(2, 2))
+plot(bc_model)
+qqnorm(residuals(bc_model), main = "Q-Q Plot dos Residuos (Box-Cox)")
+qqline(residuals(bc_model), col = "red")
+
+# Teste de Shapiro-Wilk para normalidade dos resíduos
+normality_test_bc <- shapiro.test(residuals(bc_model))
+print(normality_test_bc)
+
+# Gráfico de Resíduos vs. Valores Ajustados para verificar homocedasticidade
+plot(fitted(bc_model), residuals(bc_model),
+     xlab = "Valores Ajustados",
+     ylab = "Residuos",
+     main = "Residuos vs. Valores Ajustados (Box-Cox)")
+abline(h = 0, col = "red")
+
+# Teste de Breusch-Pagan para heterocedasticidade
+library(lmtest)
+bp_test_bc <- bptest(bc_model)
+print(bp_test_bc)
+
+anainflu_norm(bc_model)
+diag2norm(bc_model)
+envelnorm(bc_model)
+
+```
+
+
+Com base nos resultados acima, podemos concluir que a aplicação da transformação Box‑Cox foi eficaz para aproximar os resíduos de uma distribuição normal, melhorando os pressupostos do modelo de regressão linear. Note que o teste de Shapiro‑Wilk apresentou W = 0.99572 e um p‑valor de 0.01211. Isso indica que, sob o nível de significância convencional de 0.05, a hipótese nula de normalidade dos resíduos é rejeitada – ou seja, os resíduos não seguem perfeitamente uma distribuição normal. Contudo, o valor de W está muito próximo de 1, o que sugere que os resíduos estão bastante próximos de uma distribuição normal. Em amostras grandes, mesmo pequenos desvios podem resultar em p‑valores significativos, mas podem não comprometer as inferências do modelo. Assim, embora tecnicamente haja uma violação do pressuposto de normalidade, a transformação Box‑Cox melhorou consideravelmente a distribuição dos resíduos e, na prática, o modelo pode ser considerado aceitável para análises inferenciais.
+
+
+## Item 12: (0.8 pts.) Eliminar individualmente os pontos mais discrepantes (se existirem), e verificar se houve mudança inferencial. Comente!
+
+### Solução:
+
+Primeiramente vamos verificar se há outliers.
+
+```{r}
+outliers <- unique(c(
+  which(abs(rstudent(bc_model)) > 3),
+  which(cooks.distance(bc_model) > 0.05),
+  which(hatvalues(bc_model) > (2 * (length(coef(bc_model))) / nrow(df_clean)))
+))
+
+print(outliers)
+```
+
+
+Agora, vamos remover os outliers e ver como fica a performance do modelo.
+
+```{r}
+df_sem_outliers <- df_clean[-outliers, ]
+bc_model_sem_outliers <- lm(Trans_RestingBP ~ Age + Cholesterol + FastingBS + 
+                            ExerciseAngina + Oldpeak + ST_Slope,
+                            data = df_sem_outliers)
+summary(bc_model_sem_outliers)
+```
+
+A remoção dos outliers não alterou drasticamente os coeficientes das variáveis principais, mas reduziu a variância residual e corrigiu possíveis inferências enviesadas. O modelo está mais estável e a  inferência agora é mais confiável, com menor influência de pontos extremos. Vamos realizar a análise de resíduos.
+
+```{r}
+# Análise dos resíduos do modelo transformado:
+par(mfrow = c(2, 2))
+plot(bc_model_sem_outliers)
+qqnorm(residuals(bc_model_sem_outliers), main = "Q-Q Plot dos Residuos (Box-Cox)")
+qqline(residuals(bc_model_sem_outliers), col = "red")
+
+# Teste de Shapiro-Wilk para normalidade dos resíduos
+normality_test_bc <- shapiro.test(residuals(bc_model_sem_outliers))
+print(normality_test_bc)
+
+# Gráfico de Resíduos vs. Valores Ajustados para verificar homocedasticidade
+plot(fitted(bc_model_sem_outliers), residuals(bc_model_sem_outliers),
+     xlab = "Valores Ajustados",
+     ylab = "Residuos",
+     main = "Residuos vs. Valores Ajustados (Box-Cox)")
+abline(h = 0, col = "red")
+
+# Teste de Breusch-Pagan para heterocedasticidade
+library(lmtest)
+bp_test_bc <- bptest(bc_model_sem_outliers)
+print(bp_test_bc)
+
+anainflu_norm(bc_model_sem_outliers)
+diag2norm(bc_model_sem_outliers)
+envelnorm(bc_model_sem_outliers)
+```
+
+Note que agora, o pressuposto de normalidade dos resíduos é atendida uma vez que com base nas evidências dos gráficos e do teste de Shapiro-Wilk, podemos afirmar que o pressuposto de normalidade dos resíduos foi atendido ao nível de significância de 10% após a transformação Box-Cox e a remoção de outliers. Além de satisfazer a homocedasticidade e manter boa distribuição dos resíduos. Portanto, é um modelo estatisticamente válido para inferência.
+
+## Item 13: (0.8 pts.) Tente atingir a normalidade ao nível de significância de $10\%$. Comente! 
+
+### Solução: 
+
+Esse item foi resolvido no item anterios, quando usamos box-cox sem outliers.
+
+## Item 14: (0.8 pts.) Elaborar a conclusão.
+
+Este estudo teve como objetivo avaliar os fatores associados à pressão arterial de repouso (RestingBP), a partir de um conjunto de variáveis clínicas e demográficas. 
+
+O modelo final ajustado, com transformação Box-Cox e remoção de outliers, atende aos pressupostos da regressão linear ao nível de significância de 10%. Embora o poder explicativo seja limitado, o modelo permite identificar fatores com associação estatística significativa com a pressão arterial de repouso, sendo uma ferramenta válida para inferência e apoio à tomada de decisão clínica.

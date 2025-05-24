@@ -1,0 +1,299 @@
+---
+title: 'Análise de Sobrevivência '
+subtitle: '0.2 - Aula Prática'
+author: "Prof. Dr. Eder Angelo Milani"
+date: "04/04/2025"
+output: pdf_document
+--- 
+
+
+# Manipulação dos dados da FOSP
+
+
+As linhas de cógido a seguir executam as seguintes tarefas: 
+
+- leitura dos dados completo 
+
+- filtra os dados para CID C34
+
+- cria uma variável do ano da última informação 
+
+- calcula o tempo do diagnóstico até a última informação - variável tempo
+
+- constrói a variável censura 
+
+- filtra os dados para algumas variáveis
+
+- salva o conjuto de dados após manipulações
+
+
+
+```{r}
+# limpando o que tem na memoria
+rm(list=ls())
+
+# local onde esta o arquivo com os dados 
+setwd("G:\\Meu Drive\\UFG\\Especializacao\\Aulas Análise Sobrevivência\\Códigos")
+
+### leitura 
+dados <- read.csv("dados_convertidos.csv")
+
+# dimensao do conjunto de dados 
+dim(dados)
+
+# manipulacao do conjunto de dados 
+#install.packages(tidyverse)
+library(tidyverse)
+
+### pacotes para trabalhar com datas 
+#install.packages(devtools)
+#install.packages(lubridate)
+library(devtools)
+library(lubridate)
+
+### Filtro por tipo de cancer 
+
+## CID - C34 (neoplasia maligna dos bronquios e dos pulmoes)
+
+dados_c34 <- dados %>% filter(TOPOGRUP == "C34")
+dim(dados_c34)
+# observe como diminuiu o conjunto de dados!!! 
+
+## pacientes diagnosticados entre 2014 e 2016, com seguimento ate 2021
+## Anos com registro de casos em andamento: 2022, 2023 e 2024
+
+table(dados_c34$ANODIAG)
+
+## vamos criar uma variavel que e o ano da ultima informacao
+
+dados_c34 <- dados_c34 %>% mutate(`ANOULTINF`=year(DTULTINFO)) 
+table(dados_c34$ANOULTINF)
+
+dados_final <- dados_c34 %>%
+  filter(ANODIAG >= 2014 & ANODIAG <= 2016)
+
+dim(dados_final)
+
+#head(dados_final)
+
+# vamos agora criar a variavel tempo e a variavel censura 
+
+### calculo do tempo 
+
+dados_final$TEMPO <- ifelse(dados_final$ANOULTINF <= 2021, 
+                            (ymd(dados_final$DTDIAG) %--%ymd(dados_final$DTULTINFO))/ddays(1), 
+                            (ymd(dados_final$DTDIAG) %--%ymd("2021-12-31"))/ddays(1)) 
+
+dim(dados_final)
+summary(dados_final$TEMPO)
+
+
+## calculo da censura 
+### 1 – VIVO, COM CÂNCER / 2 – VIVO, SOE /
+### 3 – OBITO POR CANCER / 4 – OBITO POR OUTRAS CAUSAS, SOE
+table(dados_final$ULTINFO) 
+
+dados_final$CENSURA <- ifelse(dados_final$ULTINFO==3 & dados_final$ANOULTINF <= 2021, 1, 0) 
+
+table(dados_final$CENSURA)
+
+# observe que 41 pacientes morreram devido ao cancer 
+# mas foi apos o ano de 2021, por isso eles foram censurados
+
+
+#### formatacao dos dados para analise 
+
+dados <- dados_final %>% 
+        select(TOPOGRUP, TEMPO, CENSURA, ANODIAG, IDADE, SEXO, CIRURGIA, RADIO, QUIMIO, ECGRUP)
+
+head(dados)
+
+### Salvando os dados filtrados 
+
+f.out <- 'G:\\Meu Drive\\UFG\\Especializacao\\Aulas Análise Sobrevivência\\Códigos\\cancer_c34.csv'
+
+write.csv(dados, f.out, row.names = F)
+```
+
+
+# Estimador de Kaplan-Meier 
+
+
+As linhas de cógido a seguir executam as seguintes tarefas: 
+
+- leitura dos dados filtrados 
+
+- calcula o estimador de Kaplan-Meier 
+
+- faz o gráfico da função de sobrevivência estimada por Kaplan-Meier 
+
+- calcula o estimador de Kaplan-Meier considerando a variável sexo
+
+- faz o plot da função de sobrevivência estimada por Kaplan-Meier considerando a variável sexo
+
+```{r}
+# limpando o que tem na memoria
+rm(list=ls())
+
+# local onde esta o arquivo com os dados 
+setwd("G:\\Meu Drive\\UFG\\Especializacao\\Aulas Análise Sobrevivência\\Códigos")
+
+### leitura 
+dados <- read.csv("cancer_c34.csv")
+head(dados)
+
+# Estimador de Kaplan-Meier
+
+#O objetivo é obter a estimativa de kaplan-Meier do conjunto de dados de cancer CID C34
+
+## Utilizando o plot comum
+
+#install.packages("survival")
+require(survival)
+
+head(Surv(dados$TEMPO, dados$CENSURA))
+# tempos com o sinal de + (por exemplo, 3+) 
+# indicam tempos censurados 
+
+ekm <- survfit(Surv(TEMPO, CENSURA) ~ 1, data=dados)
+#summary(ekm)
+plot(ekm)
+plot(ekm, mark.time = T)
+plot(ekm, mark.time = T, conf.int = F)
+plot(ekm, mark.time = F, conf.int = F)
+
+
+# sexo = 1 = masculino 
+# sexo = 2 = feminino 
+ekm2 <- survfit(Surv(TEMPO, CENSURA) ~ SEXO, data=dados)
+
+#summary(ekm2)
+plot(ekm2, lty=c(1,1), xlab= "Tempo (dias)", ylab="S(t)", mark.time = T,
+     conf.int = T, col=c("black", "red"))
+legend(1500, 0.8, lty=c(1,1), c("Fem", "Mas"), col=c("red", "black"), bty="n")
+
+
+plot(ekm2, lty=c(1,1), xlab= "Tempo (dias)", ylab="S(t)", mark.time = F, 
+     conf.int = F, col=c("black", "red"))
+legend(1500, 0.8, lty=c(1,1), c("Fem", "Mas"), col=c("red", "black"), bty="n")
+
+
+plot(ekm2, lty=c(1,2), xlab= "Tempo (dias)", ylab="S(t)", mark.time = F, 
+     conf.int = F)
+legend(1500, 0.8, lty=c(2,1), c("Fem", "Mas"), bty="n")
+
+
+## Utilizando o ggplot
+require(survminer)
+
+EKM1 <- survfit(Surv(TEMPO, CENSURA) ~ 1, data = dados)
+
+ggsurvplot(EKM1, 
+           data = dados, 
+           ylab="S(t)",
+           xlab="Tempo (dias)",
+           break.x.by = 1000, 
+           size=0.5, 
+           censor.shape=" ",
+           title="", 
+           conf.int = FALSE,
+           font.x = c(16, "plain", "black"),
+           font.y = c(16, "plain", "black"),
+           legend.labs = "Todos",
+           legend.title ="Grupo",
+           legend=c(0.8,0.75),
+           risk.table = T, 
+           risk.table.title="Indivíduos em risco",
+           #pval=T
+           
+)
+
+
+EKM2 <- survfit(Surv(TEMPO, CENSURA) ~ SEXO, data = dados)
+
+ggsurvplot(EKM2, 
+           data = dados, 
+           ylab="S(t)",
+           xlab="Tempo (dias)",
+           break.x.by = 1000, 
+           size=0.5, 
+           censor.shape=" ",
+           title="", 
+           font.x = c(16, "plain", "black"),
+           font.y = c(16, "plain", "black"),
+           legend.labs = c("Mas", "Fem"),
+           legend.title ="Grupo",
+           legend=c(0.8,0.75),
+           risk.table = T, 
+           risk.table.title="Indivíduos em risco",
+           pval=T
+)
+
+```
+
+
+# Teste logrank
+
+O código a seguir calcula o teste de logrank. 
+
+
+```{r}
+require(survival)
+
+survdiff(Surv(TEMPO, CENSURA) ~ SEXO, data = dados)
+```
+
+Quando a função *ggsurvplot* é utilizada para apresentar a estimativa da função de sobrevivência, o p-valor do teste logrank pode ser incluído no gráfico simplesmente adicionando a opção *pval=T*.
+
+
+Agora vamos obter o estimador de Kaplan-Meier e o p-valor do teste logrank para as variáveis Ano de Diagnóstico, Cirurgia, Quimio e ECGRUP. 
+
+```{r}
+# variavel ano de diagnostico
+
+ekm3 <- survfit(Surv(TEMPO, CENSURA) ~ ANODIAG, data=dados)
+plot(ekm3, lty=c(1,1), xlab= "Tempo (dias)", ylab="S(t)", mark.time = F,  conf.int = F,
+     col=c("black", "red", "blue"))
+legend(1500, 0.8, lty=c(1,1), c("2014", "2015", "2016"), 
+       col=c("black", "red", "blue"), bty="n")
+
+survdiff(Surv(TEMPO, CENSURA) ~ ANODIAG, data = dados)
+
+
+
+# variavel cirurgia
+
+ekm4 <- survfit(Surv(TEMPO, CENSURA) ~ CIRURGIA, data=dados)
+plot(ekm4, lty=c(1,1), xlab= "Tempo (dias)", ylab="S(t)", mark.time = F,  conf.int = F,
+     col=c("black", "red"))
+legend(1500, 0.8, lty=c(1,1), c("Não", "Sim"), col=c("black", "red"), bty="n")
+
+survdiff(Surv(TEMPO, CENSURA) ~ CIRURGIA, data = dados)
+
+
+
+# variavel QUIMIO
+
+ekm5 <- survfit(Surv(TEMPO, CENSURA) ~ QUIMIO, data=dados)
+plot(ekm5, lty=c(1,1), xlab= "Tempo (dias)", ylab="S(t)", mark.time = F,  conf.int = F,
+     col=c("black", "red"))
+legend(1500, 0.8, lty=c(1,1), c("Não", "Sim"), col=c("black", "red"), bty="n")
+
+survdiff(Surv(TEMPO, CENSURA) ~ QUIMIO, data = dados)
+
+
+
+# variavel ECGRUP
+
+ekm6 <- survfit(Surv(TEMPO, CENSURA) ~ ECGRUP, data=dados)
+plot(ekm6, lty=c(1,2, 3, 4, 5, 6, 7), xlab= "Tempo (dias)", ylab="S(t)", mark.time = F,  
+     conf.int = F)
+legend("top", lty=c(1,2, 3, 4, 5, 6, 7), 
+       c("0", "I", "II", "III", "IV", "X", "Y"), col="black", bty="n",
+       ,horiz = TRUE)
+
+survdiff(Surv(TEMPO, CENSURA) ~ ECGRUP, data = dados)
+
+
+```
+

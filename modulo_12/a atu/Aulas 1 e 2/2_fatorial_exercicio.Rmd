@@ -1,0 +1,93 @@
+---
+title: "Exercício de Análise Fatorial"
+author: "Aluno(a)"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    number_sections: true
+    theme: flatly
+---
+
+# **Instruções**
+
+Neste exercício, você aplicará a análise fatorial exploratória (AFE) e confirmatória (AFC) em um conjunto de dados público. Siga os passos indicados e responda às perguntas ao longo do documento.
+
+# **Passo 1: Carregar Pacotes Necessários**
+
+```{r setup_libraries, message=FALSE, warning=FALSE}
+library(psych)       # Análise fatorial exploratória
+library(GPArotation) # Métodos de rotação
+library(lavaan)      # Análise fatorial confirmatória
+library(dplyr)       # Manipulação de dados
+```
+
+# **Passo 2: Carregar o Conjunto de Dados**
+
+Utilizaremos o conjunto de dados `bfi` do pacote `psych`, que contém respostas a um questionário de personalidade. 
+
+```{r}
+data("bfi", package = "psych")
+
+# Selecionar apenas as variáveis do questionário
+bfi_sub <- bfi[, 1:25] 
+
+# Visualizar as primeiras observações
+dplyr::glimpse(bfi_sub)
+```
+
+**Pergunta 1:** Quais são as escalas de medida das variáveis do conjunto de dados? Por que isso é importante na análise fatorial?
+
+# **Passo 3: Verificar os Pressupostos para AFE**
+
+```{r}
+# Teste de Kaiser-Meyer-Olkin
+KMO(bfi_sub) 
+
+# Teste de Bartlett
+cortest.bartlett(bfi_sub)
+```
+
+Se os resultados indicarem que os dados não são adequados para a análise fatorial, o que poderia ser feito?
+
+**Pergunta 2:** Interprete os resultados dos testes KMO e Bartlett. O que indicam sobre a adequação dos dados?
+
+# **Passo 4: Realizar a Análise Fatorial Exploratória (AFE)**
+
+```{r}
+# Realizar AFE com extração de máxima verossimilhança e rotação Varimax
+fa_result <- fa(bfi_sub, nfactors = 5, rotate = "varimax", fm = "ml")
+
+# Exibir os resultados
+print(fa_result, digits = 3)
+fa.diagram(fa_result)  # Visualização gráfica
+```
+
+**Pergunta 3:** Como interpretar a matriz de cargas fatoriais? Quais variáveis possuem maior peso em cada fator?
+
+# **Passo 5: Realizar a Análise Fatorial Confirmatória (AFC)**
+
+Agora, definiremos um modelo baseado na estrutura obtida na AFE e o testaremos com AFC.
+
+```{r}
+# Verificar os nomes das variáveis
+colnames(bfi_sub)
+
+# Definir modelo baseado nos fatores obtidos, substituindo índices por nomes reais
+modelo_afc <- ' 
+F1 =~ A1 + A2 + A3 + A4 + A5
+F2 =~ C1 + C2 + C3 + C4 + C5
+'
+
+# Ajustar modelo
+ajuste <- cfa(modelo_afc, data = bfi_sub)
+summary(ajuste, fit.measures = TRUE, standardized = TRUE)
+```
+
+**Pergunta 4:** Quais são os principais indicadores de ajuste do modelo AFC? Como interpretá-los?
+
+# **Conclusão**
+
+Após realizar a AFE e AFC, escreva um parágrafo resumindo suas principais descobertas e interpretações.
+
+---

@@ -1,0 +1,270 @@
+---
+title: "Exemplo_aula 03_Atividade_prática 1.4"
+author: "Cynthia Tojeiro"
+date: "2025-02-13"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Teste de esforço cardiopulmonar
+\begin{itemize}
+\item Considere o estudo sobre teste de esforço cardiopulmonar em
+pacientes com insuficiência cardíaca realizado no InCor da Faculdade
+de Medicina da USP pela Dra. Ana Fonseca Braga.
+\item Um dos objetivos do estudo é comparar os grupos formados pelas
+diferentes etiologias cardíacas quanto às respostas respiratórias e
+metabólicas obtidas do teste de esforço cardiopulmonar.
+\item Outro objetivo do estudo é saber se alguma das características
+observadas (ou combinação delas) pode ser utilizada como fator
+prognóstico de óbito.
+ \item Etiologias: CH: chagásicos, ID: idiopáticos, IS: isquêmicos, C: controle.
+    \item O objetivo é explicar a variação do consumo de oxigênio no limiar anaeróbio $(ml/(kg \cdot min))$ em função da carga utilizada na esteira ergométrica para pacientes com diferentes etiologias (causas) de insuficiência cardíaca.
+    \item A grosso modo, o Limiar Anaeróbio é um ponto (limite) de divisão entre metabolismo essencialmente aeróbio e metabolismo essencialmente anaeróbio.
+    \item Aeróbio (com a utilização de oxigênio); anaeróbio (sem a utilização de oxigênio).
+    \item Como responder à pergunta de interesse?
+    \end{itemize}
+
+
+
+
+```{r, message=FALSE, warning=FALSE}
+# Limpa a memória
+
+#rm(list=ls())
+# limpar todas as variáveis 
+rm(list = ls(all.names = TRUE))
+
+
+# Pacotes necessários
+library(xtable)
+library(lattice)
+library(plyr)
+library(plotrix)
+library(stargazer)
+```
+
+#Lendo os dados
+```{r, message=FALSE, warning=FALSE}
+
+braga<-scan("C:\\datascience\\Braga1998.txt",what=list(Etiologia="",CARGA=0,VO2=0))
+```
+
+
+
+# Construindo as variáveis
+```{r, message=FALSE, warning=FALSE}
+etio <-braga$Etiologia # etiologia
+carga <-braga$CARGA    # carga
+vo2<-braga$VO2         # consumo
+# gerando uma variável qualitativa para ser usada na função lm
+etiofac<-factor(etio,levels=c("C","CH","ID","IS"))
+```
+
+# Considerando os grupos de etiologias cardíacas
+
+```{r, message=FALSE, warning=FALSE,echo=FALSE}
+xyplot(vo2 ~ carga|etio, groups = etio, pch= 20,cex=1.4,cex.axis=1.4,cex.lab=1.4,col=c(1,2,3,4),
+main="Consumo de oxigênio em função da carga")
+
+```
+
+```{r, message=FALSE, warning=FALSE,echo=FALSE}
+plot(carga,vo2,pch=19,cex=1.4,cex.lab=1.4,cex.axis=1.4,
+cex.main=1.4,main="Consumo de oxigênio em função da carga")
+abline(v=20,lwd=4,col=2)
+abline(v=35,lwd=4,col=2)
+abline(v=55,lwd=4,col=2)
+abline(v=112,lwd=4,col=2)
+text(20,20,"diferentes valores do consumo para o mesmo valor da carga",col=2)
+arrows(15,19.5,20,17,col=2)
+arrows(15,19.5,35,17,col=2)
+arrows(15,19.5,55,17,col=2)
+arrows(15,19.5,112,17,col=2)
+```
+
+# Análise descritiva
+```{r, message=FALSE, warning=FALSE}
+datacons<-data.frame(vo2,carga,etiofac)
+ccons<-ddply(datacons,.(etiofac),summarise,media=mean(carga),
+dp=sqrt(var(carga)),vari=var(carga),
+cv=100*((sqrt(var(carga))/mean(carga))),minimo=min(carga),
+maximo=max(carga),n=length(carga))
+xtable(ccons)
+stargazer(ccons,type = "text")
+```
+
+
+# Boxplots da carga para cada etiologia
+```{r, message=FALSE, warning=FALSE,echo=FALSE}
+boxplot(carga~etiofac,xlab="etiologia",ylab="carga")
+```
+# Ajuste do Modelo
+
+```{r, message=FALSE, warning=FALSE}
+fit.model<-result<-lm(vo2~etiofac+carga)
+sumres<-summary(result)
+m.X<-(model.matrix(result))
+v.beta <- result$coefficients
+ep.beta<- sqrt(diag(vcov(result)))
+quantilt<-qt(0.975,df=124-8)
+xtable(cbind(sumres$coefficients[,1:3],v.beta-quantilt*ep.beta,
+v.beta+quantilt*ep.beta,sumres$coefficients[,4]),digits=4)
+```
+# Lembre-se que:
+
+\begin{itemize}
+    \item O objetivo é explicar a variação do consumo de oxigênio no limiar anaeróbio $(ml/(kg \cdot min))$ em função da carga utilizada na esteira ergométrica para pacientes com diferentes etiologias (causas) de insuficiência cardíaca.
+    \item Assim faremos o ajuste adequado para essa situação.
+    \end{itemize}
+
+```{r, message=FALSE, warning=FALSE}  
+fit.model<-result<-lm(vo2~etiofac+carga:etiofac)
+sumres<-summary(result)
+m.X<-(model.matrix(result))
+v.beta <- result$coefficients
+ep.beta<- sqrt(diag(vcov(result)))
+quantilt<-qt(0.975,df=124-8)
+xtable(cbind(sumres$coefficients[,1:3],v.beta-quantilt*ep.beta,
+v.beta+quantilt*ep.beta,sumres$coefficients[,4]),digits=4)
+```
+
+```{r, message=FALSE, warning=FALSE} 
+# Análise de variância
+anores<-anova(result)
+xtable(anores)
+```
+
+# ANOVA
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lrrrrr}
+  \hline
+ & Df & Sum Sq & Mean Sq & F value & Pr($>$F) \\ 
+  \hline
+etiofac & 3 & 131.40 & 43.80 & 12.94 & 0.0000 \\ 
+  etiofac:carga & 4 & 473.30 & 118.33 & 34.96 & 0.0000 \\ 
+  Residuals & 116 & 392.57 & 3.38 &  &  \\ 
+   \hline
+\end{tabular}
+\end{table}
+
+# Diagnóstico
+```{r, message=FALSE, warning=FALSE} 
+
+source("C:\\datascience\\Programas\\Diag2.norm.r")
+source("C:\\datascience\\Programas\\Envel_norm.r")
+source("C:\\datascience\\Programas\\anainflu_norm.r")
+```
+```{r, message=FALSE, warning=FALSE,echo=FALSE}
+par(mfrow=c(1,1))
+envelnorm(fit.model)
+diag2norm(fit.model)
+anainflu_norm(fit.model)
+```
+
+
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE} 
+
+```
+
+# Plotando os gráficos com as retas ajustadas
+
+
+```{r, message=FALSE, warning=FALSE,echo=FALSE}
+v.beta <- result$coefficients
+ep.beta<- sqrt(diag(vcov(result)))
+
+xyplot(vo2 ~ carga|etio, groups = etio, pch= 20,cex=1.4,cex.axis=1.4,cex.lab=1.4,col=c(1,2,3,4),main="Consumo de oxigênio em função da carga",panel = function(x, y, ...) {
+panel.superpose(x, y, ...,
+panel.groups = function(x,y, col, col.symbol, ...) {
+panel.xyplot(x, y, col=col.symbol, ...)
+panel.abline(lm(y~x), col.line=col.symbol)
+                    }
+    )
+  },
+  grid = TRUE,
+)
+```
+# Testes de Hipóteses
+
+```{r, message=FALSE, warning=FALSE}  
+
+shapiro.test(fit.model$residuals)
+ 
+
+```
+
+
+Temos um p-value menor que 0,05. Rejeitamos  então a hipótese nula, indicando que os resísduos não seguem uma distribuição normal.
+
+```{r, message=FALSE, warning=FALSE} 
+library(lmtest)
+bptest(fit.model)
+```
+
+Assim como no teste de shapiro, quando o p-value for menor que 0,05  rejeitamos a hipótese nula e consideramos que não existe homocedasticidade dos resíduos.
+
+# Transformação de variáveis
+
+# Modelo com a transformação log para a variável resposta
+
+```{r, message=FALSE, warning=FALSE}
+fit.model<-result<-lm(log(vo2)~etiofac+carga:etiofac)
+sumres<-summary(result)
+m.X<-(model.matrix(result))
+v.beta <- result$coefficients
+ep.beta<- sqrt(diag(vcov(result)))
+quantilt<-qt(0.975,df=124-8)
+xtable(cbind(sumres$coefficients[,1:3],v.beta-quantilt*ep.beta,
+v.beta+quantilt*ep.beta,sumres$coefficients[,4]),digits=4)
+```
+
+# Análise de variância
+
+```{r, message=FALSE, warning=FALSE}
+anores<-anova(result)
+xtable(anores)
+```
+# Diagnóstico com o novo ajuste
+# Diagnóstico
+```{r, message=FALSE, warning=FALSE} 
+
+source("C:\\datascience\\Programas\\Diag2.norm.r")
+source("C:\\datascience\\Programas\\Envel_norm.r")
+source("C:\\datascience\\Programas\\anainflu_norm.r")
+```
+```{r, message=FALSE, warning=FALSE,echo=FALSE}
+par(mfrow=c(1,1))
+envelnorm(fit.model)
+diag2norm(fit.model)
+anainflu_norm(fit.model)
+```
+
+# Testes de Hipóteses para o novo modelo
+
+```{r, message=FALSE, warning=FALSE}  
+
+shapiro.test(fit.model$residuals)
+ 
+
+```
+
+
+Temos um p-value maior que 0,05. Não rejeitamos então a hipótese nula, indicando que os resísduos seguem uma distribuição normal.
+
+```{r, message=FALSE, warning=FALSE} 
+library(lmtest)
+bptest(fit.model)
+```
+
+Assim como no teste de shapiro, quando o p-value for maior que 0,05 não  rejeitamos a hipótese nula e consideramos que existe homocedasticidade dos resíduos.
+
+
+
+
+
+
+

@@ -1,0 +1,319 @@
+---
+title: 'Análise de Sobrevivência '
+subtitle: '0.5 - Aula Prática'
+author: "Prof. Dr. Eder Angelo Milani"
+date: "25/04/2025"
+output: pdf_document
+--- 
+  
+
+# E na prática como funciona? 
+
+
+Em geral, na prática temos disponíveis várias variáveis que podem explicar o evento de interesse, com isso, temos que utilizar rotinas para a seleção de variáveis, como por exemplo stepwise. Na sequência as linhas de códigos visam analisar o conjunto de dados trabalhado anteriormente, mas agora utilizando todas as variáveis disponíveis. 
+
+## Leitura dos dados 
+
+As linhas de cógido a seguir executam as seguintes tarefas: 
+
+- leitura dos dados filtrados para CID C34;
+
+- breve visualização do conjunto de dados;
+
+- modificar a escala de tempo para ano, em vez de dia;
+
+- excluir os tempos iguis a zero. 
+
+```{r}
+# limpando o que tem na memoria
+rm(list=ls())
+
+# local onde esta o arquivo com os dados 
+setwd("G:\\Meu Drive\\UFG\\Especializacao\\Aulas Análise Sobrevivência\\Códigos")
+
+### leitura 
+dados <- read.csv("cancer_c34.csv")
+head(dados)
+
+# mudança na variável tempo - de dias para ano 
+summary(dados$TEMPO)
+dados$TEMPO <- dados$TEMPO/365
+
+# excluir os tempos iguais a zero 
+ind_tempo_zero <- which(dados$TEMPO == 0)
+ind_tempo_zero 
+
+dados$TEMPO[256]
+
+dados <- dados[-ind_tempo_zero,]
+```
+
+## Iniciando a análise  
+
+
+```{r}
+# analisando o tempo de sobrevida 
+# estimando a funcao de sobrevivencia
+
+library(survival)
+ekm <- survfit(Surv(TEMPO, CENSURA) ~ 1, data=dados)
+#summary(ekm)
+plot(ekm, mark.time = F, conf.int = F, xlab="Tempo (ano)", ylab="S(t)")
+
+# analisando a quantidade de censura 
+
+table(dados$CENSURA)
+round(prop.table(table(dados$CENSURA)), 2)
+
+
+# TOPOGRUP 
+
+table(dados$TOPOGRUP)
+round(prop.table(table(dados$TOPOGRUP)), 2)
+# nao sera analisada pois e 100% preenchida com C34
+
+# ANODIAG sera analisada como uma variavel categorica 
+dados$ANODIAG <- factor(dados$ANODIAG)
+table(dados$ANODIAG)
+round(prop.table(table(dados$ANODIAG)), 2)
+
+is.factor(dados$ANODIAG)
+
+# IDADE e quantitativa 
+
+is.numeric(dados$IDADE)
+summary(dados$IDADE)
+
+# SEXO e qualitativa 
+
+dados$SEXO <- factor(dados$SEXO)
+table(dados$SEXO)
+round(prop.table(table(dados$SEXO)), 2)
+
+# CIRURGIA e qualitativa
+
+dados$CIRURGIA <- factor(dados$CIRURGIA)
+table(dados$CIRURGIA)
+round(prop.table(table(dados$CIRURGIA)), 2)
+
+# QUIMIO e qualitativa
+
+dados$QUIMIO <- factor(dados$QUIMIO)
+table(dados$QUIMIO)
+round(prop.table(table(dados$QUIMIO)), 2)
+
+
+# RADIO e qualitativa
+
+dados$RADIO <- factor(dados$RADIO)
+table(dados$RADIO)
+round(prop.table(table(dados$RADIO)), 2)
+
+# ECGRUP e qualitativa
+
+dados$ECGRUP <- factor(dados$ECGRUP)
+table(dados$ECGRUP)
+round(prop.table(table(dados$ECGRUP)), 2)
+# veja a volumetria dos niveis 0, X, Y e II
+# O estadiamento clinico e uma forma de avaliar a 
+# extensao do cancer antes do inicio do tratamento principal
+
+
+table(dados$CENSURA, dados$ECGRUP)
+round(prop.table(table(dados$CENSURA, dados$ECGRUP)), 2)
+# cuidado com baixa volumetria! 
+# duvida: sera que nao poderiamos agrupar?
+# mas como e so para efeito didatico, mas seguir como e apresentado
+
+
+# todas as variaveis ok, estamos prontos para seguir com o ajuste 
+#install.packages("MASS")
+library(MASS)
+
+# modelo inicial com todas as variaveis usando a distribuicao exponencial
+modelo_inicial_exp <- survreg(Surv(TEMPO, CENSURA) ~ ANODIAG + IDADE + 
+                                CIRURGIA + RADIO + QUIMIO + ECGRUP,
+                              data = dados, dist = "exponential")
+
+summary(modelo_inicial_exp)
+
+# vamos agora aplicar a selecao stepwise baseada no AIC
+modelo_final_exp <- stepAIC(modelo_inicial_exp, direction = "both")
+
+# Resumo do modelo final
+summary(modelo_final_exp)
+AIC(modelo_final_exp)
+
+
+# modelo inicial com todas as variaveis usando a distribuicao weibull
+modelo_inicial_w <- survreg(Surv(TEMPO, CENSURA) ~ ANODIAG + IDADE + 
+                              CIRURGIA + RADIO + QUIMIO + ECGRUP,
+                            data = dados, dist = "weibull")
+
+summary(modelo_inicial_w)
+
+
+# vamos agora aplicar a selecao stepwise baseada no AIC
+modelo_final_w <- stepAIC(modelo_inicial_w, direction = "both")
+
+# Resumo do modelo final
+summary(modelo_final_w)
+AIC(modelo_final_w)
+
+
+# modelo inicial com todas as variaveis usando a distribuicao log-normal
+modelo_inicial_ln <- survreg(Surv(TEMPO, CENSURA) ~ ANODIAG + IDADE + 
+                               CIRURGIA + RADIO + QUIMIO + ECGRUP,
+                             data = dados, dist = "lognormal")
+
+summary(modelo_inicial_ln)
+
+# vamos agora aplicar a seleção stepwise baseada no AIC
+modelo_final_ln <- stepAIC(modelo_inicial_ln, direction = "both")
+
+# Resumo do modelo final
+summary(modelo_final_ln)
+AIC(modelo_final_ln)
+
+
+# AIC do modelo exponencial = 16765
+# AIC do modelo weibull = 16155
+# AIC do modelo log-normal = 15240
+# o modelo escolhido e o com distribuicao log-normal
+# as variaveis IDADE e ANODIAG nao sao estatisticamente significativas 
+# para explicar a variavel tempo ate a morte 
+
+
+modelo_final <- modelo_final_ln
+
+# intervalo de confiança 
+confint(modelo_final) # de 95% de Wald 
+#confint(modelo_final, level = .9) # de 90% de Wald 
+
+# Adequacao do modelo ajustado
+
+matriz_modelo <- model.matrix(~ CIRURGIA + RADIO + QUIMIO + ECGRUP, data = dados)
+head(matriz_modelo)
+
+x_beta <- matriz_modelo %*% modelo_final$coefficients
+
+cox_snell_modelo_final <- - log(1 - pnorm((log(dados$TEMPO)-x_beta) / modelo_final$scale) )
+
+summary(cox_snell_modelo_final)
+
+# grafico
+
+ekm_cos_snell_final <- survfit(Surv(cox_snell_modelo_final, dados$CENSURA) ~ 1)
+
+exp_cox_snell_modelo_final <- exp(- ekm_cos_snell_final$time)
+
+plot(ekm_cos_snell_final$surv, exp_cox_snell_modelo_final, main= "Resíduos de Cox-Snell", ylab="S(t) - exponencial", xlab="S(t) - EKM")
+abline(a=0, b=1)
+
+# Encontramos um modelo que se ajustou bem aos dados
+```
+
+
+A análise feita até o momento mostrou que o modelo log-normal com as covariáveis cirugia, radio, quimio e ecgrup se ajustaram bem aos dados. Com isso, podemos obter algumas interpretações. 
+
+
+Seguindo a análise anterior, vamos utilizar a função de sobrevivência e a razão do tempo mediano para as interpretações, com o objetivo de comparar dois pacientes, sendo que o paciente 1 fez cirurgia, fez radio, fez quimio e é ECGRUP = II, enquanto que o paciente 2 fez cirurgia, fez radio, fez quimio e é do ECGRUP = IV, portanto a diferenca é apenas o estadiamento. 
+
+
+```{r}
+# Interpretacoes 
+# Considere dois pacientes 
+# paciente 1 - Fez cirurgia, fez radio, fez quimio e ECGRUP = II - x=(1, 1, 1, 1, 0, 1, 0, 0, 0, 0)
+# paciente 2 - Fez cirurgia, fez radio, fez quimio e ECGRUP = IV - x=(1, 1, 1, 1, 0, 0, 0, 1, 0, 0)
+
+# vamos calcular a funcao de sobrevivencia no tempo de 1 ano - log(1)
+
+# Para o paciente 1 
+x_beta_p1 <- c(1, 1, 1, 1, 0, 1, 0, 0, 0, 0) %*% modelo_final$coefficients
+sobre_p1 <- pnorm((-log(1)+x_beta_p1) / modelo_final$scale) 
+sobre_p1
+
+# Para o paciente 2 
+x_beta_p2 <- c(1, 1, 1, 1, 0, 0, 0, 1, 0, 0) %*% modelo_final$coefficients
+sobre_p2 <- pnorm((-log(1)+x_beta_p2) / modelo_final$scale) 
+sobre_p2
+
+
+# vamos calcular a funcao de sobrevivencia no tempo de 10 ano - log(10)
+
+# Para o paciente 1 
+sobre_p1 <- pnorm((-log(10)+x_beta_p1) / modelo_final$scale) 
+sobre_p1
+
+# Para o paciente 2 
+sobre_p2 <- pnorm((-log(10)+x_beta_p2) / modelo_final$scale) 
+sobre_p2
+
+
+# MTTF - tempo medio 
+# modelo log-normal - exp(mu + sigma2/2)
+# mu = x%*%beta 
+# sigma = scale 
+
+# Para o paciente 1 
+mttf_1 <- exp(x_beta_p1 + modelo_final$scale^2 / 2)
+mttf_1
+
+
+# Para o paciente 2
+mttf_2 <- exp(x_beta_p2 + modelo_final$scale^2 / 2)
+mttf_2
+
+
+# razao dos tempos medianos 
+
+exp(c(1, 1, 1, 1, 0, 1, 0, 0, 0, 0) %*% modelo_final$coefficients - 
+      c(1, 1, 1, 1, 0, 0, 0, 1, 0, 0) %*% modelo_final$coefficients)
+
+
+# calculo do tempo mediano 
+
+paciente1 <- data.frame(
+  CIRURGIA = factor(1, levels = levels(dados$CIRURGIA)),
+  RADIO = factor(1, levels = levels(dados$RADIO)),
+  QUIMIO = factor(1, levels = levels(dados$QUIMIO)),
+  ECGRUP = factor("II", levels = levels(dados$ECGRUP))
+)
+
+predict(modelo_final, newdata = paciente1, type = "quantile", p = 0.5)
+
+paciente2 <- data.frame(
+  CIRURGIA = factor(1, levels = levels(dados$CIRURGIA)),
+  RADIO = factor(1, levels = levels(dados$RADIO)),
+  QUIMIO = factor(1, levels = levels(dados$QUIMIO)),
+  ECGRUP = factor("IV", levels = levels(dados$ECGRUP))
+)
+
+predict(modelo_final, newdata = paciente2, type = "quantile", p = 0.5)
+
+# verificando a razao do tempo mediano
+
+12.66/4.029
+
+
+# podemos utilizar a funcao predict para quaisquer percentil 
+
+# Percentil 0.25 
+
+predict(modelo_final, newdata = paciente1, type = "quantile", p = 0.25)
+
+predict(modelo_final, newdata = paciente2, type = "quantile", p = 0.25)
+
+```
+
+
+A função de sobrevivência do paciente 1 no tempo de 1 ano é igual a 0,97, enquanto que do paciente 2 é igual a 0,84. Ou seja, espera-se que 97% dos pacientes que apresentam as mesmas características do paciente 1 estejam vivos após 1 ano do diagnóstico, já para pacientes com características iguais ao do paciente 2, é esperado 84%. 
+
+
+Quando analisamos as funções de sobrevivência no tempo de 10 anos, temos 0,57 e 0,25, para os pacientes 1 e 2, respectivamente. 
+
+
+Obtemos que a razão do tempo mediano do paciente 1 pelo paciente 2 é aproximadamente igual a 3,14, ou seja, o tempo mediano do paciente 1 (12,66 anos) é 3,14 vezes o tempo mediano do paciente 2 (4,03 anos).  
+
+
+Além disso, calculamos o tempo percentil 0,25, ou seja, para pacientes com as mesmas covariáveis que o paciente 1, é esperado que 75% deles sobrevivam além do tempo de 5,01 anos. Já para pacientes com as mesmas covariáveis que o paciente 2, é esperado que 75% deles sobrevivam além do tempo de 1,59 anos. 

@@ -1,0 +1,242 @@
+---
+title: "Análise Fatorial"
+author: "Ricardo Limongi"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    number_sections: true
+    theme: united
+    highlight: tango
+  pdf_document:
+    toc: true
+  word_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+# Pacotes necessários
+pacotes_necessarios <- c(
+  "psych",       # Análise Fatorial Exploratória (AFE)
+  "GPArotation", # Métodos de rotação
+  "tidyverse",   # Manipulação de dados
+  "lavaan",      # Análise Fatorial Confirmatória (AFC)
+  "semPlot",     # Visualização de Modelos
+  "corrplot",    # Gráficos de correlação
+  "polycor"      # Correlações policóricas (para dados ordinais)
+)
+
+# Instalar pacotes se necessário - com mirror CRAN definido
+to_install <- pacotes_necessarios[!(pacotes_necessarios %in% installed.packages())]
+if(length(to_install)) {
+  # Definir um mirror CRAN para a instalação
+  repos <- "https://cran.rstudio.com/"
+  install.packages(to_install, repos = repos)
+}
+
+# Carregar pacotes
+invisible(lapply(pacotes_necessarios, library, character.only = TRUE))
+```
+
+# Introdução
+A **Análise Fatorial** é uma técnica estatística usada para reduzir a dimensionalidade de um conjunto de variáveis, identificando fatores latentes que explicam suas correlações.
+Vamos discutir**dois exemplos**:
+
+1. **Análise Fatorial Exploratória (AFE) em dados contínuos e ordinais**
+2. **Análise Fatorial Confirmatória (AFC) para ambos os tipos de dados**
+
+**Atenção** É fundamental fazer a análiose considerando a natureza do dado cletado.
+
+## Exemplo 1: Análise Fatorial Exploratória (AFE) em Dados Contínuos
+
+```{r gerar-dados-continuos}
+# Gerando um conjunto de dados fictício com variáveis correlacionadas
+set.seed(123)
+n <- 200  # Número de observações
+dados_continuos <- data.frame(
+  V1 = rnorm(n, mean = 50, sd = 10),
+  V2 = rnorm(n, mean = 50, sd = 10),
+  V3 = rnorm(n, mean = 50, sd = 10),
+  V4 = rnorm(n, mean = 50, sd = 10),
+  V5 = rnorm(n, mean = 50, sd = 10)
+)
+
+# Criar correlações artificiais entre algumas variáveis
+dados_continuos$V2 <- dados_continuos$V1 + rnorm(n, 0, 5)
+dados_continuos$V4 <- dados_continuos$V3 + rnorm(n, 0, 5)
+
+# Matriz de correlação
+corrplot(cor(dados_continuos), method = "circle")
+```
+
+### Aplicando a Análise Fatorial Exploratória (AFE)
+```{r afe-continuos}
+# Determinar a adequação dos dados
+KMO(dados_continuos)  # Teste de Kaiser-Meyer-Olkin (idealmente > 0.6)
+
+# Teste de esfericidade de Bartlett (deve ser significativo)
+cortest.bartlett(cor(dados_continuos), n)
+
+# Determinar o número de fatores pelo critério de eigenvalues
+fa.parallel(dados_continuos, fa = "fa", n.iter = 100)
+
+# Executar a AFE
+afe <- fa(dados_continuos, nfactors = 2, rotate = "varimax", fm = "ml")
+print(afe$loadings, cutoff = 0.4) # Exibir cargas fatoriais relevantes
+
+# Visualizar a matriz de cargas fatoriais
+fa.diagram(afe)
+```
+
+# Interpretação
+
+KMO = 0.47: O valor está ligeiramente abaixo do ideal (0.6), o que sugere que os dados têm uma adequação mediana para análise fatorial. No entanto, como está próximo de 0.5, ainda é aceitável prosseguir.
+
+Teste de Bartlett: Com p-valorbaixo (8.41e-130), rejeitamos a hipótese nula de que a matriz de correlação é uma matriz identidade, confirmando que existem correlações significativas entre as variáveis.
+
+Extração de Fatores
+
+Análise Paralela: Sugeriu 2 fatores, o que foi adotado.
+
+Cargas Fatoriais:
+- Fator 1 (ML1): V3 (0.897) e V4 (0.996) apresentam cargas altas
+- Fator 2 (ML2): V1 (0.889) e V2 (0.996) apresentam cargas altas
+- V5 não apresentou carga significativa em nenhum fator
+
+
+Variância Explicada: Os dois fatores explicam cerca de 71.9% da variância total, o que é um bom resultado, porém, é sempre importante consultar a literatura da área para comparação da variância aceita.
+
+Interpretação dos Fatores
+O diagrama mostra  dois grupos distintos:
+ - O primeiro fator (ML1) está fortemente associado a V3 e V4
+- O segundo fator (ML2) está fortemente associado a V1 e V2
+
+A estrutura faz sentido considerando que os dados foram gerados com correlações específicas entre V1-V2 e V3-V4.
+
+## Exemplo 2: Análise Fatorial Exploratória (AFE) para Dados Ordinais
+```{r gerar-dados-ordinais}
+# Criando um dataset simulado com escala Likert (1 a 5)
+set.seed(123)
+dados_ordin <- data.frame(
+  V1 = sample(1:5, n, replace = TRUE),
+  V2 = sample(1:5, n, replace = TRUE),
+  V3 = sample(1:5, n, replace = TRUE),
+  V4 = sample(1:5, n, replace = TRUE),
+  V5 = sample(1:5, n, replace = TRUE)
+)
+
+# Matriz de correlação policórica
+cor_pol <- hetcor(dados_ordin)$correlations
+corrplot(cor_pol, method = "circle")
+```
+
+```{r afe-ordinais}
+# AFE com correlações policóricas
+afe_ord <- fa(cor_pol, nfactors = 2, rotate = "varimax", fm = "ml")
+print(afe_ord$loadings, cutoff = 0.4)
+fa.diagram(afe_ord)
+```
+
+# Matriz de Correlação Policórica
+
+A matriz de correlação mostra que, para os dados ordinais, as variáveis apresentam um padrão diferente, com correlações mais dispersas.
+
+Extração de Fatores: Foram extraídos 2 fatores, conforme decidido previamente.
+
+Cargas Fatoriais:
+- Fator 1 (ML1): V5 (0.997) apresenta carga alta
+- Fator 2 (ML2): V2 (0.993) apresenta carga alta
+- V1, V3 e V4 não apresentaram cargas significativas
+
+Variância Explicada: Os dois fatores explicam apenas 40.4% da variância total, o que é moderado.
+
+Logo, 
+A estrutura fatorial dos dados ordinais é diferente da dos dados contínuos, o que é esperado já que os dados ordinais são dados simulados  sem correlação planejada. Este é um resultado importante, pois mostra como a escala de medida pode afetar a estrutura fatorial.
+
+## Exemplo 3: Análise Fatorial Confirmatória (AFC) para Ambos os Tipos de Dados
+```{r afc}
+# Modelo teórico baseado nos resultados da AFE
+modelo_afc <- ' 
+F1 =~ V1 + V2 + V3 
+F2 =~ V4 + V5 
+'
+
+# Ajustar modelo no lavaan para dados contínuos
+afcm_cont <- cfa(modelo_afc, data = dados_continuos)
+summary(afcm_cont, fit.measures = TRUE, standardized = TRUE)
+
+# Ajustar modelo no lavaan para dados ordinais (usando WLSMV)
+afcm_ord <- cfa(modelo_afc, data = dados_ordin, ordered = colnames(dados_ordin))
+summary(afcm_ord, fit.measures = TRUE, standardized = TRUE)
+
+# Visualização do modelo fatorial
+semPaths(afcm_cont, whatLabels = "std", layout = "tree", edge.label.cex = 1.2)
+semPaths(afcm_ord, whatLabels = "std", layout = "tree", edge.label.cex = 1.2)
+```
+
+## Dados Contínuos
+
+Modelo: F1 =~ V1 + V2 + V3; F2 =~ V4 + V5
+Ajuste do Modelo:
+
+χ² = 331.183 (df = 4, p < 0.001) - significativo, o que não é ideal
+CFI = 0.485 - muito abaixo do aceitável (deveria ser > 0.90)
+TLI = -0.287 - valor negativo é preocupante
+RMSEA = 0.640 - muito acima do aceitável (deveria ser < 0.08)
+SRMR = 0.241 - muito acima do aceitável (deveria ser < 0.08)
+
+Dados Ordinais: o modelo não convergiu após 450 iterações, o que indica problemas  no ajuste. Os avisos "Warning" mostram que:
+
+- Não foi possível calcular erros padrão
+- Algumas variâncias estimadas são negativas
+
+Interpretação da AFC
+Os modelos apresentaram problemas  de ajuste. Sugere que o modelo teórico proposto não se ajusta bem aos dados, o que é esperado para os dados ordinais (já que foram gerados aleatoriamente). Para os dados contínuos, o problema pode estar relacionado ao fato de que a estrutura fatorial da AFE não colocou V3 junto com V1 e V2 como definido no modelo AFC.
+
+# Conclusão
+- **AFE em dados contínuos e ordinais** foi aplicada para reduzir variáveis em fatores latentes.
+- **AFC testou a estrutura** sugerida pela AFE para ambos os tipos de dados.
+- **O método WLSMV** foi utilizado para dados ordinais, devido à robustez na AFC.
+
+# Reflexão e Caminhos para Análise de Dados
+
+1. Refinamento do Modelo
+
+Especificação do Modelo: Revisar o modelo teórico com base nos resultados da AFE
+Modificações de Índices: Considerar os índices de modificação para melhorar o ajuste do modelo
+Covariâncias entre Erros: Permitir covariâncias entre erros quando há justificativa teórica
+
+2. Abordagens Alternativas
+
+Rotação Oblíqua: Como mencionado, usar rotação oblimin pode ser mais apropriado se os fatores forem correlacionados
+Métodos Robustos: Para dados ordinais, o método WLSMV é recomendado, mas talvez precise ajustar outros parâmetros de estimação
+
+3. Diagnóstico Aprofundado
+
+Análise Residual: Examinar os resíduos para identificar fontes específicas de desajuste
+Análise de Comunalidades: Verificar se algumas variáveis têm comunalidades  baixas
+Identificação de Outliers: Verificar se existem observações extremas afetando os resultados
+
+4. Validação Cruzada
+
+Divisão da Amostra: Dividir a amostra em treinamento e teste para validar a estrutura fatorial
+Amostras Independentes: Se possível, replicar a análise em amostras independentes
+
+5. Interpretação Substantiva
+
+Significado dos Fatores: Interpretar os fatores identificados em termos substantivos
+Escores Fatoriais: Calcular e utilizar escores fatoriais para análises subsequentes
+Validade de Construto: Examinar a relação dos fatores com variáveis externas
+
+6. Considerações Metodológicas
+
+Para dados contínuos, a AFE funcionou bem, mas a AFC apresentou problemas
+Para dados ordinais, tanto a AFE quanto a AFC tiveram limitações
+Considerar métodos alternativos como Análise de Componentes Principais (PCA) ou técnicas de redução de dimensionalidade não lineares (como t-SNE ou UMAP)
+
+7. Verificação dos Pressupostos
+
+Verificar a normalidade multivariada dos dados
+Testar a presença de multicolinearidade
+Examinar a linearidade das relações entre variáveis

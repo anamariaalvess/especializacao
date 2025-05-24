@@ -1,0 +1,474 @@
+---
+title: "Análise Discriminante"
+author: "Ricardo Limongi"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme: cosmo
+    highlight: tango
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+# 1. Introdução à Análise Discriminante Linear (LDA)
+
+A Análise Discriminante Linear (LDA) é uma técnica estatística desenvolvida por Ronald Fisher em 1936 que busca encontrar combinações lineares de características (variáveis) que melhor separam duas ou mais classes de objetos ou eventos. Na área da saúde, a LDA pode ser extremamente útil para:
+
+* Diagnóstico de doenças com base em múltiplos biomarcadores
+* Classificação de pacientes em grupos de risco
+* Identificação de fatores mais relevantes na discriminação entre grupos de pacientes 
+* Desenvolvimento de regras de decisão para triagem clínica
+
+## 1.1 Principais características da LDA:
+
+* É uma técnica supervisionada (necessita de dados previamente rotulados)
+* Pressupõe normalidade multivariada das variáveis independentes
+* Assume homogeneidade de variâncias-covariâncias entre grupos
+* Busca maximizar a separação entre grupos enquanto minimiza a variação dentro dos grupos
+* Pode ser usada tanto para classificação quanto para redução de dimensionalidade
+
+# 2. Análise de Risco Cardiovascular - Um Caso Prático
+
+Neste exemplo, vamos utilizar a LDA para classificar pacientes em grupos de risco cardiovascular com base em diversos indicadores de saúde.
+
+## 2.1 Carregando as bibliotecas necessárias
+
+```{r bibliotecas}
+# Carregar pacotes necessários
+library(MASS)      # Para função lda()
+library(dplyr)     # Para manipulação de dados
+library(ggplot2)   # Para visualização
+library(caret)     # Para validação e métricas
+library(klaR)      # Para visualização da LDA
+```
+
+## 2.2 Preparando o conjunto de dados
+
+Para este exemplo, usaremos dados simulados que representam indicadores de saúde cardiovascular de pacientes.
+
+```{r dados}
+# Definir seed para reprodutibilidade
+set.seed(123)
+
+# Criar amostra de pacientes de baixo risco cardiovascular 
+baixo_risco <- data.frame(
+  idade = rnorm(100, mean = 45, sd = 8),
+  pressao_sistolica = rnorm(100, mean = 120, sd = 10),
+  colesterol_total = rnorm(100, mean = 190, sd = 20),
+  hdl = rnorm(100, mean = 55, sd = 8),
+  triglicerideos = rnorm(100, mean = 120, sd = 30),
+  glicemia = rnorm(100, mean = 85, sd = 10),
+  imc = rnorm(100, mean = 24, sd = 2.5),
+  grupo = factor("Baixo Risco")
+)
+
+# Criar amostra de pacientes de médio risco cardiovascular
+medio_risco <- data.frame(
+  idade = rnorm(100, mean = 55, sd = 7),
+  pressao_sistolica = rnorm(100, mean = 135, sd = 12),
+  colesterol_total = rnorm(100, mean = 215, sd = 25),
+  hdl = rnorm(100, mean = 45, sd = 7),
+  triglicerideos = rnorm(100, mean = 160, sd = 40),
+  glicemia = rnorm(100, mean = 100, sd = 15),
+  imc = rnorm(100, mean = 27, sd = 3),
+  grupo = factor("Médio Risco")
+)
+
+# Criar amostra de pacientes de alto risco cardiovascular
+alto_risco <- data.frame(
+  idade = rnorm(100, mean = 65, sd = 9),
+  pressao_sistolica = rnorm(100, mean = 150, sd = 15),
+  colesterol_total = rnorm(100, mean = 240, sd = 30),
+  hdl = rnorm(100, mean = 35, sd = 6),
+  triglicerideos = rnorm(100, mean = 210, sd = 50),
+  glicemia = rnorm(100, mean = 120, sd = 25),
+  imc = rnorm(100, mean = 31, sd = 3.5),
+  grupo = factor("Alto Risco")
+)
+
+# Combinar os três grupos
+dados <- rbind(baixo_risco, medio_risco, alto_risco)
+
+# Visualizar a estrutura dos dados
+str(dados)
+
+# Resumo estatístico dos dados
+summary(dados)
+```
+
+## 2.3 Análise exploratória dos dados
+
+Antes de aplicar a LDA, é importante explorar os dados para entender as características de cada grupo e verificar se existem padrões visíveis.
+
+```{r exploracao}
+# Visualizar a distribuição das variáveis por grupo
+ggplot(dados, aes(x = idade, y = pressao_sistolica, color = grupo)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Idade vs. Pressão Sistólica por Grupo de Risco",
+       x = "Idade", y = "Pressão Sistólica (mmHg)") +
+  theme_minimal()
+
+# Boxplots para comparar as distribuições por grupo
+ggplot(dados, aes(x = grupo, y = colesterol_total, fill = grupo)) +
+  geom_boxplot() +
+  labs(title = "Distribuição do Colesterol Total por Grupo de Risco",
+       x = "Grupo de Risco", y = "Colesterol Total (mg/dL)") +
+  theme_minimal()
+
+# Matriz de correlação entre as variáveis
+cor_matrix <- cor(dados[, 1:7])
+corrplot::corrplot(cor_matrix, method = "circle", type = "upper", 
+                  tl.col = "black", tl.srt = 45, addCoef.col = "black")
+```
+
+Correlações positivas importantes: Observa-se correlação positiva entre idade e pressão sistólica (0,52), idade e glicemia (0,47), e idade e IMC (0,52). Isso indica que, nesta população simulada, à medida que a idade aumenta, tende-se a observar aumentos nos outros indicadores de risco cardiovascular.
+
+Correlações negativas relevantes: HDL (colesterol "bom") apresenta correlação negativa com praticamente todos os outros indicadores: idade (-0,52), pressão sistólica (-0,56), triglicerídeos (-0,49), glicemia (-0,49) e IMC (-0,49). Isto corrobora o conhecimento clínico de que níveis mais altos de HDL tendem a ser protetores contra doenças cardiovasculares.
+
+Implicações para a análise: As correlações de magnitude moderada (maioria entre 0,4 e 0,5) sugerem que as variáveis contêm informações diferentes e complementares, o que é ideal para a Análise Discriminante. Não há correlações extremamente altas (> 0,8) que indicariam multicolinearidade problemática.
+
+# 3. Aplicação da Análise Discriminante Linear
+
+## 3.1 Divisão dos dados em treino e teste
+
+```{r divisao_dados}
+# Dividir os dados em conjunto de treino (70%) e teste (30%)
+set.seed(456)
+indices_treino <- createDataPartition(dados$grupo, p = 0.7, list = FALSE)
+dados_treino <- dados[indices_treino, ]
+dados_teste <- dados[-indices_treino, ]
+
+# Verificar a distribuição das classes nos conjuntos de treino e teste
+table(dados_treino$grupo)
+table(dados_teste$grupo)
+```
+
+## 3.2 Construção do modelo LDA
+
+```{r modelo_lda}
+# Construir o modelo LDA
+modelo_lda <- lda(grupo ~ idade + pressao_sistolica + colesterol_total + 
+                  hdl + triglicerideos + glicemia + imc, 
+                  data = dados_treino)
+
+# Exibir o resumo do modelo
+print(modelo_lda)
+
+# Médias das variáveis por grupo
+modelo_lda$means
+
+# Coeficientes das funções discriminantes lineares
+modelo_lda$scaling
+
+# Proporções de variância explicada por cada função discriminante
+prop_var <- modelo_lda$svd^2 / sum(modelo_lda$svd^2)
+round(prop_var, 4)
+```
+
+- Gradiente de risco: Todas as variáveis mostram uma progressão clara entre os grupos. Idade, pressão sistólica, colesterol total, triglicerídeos, glicemia e IMC aumentam progressivamente do grupo de Baixo Risco para o de Alto Risco.
+- HDL como fator protetor: O HDL é a única variável que diminui à medida que o risco aumenta, confirmando seu papel protetor. A diferença é substancial, com o grupo de Baixo Risco apresentando média quase 20 pontos superior ao grupo de Alto Risco.
+- Diferenças clinicamente significativas: As diferenças entre grupos são não apenas estatisticamente significativas, mas também clinicamente relevantes. Por exemplo, a diferença de glicemia entre o grupo de Baixo Risco (83,90 mg/dL) e Alto Risco (121,63 mg/dL) representa a diferença entre um valor normal e um diagnóstico de pré-diabetes.
+
+## 3.3 Visualização da LDA
+
+```{r visualizacao_lda}
+# Plotar as funções discriminantes canônicas
+lda_plot <- predict(modelo_lda, dados_treino)
+ldahist(lda_plot$x[,1], g = dados_treino$grupo)
+title("Histograma da Primeira Função Discriminante por Grupo")
+
+# Gráfico de dispersão das duas primeiras funções discriminantes
+plot_df <- data.frame(
+  LD1 = lda_plot$x[,1],
+  LD2 = lda_plot$x[,2],
+  grupo = dados_treino$grupo
+)
+
+ggplot(plot_df, aes(x = LD1, y = LD2, color = grupo)) +
+  geom_point(size = 3, alpha = 0.7) +
+  stat_ellipse(level = 0.95) +
+  labs(title = "Funções Discriminantes Canônicas",
+       x = paste0("LD1 (", round(prop_var[1]*100, 1), "%)"),
+       y = paste0("LD2 (", round(prop_var[2]*100, 1), "%)")) +
+  theme_minimal()
+
+# Visualizar a separação entre os grupos usando partimat
+partimat(grupo ~ idade + pressao_sistolica + colesterol_total + hdl,
+         data = dados_treino, method = "lda")
+```
+
+# Gráfico de Dispersão 
+
+- Baixo Risco (vermelho): Concentra-se na região inferior esquerda, caracterizada por idades mais jovens (maioria abaixo de 50 anos) e pressão sistólica mais baixa (geralmente abaixo de 130 mmHg).
+
+- Médio Risco (verde): Ocupa predominantemente a região central do gráfico, com idades intermediárias (aproximadamente 50-60 anos) e pressão sistólica moderada (130-145 mmHg).
+
+- Alto Risco (azul): Localiza-se majoritariamente na região superior direita, com idades mais avançadas (acima de 60 anos) e pressão sistólica elevada (acima de 145 mmHg).
+
+Sobreposição de grupos: É evidente alguma sobreposição entre os grupos, especialmente entre Médio e Alto Risco. Isto sugere que, embora estas duas variáveis (idade e pressão 
+sistólica) sejam bons discriminadores, elas sozinhas não são suficientes para classificar perfeitamente os pacientes.
+
+# Distribuição entre grupos
+
+- Progressão entre grupos: Há um claro aumento nos níveis médios de colesterol total do grupo de Baixo Risco (mediana aproximadamente 190 mg/dL) para o grupo de Alto Risco (mediana em torno de 245 mg/dL).
+- Variabilidade intragrupo: O grupo de Alto Risco apresenta maior variabilidade nos níveis de colesterol (caixa mais alongada), sugerindo maior heterogeneidade neste indicador entre pacientes de alto risco.
+- Valores atípicos (outliers): Os poucos outliers observados no grupo de Alto Risco indicam que alguns pacientes apresentam valores de colesterol extraordinariamente elevados mesmo para o grupo de alto risco.
+
+## 3.4 Avaliação do modelo no conjunto de teste
+
+```{r avaliacao}
+# Fazer predições no conjunto de teste
+predicoes <- predict(modelo_lda, dados_teste)
+confusao <- table(Predito = predicoes$class, Real = dados_teste$grupo)
+print(confusao)
+
+# Calcular a acurácia
+acuracia <- sum(diag(confusao)) / sum(confusao)
+cat("Acurácia do modelo: ", round(acuracia * 100, 2), "%\n")
+
+# Métricas de avaliação detalhadas
+caret::confusionMatrix(predicoes$class, dados_teste$grupo)
+
+# Probabilidades posteriores para os primeiros casos
+head(predicoes$posterior)
+```
+
+# Matriz de Confusão
+
+-0 Acurácia global: 92,22% (83/90 casos classificados corretamente).
+- Padrão de erros: A maioria dos erros de classificação ocorre entre grupos adjacentes (Baixo-Médio ou Médio-Alto). Não há classificação errônea de Baixo como Alto ou vice-versa, o que seria um erro mais grave clinicamente.
+- Implicações clínicas: Os erros de classificação são relativamente equilibrados, sem tendência a superestimar ou subestimar o risco, o que é desejável em aplicações médicas.
+
+# 4. Interpretação dos Resultados
+
+## 4.1 Análise das funções discriminantes
+
+```{r interpretacao_funcoes}
+# Examinar os coeficientes padronizados para entender a importância relativa de cada variável
+coef_padronizados <- modelo_lda$scaling * apply(dados_treino[, 1:7], 2, sd)
+coef_ordenados <- abs(coef_padronizados) %>% 
+  as.data.frame() %>%
+  setNames(c("LD1", "LD2")) %>%
+  arrange(desc(LD1))
+
+print("Coeficientes padronizados (em ordem de importância para LD1):")
+print(coef_ordenados)
+
+# Visualizar a importância relativa das variáveis para a primeira função discriminante
+variaveis <- rownames(coef_ordenados)
+importancia_ld1 <- data.frame(
+  variavel = variaveis,
+  coeficiente = coef_ordenados$LD1
+)
+
+ggplot(importancia_ld1, aes(x = reorder(variavel, coeficiente), y = coeficiente)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Importância Relativa das Variáveis na LD1",
+       x = "", y = "Coeficiente Padronizado (Valor Absoluto)") +
+  theme_minimal()
+```
+
+## 4.2 Mapa de classificação de novos pacientes
+
+Vamos criar uma função para avaliar novos pacientes e classificá-los em grupos de risco.
+
+```{r funcao_classificacao}
+# Função para classificar novos pacientes
+classificar_paciente <- function(idade, pressao_sistolica, colesterol_total, 
+                                hdl, triglicerideos, glicemia, imc) {
+  
+  # Criar dataframe com os dados do novo paciente
+  novo_paciente <- data.frame(
+    idade = idade,
+    pressao_sistolica = pressao_sistolica,
+    colesterol_total = colesterol_total,
+    hdl = hdl,
+    triglicerideos = triglicerideos,
+    glicemia = glicemia,
+    imc = imc
+  )
+  
+  # Fazer predição usando o modelo LDA
+  resultado <- predict(modelo_lda, novo_paciente)
+  
+  # Retornar o grupo predito e as probabilidades posteriores
+  list(
+    grupo_predito = as.character(resultado$class),
+    probabilidades = resultado$posterior
+  )
+}
+
+# Exemplo de uso da função com um novo paciente
+novo_paciente <- classificar_paciente(
+  idade = 58,
+  pressao_sistolica = 142,
+  colesterol_total = 230,
+  hdl = 38,
+  triglicerideos = 180,
+  glicemia = 110,
+  imc = 29.5
+)
+
+cat("Classificação do paciente: ", novo_paciente$grupo_predito, "\n")
+cat("Probabilidades por grupo:\n")
+print(round(novo_paciente$probabilidades, 4))
+```
+
+# 5. Aplicação Prática e Tomada de Decisão
+
+## 5.1 Protocolo de decisão baseado na Análise Discriminante
+
+Com base nos resultados da Análise Discriminante, podemos criar um protocolo de decisão para orientar profissionais de saúde na avaliação de pacientes:
+
+```{r protocolo_decisao}
+# Definir limiares de decisão (exemplo)
+limiar_confianca <- 0.8  # Probabilidade mínima para decisão automática
+
+# Função de suporte à decisão
+avaliar_risco_cardiovascular <- function(idade, pressao_sistolica, colesterol_total, 
+                                        hdl, triglicerideos, glicemia, imc) {
+  
+  # Classificar o paciente
+  resultado <- classificar_paciente(idade, pressao_sistolica, colesterol_total, 
+                                   hdl, triglicerideos, glicemia, imc)
+  
+  # Probabilidade máxima
+  prob_max <- max(resultado$probabilidades)
+  grupo_max <- resultado$grupo_predito
+  
+  # Tomar decisão
+  if (prob_max >= limiar_confianca) {
+    decisao <- paste0("Classificar paciente como '", grupo_max, 
+                     "' com alta confiança (", round(prob_max*100, 1), "%).")
+  } else {
+    decisao <- paste0("Classificação incerta. Probabilidade do grupo mais provável ('", 
+                     grupo_max, "') é de apenas ", round(prob_max*100, 1), 
+                     "%. Considerar avaliação adicional.")
+  }
+  
+  # Definir recomendações por grupo
+  recomendacoes <- list(
+    "Baixo Risco" = c(
+      "Reavaliação em 12 meses",
+      "Manter hábitos saudáveis",
+      "Atividade física regular"
+    ),
+    "Médio Risco" = c(
+      "Reavaliação em 6 meses",
+      "Considerar ajustes na dieta",
+      "Intensificar atividade física",
+      "Monitorar pressão arterial e glicemia"
+    ),
+    "Alto Risco" = c(
+      "Reavaliação em 3 meses",
+      "Encaminhar para especialista",
+      "Considerar terapia medicamentosa",
+      "Monitoramento regular de pressão e perfil lipídico",
+      "Plano de redução de peso se IMC elevado"
+    )
+  )
+  
+  # Retornar resultado estruturado
+  list(
+    classificacao = grupo_max,
+    probabilidades = resultado$probabilidades,
+    decisao = decisao,
+    recomendacoes = recomendacoes[[grupo_max]]
+  )
+}
+
+# Testar a função com três pacientes diferentes
+pacientes_teste <- list(
+  paciente1 = list(idade = 42, pressao_sistolica = 118, colesterol_total = 185, 
+                  hdl = 58, triglicerideos = 110, glicemia = 82, imc = 23.5),
+  
+  paciente2 = list(idade = 58, pressao_sistolica = 142, colesterol_total = 230, 
+                  hdl = 38, triglicerideos = 180, glicemia = 110, imc = 29.5),
+  
+  paciente3 = list(idade = 55, pressao_sistolica = 138, colesterol_total = 210, 
+                  hdl = 42, triglicerideos = 155, glicemia = 105, imc = 28.0)
+)
+
+# Avaliar cada paciente
+for (i in 1:length(pacientes_teste)) {
+  p <- pacientes_teste[[i]]
+  nome_paciente <- names(pacientes_teste)[i]
+  
+  cat("\n\n===================================\n")
+  cat("AVALIAÇÃO DO PACIENTE:", nome_paciente, "\n")
+  cat("===================================\n")
+  
+  resultado <- avaliar_risco_cardiovascular(p$idade, p$pressao_sistolica, p$colesterol_total,
+                                           p$hdl, p$triglicerideos, p$glicemia, p$imc)
+  
+  cat("Classificação: ", resultado$classificacao, "\n")
+  cat("Probabilidades por grupo:\n")
+  print(round(resultado$probabilidades, 4))
+  cat("\nDecisão: ", resultado$decisao, "\n")
+  cat("\nRecomendações:\n")
+  for (rec in resultado$recomendacoes) {
+    cat("- ", rec, "\n")
+  }
+}
+```
+
+Os três casos de exemplo (páginas 21-22) ilustram a aplicação prática do modelo:
+
+Paciente 1 (Baixo Risco):
+- Perfil: 42 anos, pressão sistólica 118 mmHg, HDL 58 mg/dL, IMC 23,5
+- Classificação: Baixo Risco com probabilidade 99,84%
+- Interpretação: Este caso demonstra alta confiança na classificação devido ao perfil claramente favorável em todas as variáveis importantes (idade, pressão, HDL e IMC).
+- Recomendações clínicas: As recomendações de reavaliação anual e manutenção de hábitos saudáveis são apropriadas para este nível de risco.
+
+Paciente 2 (Alto Risco):
+- Perfil: 58 anos, pressão sistólica 142 mmHg, HDL 38 mg/dL, IMC 29,5
+- Classificação: Alto Risco, mas com probabilidade moderada (54,68%)
+- Interpretação: A incerteza na classificação (probabilidade apenas 54,7%) sugere que este paciente está na fronteira entre Médio e Alto Risco. Isto é ilustrado pela probabilidade substancial (45,32%) de pertencer ao grupo de Médio Risco.
+- Implicação clínica: A recomendação de avaliação adicional é apropriada neste caso, possivelmente incluindo exames complementares como ecocardiograma ou teste de esforço.
+
+Paciente 3 (Médio Risco):
+- Perfil: 55 anos, pressão sistólica 138 mmHg, HDL 42 mg/dL, IMC 28,0
+- Classificação: Médio Risco com alta confiança (98,38%)
+- Interpretação: Este caso demonstra que o modelo pode identificar com precisão casos de risco intermediário, não apenas os extremos.
+- Valor prático: A identificação precisa do grupo de Médio Risco permite intervenções preventivas proporcionais ao nível de risco, evitando tanto o subtratamento quanto o sobretratamento.
+
+# Considerações Práticas para Data Science em Saúde
+Alguns pontos adicionais relevantes para estudantes de MBA em Data Science:
+
+Interpretabilidade vs. Desempenho: A LDA oferece boa interpretabilidade, permitindo entender a contribuição de cada variável para a classificação. Isto é fundamental na área médica, onde modelos "caixa-preta" podem encontrar resistência.
+Importância da validação externa: Os resultados são baseados em dados simulados. Em aplicações reais, a validação em populações diversas seria essencial para garantir a generalização do modelo.
+Calibração de probabilidades: As probabilidades posteriores fornecidas pelo modelo LDA permitem não apenas classificar pacientes, mas também quantificar a incerteza na classificação, o que é valioso para tomada de decisão clínica.
+Potencial para implementação em sistemas de apoio à decisão: A relativa simplicidade computacional da LDA a torna adequada para implementação em sistemas de apoio à decisão clínica, inclusive em ambientes com recursos limitados.
+
+# 6. Conclusões e Limitações da Técnica
+
+## 6.1 Principais benefícios da Análise Discriminante no contexto médico
+
+- Fornece uma estrutura objetiva para classificação de pacientes em grupos de risco
+- Identifica quais fatores são mais importantes na discriminação entre grupos
+- Permite calcular probabilidades de pertencimento a cada grupo
+- Pode servir como base para protocolos de decisão clínica
+- Facilita a comunicação de risco aos pacientes
+
+## 6.2 Limitações a considerar
+
+- Pressupõe normalidade multivariada dos dados e homogeneidade de variâncias-covariâncias
+- Resultados podem ser sensíveis a outliers
+- Necessita de amostras representativas para cada grupo
+- Não lida bem com relações não-lineares entre variáveis
+- Fronteiras de decisão são lineares, o que pode ser uma simplificação
+- As probabilidades posteriores dependem das proporções dos grupos na amostra de treinamento
+
+## 6.3 Possíveis extensões
+
+- Análise Discriminante Quadrática (QDA) para relaxar a suposição de homogeneidade
+- Regularização para lidar com multicolinearidade entre variáveis
+- Validação cruzada para estimar melhor o erro de generalização
+- Combinação com outras técnicas de classificação para decisões mais robustas
+```

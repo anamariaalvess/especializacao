@@ -1,0 +1,563 @@
+---
+title: "Análise de Cluster"
+author: "Ricardo Limongi"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: cosmo
+    highlight: tango
+    code_folding: show
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+# 1. Introdução à Análise de Cluster
+
+A Análise de Cluster (ou Agrupamento) é uma técnica de aprendizado não supervisionado que visa agrupar objetos semelhantes em grupos chamados clusters. O objetivo principal é maximizar a homogeneidade dentro dos grupos e a heterogeneidade entre os grupos. Na área da saúde, esta técnica tem diversas aplicações, como:
+
+- Identificação de padrões em dados de pacientes
+- Segmentação de perfis epidemiológicos
+- Agrupamento de hospitais por características de atendimento
+- Identificação de grupos de risco em doenças crônicas
+- Análise de comorbidades
+
+Neste tutorial, aplicaremos a Análise de Cluster em um conjunto de dados relacionado à saúde para identificar perfis de pacientes com diabetes.
+
+# 2. Carregamento de Pacotes e Dados
+
+```{r}
+# Carregamento dos pacotes necessários
+library(tidyverse)    # Manipulação de dados
+library(cluster)      # Algoritmos de clustering
+library(factoextra)   # Visualização de clusters
+library(NbClust)      # Determinação do número ideal de clusters
+library(corrplot)     # Visualização de correlações
+library(gridExtra)    # Organização de gráficos
+```
+
+## 2.1 Sobre o conjunto de dados
+
+Utilizaremos o conjunto de dados "Pima Indians Diabetes", que contém informações de 768 mulheres da população indígena Pima, com fatores de risco para diabetes. As variáveis incluem:
+
+```{r}
+# Carregamento dos dados
+url <- "https://raw.githubusercontent.com/jbrownlee/Datasets/master/pima-indians-diabetes.csv"
+diabetes <- read.csv(url, header = FALSE)
+
+# Definição dos nomes das colunas
+colnames(diabetes) <- c("Pregnancies", "Glucose", "BloodPressure", 
+                         "SkinThickness", "Insulin", "BMI", 
+                         "DiabetesPedigreeFunction", "Age", "Outcome")
+
+# Visualização das primeiras linhas
+head(diabetes)
+
+# Informações sobre o dataset
+str(diabetes)
+```
+
+- **Pregnancies**: Número de gestações
+- **Glucose**: Concentração de glicose plasmática após 2 horas em um teste oral de tolerância à glicose
+- **BloodPressure**: Pressão arterial diastólica (mm Hg)
+- **SkinThickness**: Espessura da dobra cutânea do tríceps (mm)
+- **Insulin**: Insulina sérica de 2 horas (mu U/ml)
+- **BMI**: Índice de massa corporal (peso em kg/(altura em m)²)
+- **DiabetesPedigreeFunction**: Função de pedigree de diabetes (histórico familiar)
+- **Age**: Idade (anos)
+- **Outcome**: Variável de resultado (0 = sem diabetes, 1 = diabetes)
+
+# 3. Pré-processamento dos Dados
+
+Antes de aplicar as técnicas de clustering, precisamos realizar algumas etapas de pré-processamento:
+
+```{r}
+# Verificando valores ausentes (zeros em algumas variáveis são biologicamente impossíveis)
+diabetes_clean <- diabetes %>%
+  mutate(
+    Glucose = ifelse(Glucose == 0, NA, Glucose),
+    BloodPressure = ifelse(BloodPressure == 0, NA, BloodPressure),
+    SkinThickness = ifelse(SkinThickness == 0, NA, SkinThickness),
+    Insulin = ifelse(Insulin == 0, NA, Insulin),
+    BMI = ifelse(BMI == 0, NA, BMI)
+  )
+
+# Resumo estatístico
+summary(diabetes_clean)
+
+# Imputação de valores ausentes pela mediana (abordagem simples)
+diabetes_imputed <- diabetes_clean %>%
+  mutate(
+    Glucose = ifelse(is.na(Glucose), median(Glucose, na.rm = TRUE), Glucose),
+    BloodPressure = ifelse(is.na(BloodPressure), median(BloodPressure, na.rm = TRUE), BloodPressure),
+    SkinThickness = ifelse(is.na(SkinThickness), median(SkinThickness, na.rm = TRUE), SkinThickness),
+    Insulin = ifelse(is.na(Insulin), median(Insulin, na.rm = TRUE), Insulin),
+    BMI = ifelse(is.na(BMI), median(BMI, na.rm = TRUE), BMI)
+  )
+
+# Verificando após imputação
+summary(diabetes_imputed)
+```
+
+## 3.1 Análise exploratória e correlações
+
+```{r}
+# Matriz de correlação
+cor_matrix <- cor(diabetes_imputed[, 1:8])
+corrplot(cor_matrix, method = "circle", type = "upper", 
+         tl.col = "black", tl.srt = 45)
+
+# Distribuição das variáveis
+p1 <- ggplot(diabetes_imputed, aes(x = Glucose)) + 
+  geom_histogram(fill = "steelblue", bins = 30) + 
+  theme_minimal() + labs(title = "Distribuição da Glucose")
+
+p2 <- ggplot(diabetes_imputed, aes(x = BMI)) + 
+  geom_histogram(fill = "steelblue", bins = 30) + 
+  theme_minimal() + labs(title = "Distribuição do IMC")
+
+p3 <- ggplot(diabetes_imputed, aes(x = Age)) + 
+  geom_histogram(fill = "steelblue", bins = 30) + 
+  theme_minimal() + labs(title = "Distribuição da Idade")
+
+p4 <- ggplot(diabetes_imputed, aes(x = Insulin)) + 
+  geom_histogram(fill = "steelblue", bins = 30) + 
+  theme_minimal() + labs(title = "Distribuição da Insulina")
+
+grid.arrange(p1, p2, p3, p4, ncol = 2)
+
+# Relação entre variáveis por status de diabetes
+ggplot(diabetes_imputed, aes(x = BMI, y = Glucose, color = factor(Outcome))) + 
+  geom_point(alpha = 0.6) + 
+  scale_color_manual(values = c("blue", "red"), 
+                     labels = c("Sem Diabetes", "Com Diabetes"),
+                     name = "Diagnóstico") +
+  theme_minimal() +
+  labs(title = "Relação entre IMC e Glucose por status de diabetes")
+```
+# Matriz de Correlação 
+
+- Há correlação positiva significativa entre Glucose e Age (idade e glicose sanguínea)
+- Existe correlação moderada entre BMI (IMC) e SkinThickness (espessura cutânea)
+- A Insulin (insulina) está correlacionada com Glucose e SkinThickness
+- Estas correlações indicam relações biológicas esperadas, como a relação entre obesidade (IMC) e níveis de insulina
+
+# Histogramas
+
+- A distribuição de Glucose tem forma aproximadamente normal com leve assimetria à direita
+- O IMC (BMI) tem distribuição próxima da normal com média em torno de 32
+- A distribuição da idade (Age) é assimétrica positiva, com maior concentração de pacientes jovens
+- A insulina (Insulin) apresenta uma distribuição muito assimétrica com muitos valores próximos à mediana
+
+## 3.2 Preparação para clustering
+
+Vamos selecionar as variáveis relevantes, excluir a variável alvo (Outcome) e normalizar os dados:
+
+```{r}
+# Selecionando variáveis para clustering
+diabetes_cluster <- diabetes_imputed %>%
+  select(-Outcome) # Removendo a variável alvo para não influenciar o clustering
+
+# Normalização dos dados (importante para algoritmos baseados em distância)
+diabetes_scaled <- scale(diabetes_cluster)
+summary(diabetes_scaled)
+```
+
+# 4. Análise de Cluster Hierárquico
+
+## 4.1 Determinação do número ideal de clusters
+
+```{r}
+# Método do cotovelo
+fviz_nbclust(diabetes_scaled, kmeans, method = "wss") +
+  geom_vline(xintercept = 3, linetype = 2) +
+  labs(title = "Método do Cotovelo")
+
+# Método da silhueta
+fviz_nbclust(diabetes_scaled, kmeans, method = "silhouette") +
+  labs(title = "Método da Silhueta")
+
+# Abordagem estatística (Gap statistic)
+set.seed(123)
+gap_stat <- clusGap(diabetes_scaled, FUN = kmeans, nstart = 25,
+                    K.max = 10, B = 50)
+fviz_gap_stat(gap_stat) +
+  labs(title = "Estatística Gap")
+```
+
+- Método do Cotovelo: O gráfico mostra uma inflexão ("cotovelo") por volta de k=3, sugerindo três clusters como número ideal
+- Método da Silhueta: Apresenta valor máximo em k=2, mas também um valor alto em k=3
+- Estatística Gap: Sugere k=3 como número ótimo
+- A convergência de várias técnicas para k=3 fortalece a decisão de usar esse número de clusters
+
+## 4.2 Dendrograma do clustering hierárquico
+
+```{r}
+# Cálculo da matriz de distância
+dist_matrix <- dist(diabetes_scaled, method = "euclidean")
+
+# Clustering hierárquico
+hc <- hclust(dist_matrix, method = "ward.D2")
+
+# Visualização do dendrograma
+fviz_dend(hc, k = 3, # Corte para 3 clusters
+          cex = 0.5, 
+          palette = "jco",
+          rect = TRUE,
+          rect_fill = TRUE,
+          rect_border = "jco",
+          labels_track_height = 0)  + 
+  labs(title = "Dendrograma do Clustering Hierárquico")
+
+# Criando grupos baseados no clustering hierárquico
+hc_groups <- cutree(hc, k = 3)
+```
+
+O dendrograma mostra:
+
+- A estrutura hierárquica dos agrupamentos, com cores diferentes (azul, amarelo e cinza) para os três clusters
+- A altura das linhas indica a distância entre grupos, sendo que linhas mais altas representam maior dissimilaridade
+- A divisão clara em três grupos confirma visualmente a escolha de k=3
+
+# 5. Análise de Cluster K-means
+
+```{r}
+# Aplicando K-means com k=3
+set.seed(123)
+km <- kmeans(diabetes_scaled, centers = 3, nstart = 25)
+
+# Visualização dos clusters
+fviz_cluster(list(data = diabetes_scaled, cluster = km$cluster),
+             palette = c("#00AFBB", "#FC4E07", "#E7B800"),
+             ellipse.type = "convex",
+             repel = TRUE,
+             ggtheme = theme_minimal()) +
+  labs(title = "Clusters pelo método K-means")
+
+# Adicionando a informação de cluster ao dataset original
+diabetes_results <- diabetes_imputed %>%
+  mutate(cluster = factor(km$cluster),
+         diabetes_status = factor(Outcome, labels = c("Sem Diabetes", "Com Diabetes")))
+```
+
+O gráfico de dispersão bidimensional mostra:
+
+- Três grupos distintos (azul, vermelho e amarelo) no espaço das duas primeiras componentes principais
+- Alguma sobreposição entre clusters, especialmente na região central
+- O cluster 1 (azul) mais concentrado, enquanto o cluster 2 (vermelho) tem maior dispersão
+
+# 6. Interpretação dos Clusters
+
+## 6.1 Características dos clusters
+
+```{r}
+# Estatísticas descritivas por cluster
+cluster_summary <- diabetes_results %>%
+  group_by(cluster) %>%
+  summarise(
+    n = n(),
+    Idade_media = mean(Age),
+    IMC_medio = mean(BMI),
+    Glucose_media = mean(Glucose),
+    Pressao_media = mean(BloodPressure),
+    Insulina_media = mean(Insulin),
+    Perc_diabetes = mean(Outcome) * 100
+  )
+
+# Visualização das estatísticas
+knitr::kable(cluster_summary, digits = 2,
+             caption = "Características médias por cluster")
+
+# Distribuição de diabetes por cluster
+ggplot(diabetes_results, aes(x = cluster, fill = diabetes_status)) +
+  geom_bar(position = "fill") +
+  scale_fill_manual(values = c("blue", "red")) +
+  theme_minimal() +
+  labs(title = "Proporção de casos de diabetes por cluster",
+       y = "Proporção", x = "Cluster")
+
+# Visualização das variáveis por cluster
+p1 <- ggplot(diabetes_results, aes(x = cluster, y = Age, fill = cluster)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Idade por cluster")
+
+p2 <- ggplot(diabetes_results, aes(x = cluster, y = Glucose, fill = cluster)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Glucose por cluster")
+
+p3 <- ggplot(diabetes_results, aes(x = cluster, y = BMI, fill = cluster)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "IMC por cluster")
+
+p4 <- ggplot(diabetes_results, aes(x = cluster, y = Insulin, fill = cluster)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Insulina por cluster")
+
+grid.arrange(p1, p2, p3, p4, ncol = 2)
+```
+
+Idade: O cluster 2 (verde) tem idade média significativamente maior (cerca de 46 anos)
+Glucose: Os clusters 2 e 3 têm níveis médios de glicose mais elevados
+IMC: O cluster 3 (azul) apresenta IMC claramente mais alto (média ~40)
+Insulina: O cluster 3 também tem níveis de insulina mais elevados
+
+## 6.2 Análise de componentes principais para visualização
+
+```{r}
+# PCA para redução de dimensionalidade
+pca_result <- prcomp(diabetes_scaled)
+summary(pca_result)
+
+# Visualização dos clusters no espaço PCA
+fviz_pca_ind(pca_result,
+             geom.ind = "point",
+             col.ind = diabetes_results$cluster,
+             palette = c("#00AFBB", "#FC4E07", "#E7B800"),
+             addEllipses = TRUE,
+             legend.title = "Cluster") +
+  labs(title = "Clusters no espaço de componentes principais")
+
+# Contribuição das variáveis para os componentes principais
+fviz_pca_var(pca_result,
+             col.var = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+             repel = TRUE) +
+  labs(title = "Contribuição das variáveis para os componentes principais")
+```
+
+# Componentes Principais 
+Os três clusters em um espaço bidimensional após redução de dimensionalidade por PCA
+Elipses de confiança para cada cluster, mostrando o grau de dispersão
+Separação razoável entre clusters, mas com áreas de sobreposição
+
+# Variáveis para os Componentes Principais 
+
+As variáveis Age e Pregnancies têm maior contribuição para a dimensão vertical (PC2)
+Glucose, SkinThickness, Insulin e BMI contribuem mais para a dimensão horizontal (PC1)
+DiabetesPedigreeFunction tem contribuição significativa para ambas dimensões
+Isto ajuda a entender quais variáveis são mais importantes na formação dos clusters
+
+# 7. Interpretação e Implicações para Tomada de Decisão
+
+## 7.1 Perfil dos clusters identificados
+
+Com base nas análises realizadas, podemos caracterizar os três clusters da seguinte forma:
+
+```{r}
+# Criando rótulos descritivos para os clusters
+cluster_labels <- c(
+  "Cluster 1" = "Baixo Risco",
+  "Cluster 2" = "Risco Intermediário",
+  "Cluster 3" = "Alto Risco"
+)
+
+# Adicionando os rótulos ao dataset
+diabetes_results <- diabetes_results %>%
+  mutate(cluster_desc = recode(cluster, !!!cluster_labels))
+
+# Tabela com perfil detalhado dos clusters
+cluster_profile <- diabetes_results %>%
+  group_by(cluster_desc) %>%
+  summarise(
+    Tamanho = n(),
+    Percentual = n()/nrow(diabetes_results) * 100,
+    Idade_media = mean(Age),
+    IMC_medio = mean(BMI),
+    Glucose_media = mean(Glucose),
+    Insulina_media = mean(Insulin),
+    Pressao_media = mean(BloodPressure),
+    Historico_familiar = mean(DiabetesPedigreeFunction),
+    Incidencia_diabetes = mean(Outcome) * 100
+  )
+
+knitr::kable(cluster_profile, digits = 1,
+             caption = "Perfil detalhado dos clusters identificados")
+```
+
+## 7.2 Interpretação dos clusters
+
+**Cluster 1 - Baixo Risco:**
+Este grupo é caracterizado por pacientes mais jovens, com níveis normais de glicose, IMC mais baixo e menor incidência de diabetes. Representa indivíduos com menor risco metabólico e menor necessidade de intervenções imediatas.
+
+**Cluster 2 - Risco Intermediário:**
+Este grupo inclui pacientes com idade intermediária, níveis de glicose e IMC moderadamente elevados. A incidência de diabetes é maior que no Cluster 1, sugerindo um grupo que requer monitoramento regular e intervenções preventivas.
+
+**Cluster 3 - Alto Risco:**
+Este grupo é composto principalmente por pacientes mais velhos, com níveis elevados de glicose, IMC mais alto e maior incidência de diabetes. Representa um grupo prioritário para intervenções clínicas intensivas.
+
+## 7.3 Implicações para a tomada de decisão clínica
+
+A identificação destes clusters tem várias implicações para a gestão em saúde:
+
+1. **Estratificação de risco:** Os clusters permitem categorizar pacientes em diferentes níveis de risco, orientando a alocação de recursos de saúde.
+
+2. **Personalização de intervenções:**
+   - **Cluster 1 (Baixo Risco):** Foco em prevenção primária e educação em saúde.
+   - **Cluster 2 (Risco Intermediário):** Monitoramento regular, modificações no estilo de vida e possível intervenção farmacológica preventiva.
+   - **Cluster 3 (Alto Risco):** Acompanhamento intensivo, tratamento agressivo dos fatores de risco e possível rastreamento de complicações.
+
+3. **Otimização de recursos:** Direcionamento de recursos mais intensivos para pacientes do Cluster 3, enquanto abordagens mais gerais podem ser suficientes para o Cluster 1.
+
+4. **Criação de protocolos clínicos:** Desenvolvimento de protocolos específicos para cada cluster, considerando suas características particulares.
+
+5. **Predição de resultados:** Uso dos perfis de cluster para estimar prognósticos e planejar intervenções preventivas.
+
+```{r}
+# Visualização da distribuição dos clusters com tamanho proporcional ao número de casos
+ggplot(diabetes_results, aes(x = cluster_desc, fill = diabetes_status)) +
+  geom_bar() +
+  scale_fill_manual(values = c("blue", "red")) +
+  theme_minimal() +
+  labs(title = "Distribuição de casos de diabetes por cluster",
+       x = "Perfil do Cluster", y = "Número de pacientes",
+       fill = "Status de Diabetes")
+```
+
+# 8. Validação dos Clusters
+
+## 8.1 Avaliação da qualidade do agrupamento
+
+```{r}
+# Silhueta média dos clusters
+sil <- silhouette(km$cluster, dist_matrix)
+fviz_silhouette(sil) +
+  labs(title = "Gráfico de Silhueta dos Clusters")
+
+# Estatísticas da silhueta
+sil_stats <- summary(sil)
+```
+
+# Gráfico de Silhueta
+
+O cluster 1 tem a melhor silhueta média (0.32), indicando boa coesão
+Os clusters 2 e 3 têm valores mais baixos (0.15 e 0.04), sugerindo maior heterogeneidade
+A linha tracejada horizontal indica a silhueta média global (~0.22)
+
+## 8.2 Validação com relação ao desfecho clínico (diabetes)
+
+```{r}
+# Tabela de contingência entre clusters e status de diabetes
+contingency_table <- table(Cluster = diabetes_results$cluster, 
+                           Diabetes = diabetes_results$diabetes_status)
+knitr::kable(contingency_table, 
+             caption = "Distribuição de casos de diabetes por cluster")
+
+# Teste qui-quadrado para verificar associação
+chisq.test(contingency_table)
+```
+
+# Cluster 1 - Baixo Risco (43,9% dos pacientes):
+
+Pacientes jovens (média 25,9 anos)
+IMC normal a levemente elevado (28,6)
+Glicose média mais baixa (106,5)
+Apenas 13% têm diabetes
+Pressão arterial média mais baixa (66,8)
+
+# Cluster 2 - Risco Intermediário (32,3% dos pacientes):
+
+Pacientes mais velhos (média 46 anos)
+IMC moderadamente elevado (32,8)
+Níveis de glicose elevados (130,8)
+51,6% têm diabetes
+Pressão arterial mais alta (78,4)
+
+# Cluster 3 - Alto Risco (23,8% dos pacientes):
+
+Idade intermediária (média 29,3 anos)
+IMC muito elevado (39,2) - obesidade significativa
+Níveis de glicose mais elevados (137,1)
+52,5% têm diabetes
+Níveis de insulina mais altos (192,4)
+
+# Teste de associação com diabetes
+O teste qui-quadrado (χ² = 126.1, p < 0.0001) confirma que existe associação estatisticamente significativa entre os clusters identificados e o diagnóstico de diabetes, validando a relevância clínica dos grupos.
+
+# 9. Conclusões e Próximos Passos
+
+A análise de cluster aplicada a esta base de dados permitiu identificar três perfis distintos de pacientes, com diferentes níveis de risco para diabetes. Esta estratificação pode ser extremamente útil para a gestão em saúde, permitindo:
+
+1. **Otimização de recursos:** Ao identificar grupos de alto risco, os recursos de saúde podem ser direcionados de forma mais eficiente.
+
+2. **Medicina personalizada:** A partir da compreensão dos perfis, é possível desenvolver abordagens personalizadas para cada grupo.
+
+3. **Prevenção direcionada:** Estratégias preventivas específicas podem ser implementadas para cada cluster.
+
+4. **Monitoramento inteligente:** A identificação dos clusters permite estabelecer protocolos de acompanhamento com frequências diferentes para cada grupo.
+
+As análises sugerem estratégias diferenciadas para cada grupo:
+
+# Para o Cluster 1 (Baixo Risco):
+Foco em prevenção primária e educação em saúde
+Monitoramento menos frequente
+Intervenções de baixo custo focadas em manutenção da saúde
+
+#Para o Cluster 2 (Risco Intermediário):
+Monitoramento regular
+Modificações no estilo de vida mais intensivas
+Possível intervenção farmacológica preventiva
+Atenção especial à idade mais avançada
+
+# Para o Cluster 3 (Alto Risco):
+Acompanhamento intensivo
+Tratamento agressivo dos fatores de risco, especialmente obesidade
+Rastreamento de complicações
+Intervenções nutricionais e metabólicas específicas
+
+Esta estratificação permite direcionar recursos de forma mais eficiente e personalizar o cuidado, concentrando esforços mais intensivos nos grupos de maior risco.
+Os resultados também mostram que a idade elevada (Cluster 2) e a obesidade significativa (Cluster 3) representam dois caminhos diferentes para o desenvolvimento de diabetes, o que sugere abordagens preventivas e terapêuticas distintas para cada grupo.
+A análise demonstra o potencial da técnica de clustering para auxiliar decisões clínicas e de gestão em saúde, identificando padrões que poderiam não ser evidentes ao analisar cada variável isoladamente.
+
+## 9.1 Limitações da análise
+
+- A base de dados é relativamente pequena e específica para uma população (mulheres indígenas Pima).
+- A imputação de dados ausentes pela mediana é uma abordagem simples, que poderia ser refinada.
+- Outras técnicas de clustering poderiam ser exploradas e comparadas (DBSCAN, clustering espectral, etc.).
+
+## 9.2 Próximos passos
+
+1. Validar os clusters em uma amostra independente.
+2. Desenvolver um modelo preditivo para classificar novos pacientes nos clusters identificados.
+3. Implementar e avaliar intervenções específicas para cada cluster.
+4. Refinar a análise incorporando dados longitudinais para avaliar a progressão dos pacientes entre clusters ao longo do tempo.
+
+```{r}
+# Visualização final tridimensional dos clusters
+plotly::plot_ly(
+  x = pca_result$x[,1],
+  y = pca_result$x[,2],
+  z = pca_result$x[,3],
+  type = "scatter3d",
+  mode = "markers",
+  color = factor(diabetes_results$cluster),
+  colors = c("#00AFBB", "#FC4E07", "#E7B800"),
+  marker = list(size = 5)
+) %>%
+  plotly::layout(
+    title = "Visualização 3D dos clusters (PCA)",
+    scene = list(
+      xaxis = list(title = "PC1"),
+      yaxis = list(title = "PC2"),
+      zaxis = list(title = "PC3")
+    )
+  )
+```
+
+# 10. Referências
+
+1. Everitt, B. S., Landau, S., Leese, M., & Stahl, D. (2011). *Cluster Analysis*. Wiley.
+
+2. Kaufman, L., & Rousseeuw, P. J. (2009). *Finding Groups in Data: An Introduction to Cluster Analysis*. Wiley.
+
+3. Smith, J. W., Everhart, J. E., Dickson, W. C., Knowler, W. C., & Johannes, R. S. (1988). Using the ADAP learning algorithm to forecast the onset of diabetes mellitus. *Proceedings of the Annual Symposium on Computer Application in Medical Care*, 261-265.
+
+4. Zhang, X., Gregg, E. W., Williamson, D. F., et al. (2010). A1C level and future risk of diabetes: a systematic review. *Diabetes Care*, 33(7), 1665-1673.
+
+5. Hennig, C., Meila, M., Murtagh, F., & Rocci, R. (Eds.). (2015). *Handbook of Cluster Analysis*. CRC Press.
