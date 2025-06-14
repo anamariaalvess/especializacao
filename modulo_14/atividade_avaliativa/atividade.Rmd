@@ -1,0 +1,330 @@
+---
+title: "Atividade Avaliativa"
+subtitle: "Análise de dados categorizados"
+author: "Ana Maria Alves da Silva"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+  html_document: default
+  always_allow_html: true
+    
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = 'center'  # centraliza todas as figuras
+)
+```
+
+
+# Instruções
+
+\begin{itemize}
+\item O desenvolvimento desta atividade deve ser realizada de forma individual ou em dupla.
+\item Deve-se completar o arquivo Rmd enviado na atividade.
+\item É necessário devolver o arquivo em Rmd e em pdf.
+\item Valor da atividade: 10 pontos.
+\end{itemize}
+
+
+# Descrição da atividade 
+
+Um estudo desenvolvido pela Profa. Denise Gonçalves, do Departamento de Otorrinolaringologia da UFMG, teve como interesse a ocorrência de manifestações otorrinolaringológicas em pacientes HIV positivos. Neste estudo, 112 pacientes foram acompanhados no período de março de 1993 a fevereiro de 1195, sendo 91 HIV positivo e 21 HIV negativo. A classificação quanto à infecção pelo HIV seguiu os critérios Do _Center for Disease Control_ (CDC, 1987), sendo ela: HIV soronegativo ( não possui o HIV), HIV soropositivo assintomático (possui o vírus mas não desenvolveu o quadro clínico de AIDS),  com ARC (_Aids Related Complex_: apresenta baixa imunidade e outros indicadores clínicos que antecedem o quadro clínico de AIDS ), ou AIDS (apresenta infecções oportunistas que definem AIDS).
+
+
+As Covariáveis medidas no estudo  são:
+
+- **id** : Idade do Paciente (medida em anos);
+
+- **sex**: Sexo do Paciente (0 se Masculino e 1  se Feminino)
+
+- **grp**: Grupo de Risco (1 se HIV Soronegativo, 2  se HIV Soropositivo Assintomático, 3 se ARC e 4 se AIDS)
+
+- **ats**: Atividade Sexual (1 se Homossexual, 2 se Bissexual e 3 se Heterossexual)
+
+- **ud**: Uso de Droga Injetável (1 se Sim e 2 se Não)
+
+- **ac**: Uso de Cocaína por Aspiração (1 se Sim e 2 se Não)
+
+
+**Questão 1** Faça a leitura do conjunto de dados *aids.txt* e formate as variáveis **sex**, **grp**, **ats**, **ud** e **ac** para fator.
+
+## Solução:
+
+Primeiro vamos
+```{r}
+library(readr)
+# Caminho corrigido usando barra normal
+dados <- read.table("C:/Users/anama/OneDrive/Documents/especializacao/modulo_14/atividade_avaliativa/aids (1).txt",
+                    header = TRUE,
+                    sep = "",  # ajuste conforme o separador real
+                    stringsAsFactors = FALSE)
+
+# Checagem
+print(dim(dados))
+print(is.data.frame(dados))
+```
+Vamos verificar se há valores ausentes antes de transformar em fator.
+
+```{r}
+colSums(is.na(dados))
+```
+
+Não vamos excluir os dados ausentes, pois isso reduz a base sem necessidade no entanto, quando necessário iremos omiti-los da análise. Vale ressaltar também que alguns testes estatísticos permintem omitir os valores ausentes na hora de aplicar o teste.. Agora, vamos transforma as variáveis em fator.
+```{r}
+dados$sex <- factor(dados$sex, levels = c(0, 1), 
+                    labels = c("Masculino", "Feminino"))
+dados$grp <- factor(dados$grp, 
+                    levels = c(1, 2, 3, 4), 
+                    labels = c("HIV-", "HIV+ Assintomático", "ARC", "AIDS"))
+dados$ats <- factor(dados$ats, levels = c(1, 2, 3), 
+                    labels = c("Homossexual", "Bissexual", "Heterossexual"))
+dados$ud <- factor(dados$ud, levels = c(1, 2), labels = c("Sim", "Não"))
+dados$ac <- factor(dados$ac, levels = c(1, 2), labels = c("Sim", "Não"))
+
+# Visualização do início do dataset formatado
+head(dados)
+
+# Verificando as transformações
+str(dados)
+
+```
+
+
+**Questão 2** Faça as seguintes análises: 
+
+(i) Construa a tabela de contigência entre as variáveis **sex** e **ud**.
+
+## Solução:
+Nesse caos, vamos omitir os valores ausentes.
+```{r}
+dados_sub <- na.omit(dados[, c("sex", "ud")])
+tabela_sex_ud <- table(dados_sub$sex, dados_sub$ud)
+# Tabela de contingência com totais e proporções
+addmargins(tabela_sex_ud)
+
+# Proporções por linha
+prop.table(tabela_sex_ud, margin = 1)
+
+# Proporções por coluna
+prop.table(tabela_sex_ud, margin = 2)
+```
+
+(ii) Verifique se existe associação entre as variáveis **sex** e **ud**.
+
+## Solução:
+
+```{r}
+# Teste Qui-quadrado sem correção
+teste_qui2 <- chisq.test(tabela_sex_ud, correct = FALSE)
+
+# Frequências esperadas
+freq_esperadas <- teste_qui2$expected
+
+# Verificar se alguma frequência esperada < 5
+frequencia_baixa <- any(freq_esperadas < 5)
+
+# Se necessário, aplica o teste exato de Fisher
+if (frequencia_baixa) {
+  teste_final <- fisher.test(tabela_sex_ud)
+  metodo <- "Teste exato de Fisher"
+  valor_p <- teste_final$p.value
+  or <- round(teste_final$estimate, 3)
+  ci <- paste0("IC 95% = [", 
+               round(teste_final$conf.int[1], 3), "; ", 
+               round(teste_final$conf.int[2], 3), "]")
+} else {
+  teste_final <- teste_qui2
+  metodo <- "Teste Qui-quadrado de Pearson"
+  valor_p <- teste_final$p.value
+  or <- NA
+  ci <- NA
+}
+
+# Interpretação automatizada
+cat("Método utilizado:", metodo, "\n")
+cat("Valor-p:", round(valor_p, 4), "\n")
+
+if (valor_p < 0.05) {
+  cat("Conclusão: Há evidência estatística de associação entre sexo 
+      e uso de droga injetável.\n")
+} else {
+  cat("Conclusão: Não há evidência estatística de associação entre sexo 
+      e uso de droga injetável.\n")
+}
+
+if (!is.na(or)) {
+  cat("Razão de chances estimada (OR):", or, "\n")
+  cat(ci, "\n")
+}
+```
+(iii) Determine  a razão de chances (Odds ratio) entre as variáveis **sex** e **ud**. Interprete os resultados.
+
+## Solução:
+
+```{r}
+library(epitools)
+resultado_or <- oddsratio(tabela_sex_ud, method = "wald")
+resultado_or$measure  # mostra estimativa e IC 95%
+resultado_or$p.value  # valor-p dos testes
+```
+A razão de chances de uma mulher usar droga injetável em comparação a um homem é 1.97, ou seja, quase o dobro. No entanto, o intervalo de confiança é muito amplo e inclui o valor 1, o que indica alta incerteza.
+O valor-p = 0.4978 (teste exato de Fisher) é maior que 0.05, portanto, não há evidência estatística de associação significativa entre sex e ud.
+
+**Questão 3** Faça as seguintes análises: 
+
+(i) Construa a tabela de contigência entre as variáveis **ud** e **grp**.
+
+## Solução:
+Vamos omitir os valores ausentes.
+
+```{r}
+# Remover valores ausentes apenas nas variáveis ud e grp
+dados_sub3 <- na.omit(dados[, c("ud", "grp")])
+
+# Tabela de contingência entre uso de droga injetável e grupo de risco
+tabela_ud_grp <- table(dados_sub3$ud, dados_sub3$grp)
+tabela_ud_grp
+```
+
+(ii) Verifique se existe associação entre as variáveis **ud** e **grp**.
+
+## Solução:
+
+```{r}
+# Teste Qui-quadrado sem correção
+teste_qui_ud_grp <- chisq.test(tabela_ud_grp, correct = FALSE)
+
+# Verificar frequências esperadas
+freq_esperadas <- teste_qui_ud_grp$expected
+frequencia_baixa <- any(freq_esperadas < 5)
+
+# Aplicar teste apropriado
+if (frequencia_baixa) {
+  teste_final <- fisher.test(tabela_ud_grp)
+  metodo <- "Teste exato de Fisher"
+  valor_p <- teste_final$p.value
+} else {
+  teste_final <- teste_qui_ud_grp
+  metodo <- "Teste Qui-quadrado de Pearson"
+  valor_p <- teste_final$p.value
+}
+
+# Interpretação automatizada
+cat("Método utilizado:", metodo, "\n")
+cat("Valor-p:", round(valor_p, 4), "\n")
+
+if (valor_p < 0.05) {
+  cat("Conclusão: Há evidência estatística de associação entre uso de droga 
+      injetável e grupo de risco.\n")
+} else {
+  cat("Conclusão: Não há evidência estatística de associação entre uso de droga 
+      injetável e grupo de risco.\n")
+}
+```
+
+
+(iii) Determine as razão de chances (Odds ratio) entre as variáveis **sex** e **ud**. Interprete os resultados.
+
+## Solução:
+
+```{r}
+resultado_or_2 <- oddsratio(tabela_ud_grp, method = "wald")
+resultado_or_2$measure  # mostra estimativa e IC 95%
+resultado_or_2$p.value  # valor-p dos testes
+```
+
+A razão de chances estimada para os indivíduos que não usam droga injetável, comparados aos que usam, foi de 0.729, o que sugere uma menor chance de estar em um grupo de risco mais grave. No entanto, o intervalo de confiança  inclui 1, indicando alta incerteza na estimativa.
+Além disso, o valor-p = 0.6919 (do teste exato de Fisher) é muito maior que 0.05, o que indica ausência de evidência estatística de associação entre o uso de droga injetável e o grupo de risco.
+
+**Questão 4** Utilizando as covariáveis **id**, **sex**, **grp**, **ats**, **ud** e **ac**, e o modelo de regressão logística, responda: 
+ 
+(i) Faça o ajuste do modelo de regressão logística, considerando a variável **cens** como variável resposta e todos os efeitos principais de todas as  covariáveis.
+
+## Solução:
+
+```{r}
+# Selecionar apenas as colunas relevantes e remover valores ausentes
+dados_modelo <- na.omit(dados[, c("cens", "id", "sex", "grp", "ats", "ud", "ac")])
+
+# Ajuste do modelo de regressão logística
+modelo_logistico <- glm(cens ~ id + sex + grp + ats + ud + ac, 
+                        data = dados_modelo, 
+                        family = binomial())
+
+# Resumo do modelo
+summary(modelo_logistico)
+
+```
+
+(ii) Avalie a qualidade do modelo ajustado.
+
+## Solução:
+
+1. Vamos Comparar a Null Deviance com a Residual Deviance:
+
+- Null deviance: 115.264
+- Residual deviance: 92.667
+
+a diferença entre as duas é (TRV): 22.597 com 9 Graus de liberdade da diferença, pois. 104 − 95 = 9
+Vamos testar essa diferença com um Teste da Razão de Verossimilhança (TRV):
+
+```{r}
+pchisq(22.597, df = 9, lower.tail = FALSE)
+
+```
+
+Como o valor-p é menor que 0.05, o modelo ajustado é significativamente melhor que o modelo nulo. Note também que a AIC do modelo é 112.67.
+Valores de AIC menores indicam modelos melhores (quando comparando com outros modelos). Sozinho, o AIC indica apenas que o modelo é parcimonioso, mas deve ser comparado com modelos alternativos.
+
+Vamos verificar os resíduos:
+
+```{r}
+# Resíduos de Pearson
+plot(residuals(modelo_logistico, type = "pearson"), 
+     main = "Resíduos de Pearson", ylab = "Resíduo", xlab = "Índice")
+abline(h = 0, lty = 2)
+
+```
+O gráfico dos resíduos de Pearson mostra que a maioria das observações se ajusta bem ao modelo.
+No entanto, algumas observações têm resíduos elevados, acima de 2, indicando que o modelo pode não estar ajustando perfeitamente todos os casos.
+Apesar disso, não há padrão sistemático nos resíduos, o que sugere que o modelo está, em geral, bem especificado.
+
+```{r}
+library(ResourceSelection)
+hoslem.test(dados_modelo$cens, fitted(modelo_logistico), g = 10)
+```
+Como o valor-p do teste de Hosmer e Lemeshow foi 0.7359, que é maior que 0.05, não há evidência de falta de ajuste do modelo.
+Portanto, o modelo de regressão logística apresenta um bom ajuste aos dados, segundo esse critério.
+
+
+(iii) Avalie a predição do modelo ajustado utilizando a curva ROC. 
+
+## Solução:
+
+```{r}
+library(pROC)
+# Curva ROC e AUC
+roc_modelo <- roc(dados_modelo$cens, fitted(modelo_logistico), percent = TRUE)
+
+# Plotar curva ROC
+plot(roc_modelo, main = "Curva ROC do Modelo de Regressao Logistica", 
+     col = "blue", lwd = 3)
+auc(roc_modelo)
+
+```
+
+A curva ROC gerada a partir do modelo ajustado mostra a capacidade de discriminar corretamente entre os indivíduos com `cens = 1` e `cens = 0`.
+A **AUC (Área sob a Curva)** foi de **80.2%**, o que indica que o modelo possui muito boa capacidade preditiva e poder discriminativo.
+
+(iv) interprete os resultados do modelo ajustado. 
+
+## Solução:
+
+Com base em todos os critérios — ajuste global (TRV e AIC), qualidade de ajuste (Hosmer e Lemeshow), comportamento dos resíduos e curva ROC —, podemos concluir que o modelo de regressão logística ajustado apresenta bom desempenho global e preditivo.
+Ele é estatisticamente significativo, bem ajustado aos dados e possui capacidade razoável de discriminação entre os indivíduos com cens = 0 e cens = 1.

@@ -1,0 +1,497 @@
+---
+title: "Atividade Avaliativa"
+subtitle: "Análise de Sobrevicência"
+author: "Ana Maria Alves da Silva"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  html_document: default
+  always_allow_html: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = 'center'  # centraliza todas as figuras
+)
+
+```
+
+O objetivo da atividade avaliativa é a análise do conjunto de df de pacientes diagnosticados com neoplasia
+maligna do estômago (CID C16), com diagnóstico entre os anos de 2013 a 2016, com acompanhamento até o
+ano de 2021. Os df foram obtidos da Fundação Oncocentro de São Paulo (FOSP).
+
+As variáveis disponíveis para análise são:
+
+- TOPOGRUP: grupo da topografia
+- TEMPO: tempo em anos do diagnóstico até a falha ou censura
+- CENSURA: variável que indica se o tempo é de falha (=1) ou de censura à direita (=0)
+- ANODIAG: indica o ano do diagnóstico
+- SEXO: 0 - Masculino ou 1 - Feminino
+- CIRURGIA: 0 se não realizou cirurgia - 1 se realizou cirurgia
+- RADIO: 0 se não realizou radioterapia - 1 se realizou radioterapia
+- QUIMIO: 0 se não realizou quimioterapia - 1 se realizou quimioterapia
+
+**Questão 1.**  Faça a leitura do conjunto de df cancer_c16.csv e formate as variáveis ANODIAG, SEXO, CIRURGIA, RADIO e QUIMIO para fator.
+
+## Solução:
+Primeiro vamos carregar o conjunto de df:
+
+```{r}
+setwd <- "/Users/anamaria/especializacao/modulo_12/Atividade"
+df <- read.csv("cancer_c16.csv", sep = ",")
+print(dim(df))
+print(is.data.frame(df))
+```
+
+Agora, vamos transforma as variáveis em fator.
+```{r}
+df$ANODIAG <- as.factor(df$ANODIAG)
+df$SEXO <- as.factor(df$SEXO)
+df$CIRURGIA <- as.factor(df$CIRURGIA)
+df$RADIO <- as.factor(df$RADIO)
+df$QUIMIO <- as.factor(df$QUIMIO)
+
+# Verificando as transformações
+str(df)
+```
+
+**Questão 2.** Faça as seguintes análises descritivas:
+
+(i) calcule a proporção e o valor absoluto para os possíveis valores das variáveis CENSURA, ANODIAG, SEXO, CIRURGIA, RADIO e QUIMIO. Comente os valores encontrados.
+
+## Solução:
+
+```{r}
+table(df$CENSURA)
+Censura_prop <- round(prop.table(table(df$CENSURA)),2)
+print(Censura_prop)
+```
+
+Note  o valor 1 indica falha (óbito) e 0 indica censura. Os valores indicam a proporção de pacientes que foram a óbito ou censurados ao final do período de acompanhamento onde 64% dos pacientes vieram a óbito.
+
+```{r}
+table(df$ANODIAG)
+ANODIAG_prop <- round(prop.table(table(df$ANODIAG)),2)
+print(ANODIAG_prop)
+```
+
+Note que não há um ano isolado com grande predominância de diagnósticos, indicando que o número de novos casos de câncer de estômago foi relativamente estável ao longo do período de 2013 a 2016. Essa estabilidade sugere que a distribuição anual de diagnósticos não sofreu grandes alterações no intervalo estudado.
+
+```{r}
+table(df$SEXO)
+SEXO_prop <- round(prop.table(table(df$SEXO)),2)
+print(SEXO_prop)
+```
+
+Note que temos uma propoção maior de registros de câncer de estômago para homens do que para mulheres.
+
+```{r}
+table(df$CIRURGIA)
+CIRURGIA_prop <- round(prop.table(table(df$CIRURGIA)),2)
+print(CIRURGIA_prop)
+```
+
+
+Note que a proporção de casos no qual houve interveção cirurgica é similar a quantidade de casos onde não houve cirurgias.
+
+```{r}
+table(df$RADIO)
+RADIO_prop <- round(prop.table(table(df$RADIO)),2)
+print(RADIO_prop)
+```
+
+Note que a quantidade de pacientes que fizeram radiografia é muito menor do que a quantidade de pacientes que não fizeram.
+
+```{r}
+table(df$QUIMIO)
+QUIMIO_prop <- round(prop.table(table(df$QUIMIO)),2)
+print(QUIMIO_prop)
+```
+
+Note que a quantidade de pacientes que fizeram radiografia é similar a quantidade de pacientes que não fizeram.
+
+(ii) faça o gráfico com a estimativa de Kaplan-Meier para a função de Sobrevivencia sem considerar covariáveis. Faça comentários sobre o gráfico. 
+
+## Solução:
+
+```{r}
+
+library(survival)
+# Ajuste do modelo Kaplan-Meier sem covariáveis
+ekm <- survfit(Surv(TEMPO, CENSURA) ~ 1, data = df)
+
+# Gráfico
+plot(ekm,
+     ylab = "S(t)",
+     xlab = "Tempo (anos)",
+     main = "Estimativa de Sobrevivencia - Kaplan-Meier (Global)",
+     mark.time = FALSE,
+     conf.int = FALSE)
+```
+
+O gráfico acima representa a probabilidade acumulada de Sobrevivencia ao longo do tempo (em anos) para pacientes diagnosticados com neoplasia maligna do estômago (CID C16). A análise de Kaplan-Meier revela um alto risco de mortalidade nos primeiros anos após o diagnóstico de câncer de estômago.
+Observe que a curva se estabiliza com o tempo, indicando que pacientes que sobrevivem aos primeiros anos têm maiores chances de Sobrevivencia a longo prazo. Isso reforça a importância de intervenções precoces no tratamento e monitoramento dos pacientes com esse tipo de câncer.
+
+(iii) construa o gráfico com a estimativa de Kaplan-Meier para a função de Sobrevivencia considerando as covariáveis ANODIAG, SEXO, CIRURGIA, RADIO e QUIMIO, uma de cada vez. Faça comentários sobre os gráficos.
+
+##Solução:
+1. ANODIAG
+```{r}
+ekm_anodiag <- survfit(Surv(TEMPO, CENSURA) ~ ANODIAG, data=df)
+plot(ekm_anodiag, xlab= "Tempo (anos)", ylab="S(t)", mark.time = F, 
+     conf.int = F, main="Sobrevivencia - ANODIAG")
+legend("topright", legend = levels(df$ANODIAG), lty = 1, 
+       col = 1:length(levels(df$ANODIAG)), bty = "n")
+
+```
+Com base no gráfico acima temos que o ano de diagnóstico não parece ter um impacto relevante na sobrevivência dos pacientes.
+
+2. SEXO
+```{r}
+ekm_sexo <- survfit(Surv(TEMPO, CENSURA) ~ SEXO, data=df)
+plot(ekm_sexo, xlab= "Tempo (anos)", ylab="S(t)", mark.time = F, 
+     conf.int = F, col=c("black", "red"), main="Sobrevivencia - Sexo")
+legend("topright", legend = c("Masculino", "Feminino"), lty = 1, 
+       col = c("black", "red"), bty = "n")
+
+```
+Com base no gráfico acima  ser do sexo feminino está associado a uma maior chance de sobrevivência.
+
+3. CIRURGIA
+```{r}
+ekm_cirurgia <- survfit(Surv(TEMPO, CENSURA) ~ CIRURGIA, data=df)
+plot(ekm_cirurgia, xlab= "Tempo (anos)", ylab="S(t)", mark.time = F, 
+     conf.int = F, col=c("black", "red"), main="Sobrevivencia - Cirurgia")
+legend("topright", legend = c("Nao fez cirurgia", "Fez cirurgia"), 
+       lty = 1, col = c("black", "red"), bty = "n")
+```
+Note que a cirurgia é um fator protetor importante para a sobrevida dos pacientes.
+
+4. RADIO
+```{r}
+ekm_radio <- survfit(Surv(TEMPO, CENSURA) ~ RADIO, data=df)
+plot(ekm_radio, xlab= "Tempo (anos)", ylab="S(t)", mark.time = F, conf.int = F, 
+     col=c("black", "red"), main="Sobrevivencia - Radioterapia")
+legend("topright", legend = c("Nao fez radioterapia", "Fez radioterapia"), 
+       lty = 1, col = c("black", "red"), bty = "n")
+
+```
+Note que a radioterapia pode ser benéfica para a sobrevida, mas é necessário avaliar em conjunto com outros fatores.
+
+5. QUIMIO
+```{r}
+ekm_quimio <- survfit(Surv(TEMPO, CENSURA) ~ QUIMIO, data=df)
+plot(ekm_quimio, xlab= "Tempo (anos)", ylab="S(t)", mark.time = F, 
+     conf.int = F, col=c("black", "red"), main="Sobrevivencia - Quimioterapia")
+legend("topright", legend = c("Nao fez quimioterapia", "Fez quimioterapia"), 
+       lty = 1, col = c("black", "red"), bty = "n")
+```
+Note que a quimioterapia aparece associada a menor sobrevivência, mas isso pode estar relacionado a fatores de confusão, como o estágio da doença.
+
+(iv) realize o teste logrank considerando as covariáveis ANODIAG, SEXO, CIRURGIA, RADIO e QUIMIO, uma de cada vez. Descreva a conclusão do teste utilizando o p-valor.   
+
+## Solução:
+
+```{r}
+# Teste Logrank - ANODIAG
+logrank_anodiag <- survdiff(Surv(TEMPO, CENSURA) ~ ANODIAG, data = df)
+print(logrank_anodiag)
+
+# Teste Logrank - SEXO
+logrank_sexo <- survdiff(Surv(TEMPO, CENSURA) ~ SEXO, data = df)
+print(logrank_sexo)
+
+# Teste Logrank - CIRURGIA
+logrank_cirurgia <- survdiff(Surv(TEMPO, CENSURA) ~ CIRURGIA, data = df)
+print(logrank_cirurgia)
+
+# Teste Logrank - RADIO
+logrank_radio <- survdiff(Surv(TEMPO, CENSURA) ~ RADIO, data = df)
+print(logrank_radio)
+
+# Teste Logrank - QUIMIO
+logrank_quimo <- survdiff(Surv(TEMPO, CENSURA) ~ QUIMIO, data = df)
+print(logrank_quimo)
+```
+
+Note que como não há diferença estatisticamente significativa entre as curvas de sobrevivência dos anos de diagnóstico 2013, 2014, 2015 e 2016 podemos interpretar que o ano em que o paciente foi diagnosticado não influencia significativamente a sua sobrevida no período estudado. Por outro lado, existe diferença estatisticamente significativa entre as curvas de sobrevivência de homens e mulheres indicando que o sexo influencia a sobrevida.
+
+Existe diferença estatisticamente significativa nas curvas de sobrevivência entre pacientes que realizaram cirurgia e os que não realizaram. O mesmo acontece para Radiografia e Quimioterapia, indicando que pacientes que realizaram cirurgia têm uma probabilidade de sobrevivência significativamente maior do que os que não realizaram e fazer radioterapia está associado a maior sobrevida. No entanto, pacientes que não fizeram quimioterapia tiveram maior sobrevida. Isso pode indicar que os pacientes que receberam quimioterapia tinham casos mais graves, necessitando de tratamentos mais agressivos, o que não significa que a quimioterapia seja ineficaz, mas que os casos tratados com ela provavelmente tinham piores prognósticos.
+
+**Questão 3** Utilizando as covariáveis ANODIAG, SEXO, CIRURGIA, RADIO e QUIMIO, e os modelos exponencial, Weibull e log-normal, responda: 
+(i) adotando o modelo exponencial, qual é o conjunto de covariáveis que apresenta melhor AIC, considerando a rotina *stepAIC* com *direction = "both"*?
+
+## Solução:
+
+```{r}
+# Carregar os pacotes necessários
+library(survival)
+library(MASS)
+
+# Ajuste do modelo inicial (com todas as variáveis)
+modelo_inicial_exp <- survreg(Surv(TEMPO, CENSURA) ~ ANODIAG + SEXO + CIRURGIA + RADIO + QUIMIO, 
+                              data = df, dist = "exponential")
+
+# Aplicar a seleção stepwise baseada no AIC
+modelo_final_exp <- stepAIC(modelo_inicial_exp, direction = "both")
+
+# Resumo do modelo final
+summary(modelo_final_exp)
+
+# Verificar o AIC
+AIC(modelo_final_exp)
+
+```
+
+Note que pelo resultados do Teste Logrank todas as variáveis, exceto ANODIAG, apresentaram impacto significativo na sobrevivência. Os resultados do modelo incial compelto nos diz que  pacientes diagnosticados em anos mais recentes (2015 e 2016) tendem a ter melhor sobrevida. Mulheres, quem fez cirurgia, e quem fez radioterapia têm melhor prognóstico. Quimioterapia está associada a pior sobrevida, mas provavelmente por estar ligada a casos mais graves. Note ainda que  o modelo completo foi o selecionado pelo stepAIC, ou seja, nenhuma variável foi eliminada.
+
+(ii) adotando o modelo Weibull, qual é o conjunto de covariáveis que apresenta melhor AIC, considerando a rotina *stepAIC* com *direction = "both"*?
+
+## Solução:
+
+```{r}
+# Ajuste do modelo inicial Weibull (com todas as covariáveis)
+modelo_inicial_weibull <- survreg(Surv(TEMPO, CENSURA) ~ ANODIAG + SEXO + CIRURGIA + RADIO + QUIMIO,
+                                  data = df, dist = "weibull")
+
+# Aplicar a seleção stepwise baseada no AIC
+modelo_final_weibull <- stepAIC(modelo_inicial_weibull, direction = "both")
+
+# Resumo do modelo final
+summary(modelo_final_weibull)
+
+# Verificar o AIC
+AIC(modelo_final_weibull)
+```
+
+Veja que o resultado do stepAIC removeu a variável ANODIAG. Com isso o melhor conjunto de covariáveis para o modelo Weibull, de acordo com o AIC, é: SEXO, CIRURGIA, RADIO e QUIMIO.
+
+(iii) adotando o modelo log-normal, qual é o conjunto de covariáveis que apresenta melhor AIC, considerando a rotina *stepAIC* com *direction = "both"*?
+
+## Solução: 
+
+```{r}
+# Ajuste do modelo inicial Log-Normal (com todas as covariáveis)
+modelo_inicial_lognorm <- survreg(Surv(TEMPO, CENSURA) ~ ANODIAG + SEXO + CIRURGIA + RADIO + QUIMIO,
+                                  data = df, dist = "lognormal")
+
+# Aplicar a seleção stepwise baseada no AIC
+modelo_final_lognorm <- stepAIC(modelo_inicial_lognorm, direction = "both")
+
+# Resumo do modelo final
+summary(modelo_final_lognorm)
+
+# Verificar o AIC
+AIC(modelo_final_lognorm)
+```
+
+Observe que o melhor conjunto de covariáveis para o modelo log-normal, segundo o stepAIC, é: SEXO, CIRURGIA, RADIO e QUIMIO. Assim como no teste anterior, a variável ANODIAG foi eliminada, pois sua inclusão não contribui significativamente para explicar a variação na sobrevivência.
+
+(iv) usando o critério AIC, qual o melhor modelo? 
+
+## Solução:
+
+Comparando os valores de AIC dos três modelos (Exponencial, Weibull e Log-Normal), observamos que:
+
+- O **modelo log-normal** apresentou o menor AIC (**20938.84**), indicando o melhor ajuste aos dados.
+- O modelo Weibull apresentou AIC intermediário (**22038.99**).
+- O modelo Exponencial teve o maior AIC (**23625.24**).
+
+Portanto, **o modelo log-normal é o mais adequado** para explicar a sobrevivência dos pacientes com câncer de estômago (CID C16), considerando as covariáveis selecionadas.
+
+
+(v) faça o gráfico dos resíduos de Cox-Snell. O que se pode afirmar sobre a qualidade do ajuste do modelo aos dados? 
+
+## Solução:
+
+```{r}
+# Obter matriz de design
+matriz_modelo <- model.matrix(~ SEXO + CIRURGIA + RADIO + QUIMIO, data = df)
+
+# Calcular o preditor linear
+x_beta <- matriz_modelo %*% modelo_final_lognorm$coefficients
+
+# Calcular o resíduo de Cox-Snell para o modelo log-normal
+residuo_coxsnell <- -log(1 - pnorm((log(df$TEMPO) - x_beta) / modelo_final_lognorm$scale))
+
+# Estimar a curva de sobrevivência dos resíduos
+ekm_coxsnell <- survfit(Surv(residuo_coxsnell, df$CENSURA) ~ 1)
+
+# Calcular a curva teórica da exponencial(1)
+exp_coxsnell <- exp(- ekm_coxsnell$time)
+
+# Gráfico
+plot(ekm_coxsnell$surv, exp_coxsnell, 
+     main= "Resíduos de Cox-Snell - Modelo Log-Normal",
+     xlab="S(t) - Kaplan-Meier", ylab="S(t) - Exponencial")
+abline(0,1)
+```
+O gráfico dos resíduos de Cox-Snell para o modelo log-normal mostra que os pontos estão alinhados de forma satisfatória com a linha de referência (reta de 45 graus). Portanto, podemos afirmar que o modelo log-normal apresenta um bom ajuste global aos dados de sobrevivência.
+
+(vi) obtenha a estimativa da sobrevivência nos instantes de 1 e 10 anos, para dois pacientes com: 
+
+- paciente 1 - sexo masculino, não fez cirurgia, não fez radio, não fez quimio - x=(1, 0, 0, 0, 0)
+
+- paciente 2 - sexo feminino, fez cirurgia, fez radio, fez quimio - x=(1, 1, 1, 1, 1)
+
+## Solução: 
+
+```{r}
+# Parâmetros do modelo log-normal final
+coef_log <- modelo_final_lognorm$coefficients
+scale_log <- modelo_final_lognorm$scale
+
+# Paciente 1: Sexo masculino (0), não fez cirurgia (0), não fez rádio (0), não fez quimio (0)
+x_p1 <- c(1, 0, 0, 0, 0)
+
+# Paciente 2: Sexo feminino (1), fez cirurgia (1), fez rádio (1), fez quimio (1)
+x_p2 <- c(1, 1, 1, 1, 1)
+
+# Calcular o preditor linear (x_beta)
+x_beta_p1 <- sum(x_p1 * coef_log)
+x_beta_p2 <- sum(x_p2 * coef_log)
+
+# Definir os tempos de interesse
+tempos <- c(1, 10)
+
+# Calcular a sobrevivência para cada tempo
+S_p1 <- 1 - pnorm((log(tempos) - x_beta_p1) / scale_log)
+S_p2 <- 1 - pnorm((log(tempos) - x_beta_p2) / scale_log)
+
+# Exibir os resultados
+data.frame(
+  Tempo = tempos,
+  Sobrevivencia_P1 = S_p1,
+  Sobrevivencia_P2 = S_p2
+)
+
+```
+
+O Paciente 1 tem uma baixa chance de sobrevivência a longo prazo. Apenas 3,3% de chance de sobreviver até 10 anos. No primeiro ano, a sobrevida é de 31,1%. Enquanto a Paciente 2 tem uma alta probabilidade de sobrevivência aos 1 ano (90,4%) e ainda mantém uma chance considerável aos 10 anos (48,3%).
+
+(vii) calcule para os dois pacientes do item (vi) o MTTF. 
+
+## Solução:
+
+```{r}
+# Calcular o MTTF para Paciente 1 e Paciente 2 no modelo log-normal
+
+# Parâmetros do modelo log-normal
+coef_log <- modelo_final_lognorm$coefficients
+scale_log <- modelo_final_lognorm$scale
+
+# Paciente 1: Sexo masculino (0), não fez cirurgia (0), não fez rádio (0), não fez quimio (0)
+x_p1 <- c(1, 0, 0, 0, 0)
+mu_p1 <- sum(x_p1 * coef_log)
+MTTF_p1 <- exp(mu_p1 + (scale_log^2) / 2)
+
+# Paciente 2: Sexo feminino (1), fez cirurgia (1), fez rádio (1), fez quimio (1)
+x_p2 <- c(1, 1, 1, 1, 1)
+mu_p2 <- sum(x_p2 * coef_log)
+MTTF_p2 <- exp(mu_p2 + (scale_log^2) / 2)
+
+# Exibir resultados
+data.frame(
+  Paciente = c("Paciente 1", "Paciente 2"),
+  MTTF = c(MTTF_p1, MTTF_p2)
+)
+
+```
+
+- Paciente 1: Sexo masculino, não fez cirurgia, não fez rádio, não fez quimio.
+
+-- Expectativa média de tempo até o evento (MTTF): 1.86 anos.
+
+-- Baixa expectativa de sobrevivência, refletindo a ausência de tratamentos e o fator de risco associado ao sexo masculino.
+
+- Paciente 2: Sexo feminino, fez cirurgia, fez rádio, fez quimio.
+
+-- Expectativa média de tempo até o evento (MTTF): 40.25 anos.
+
+-- Expectativa de sobrevivência muito maior, indicando o impacto positivo do tratamento (cirurgia, radioterapia, quimioterapia) e o efeito protetor do sexo feminino.
+
+**Questão 4** Utilizando as covariáveis ANODIAG, SEXO, CIRURGIA, RADIO e QUIMIO, e o modelo de Cox, responda: 
+
+(i) faça o ajuste do modelo de Cox considerando todas as covariáveis. 
+
+## Solução: 
+
+```{r}
+# Ajuste do modelo de Cox com todas as covariáveis
+modelo_cox <- coxph(Surv(TEMPO, CENSURA) ~ ANODIAG + SEXO + CIRURGIA + RADIO + QUIMIO, data = df)
+
+# Resumo do modelo
+summary(modelo_cox)
+```
+
+O modelo de Cox ajustado com todas as covariáveis mostra que o SEXO (feminino), CIRURGIA, RADIO e QUIMIO são significativos e reduzem o risco de óbito. As categorias de ANODIAG não são estatisticamente significativas (p > 0.05), ou seja, o ano de diagnóstico não influencia significativamente o risco de óbito neste modelo.
+
+(ii) utilizando da rotina *stepAIC* com *direction = "both"*, obtenha o conjunto de covariáveis que apresenta melhor AIC.
+
+## Solução:
+
+```{r}
+
+# Ajuste inicial do modelo de Cox (com todas as covariáveis)
+modelo_inicial_cox <- coxph(Surv(TEMPO, CENSURA) ~ ANODIAG + SEXO + CIRURGIA + RADIO + QUIMIO, data = df)
+
+# Aplicar a seleção stepwise baseada no AIC
+modelo_final_cox <- stepAIC(modelo_inicial_cox, direction = "both")
+
+# Resumo do modelo final
+summary(modelo_final_cox)
+```
+
+O melhor conjunto de covariáveis no Modelo de Cox, considerando o critério AIC e a seleção stepAIC, inclui:
+SEXO, CIRURGIA, RADIO e QUIMIO. A variável ANODIAG foi eliminada por não contribuir significativamente para o modelo.
+Note que modelo final é mais simples e apresenta um AIC reduzido, indicando melhor ajuste aos dados.
+
+(iii) a partir do conjunto de covariáveis obtido do item (ii), faça o gráfico com os resíduos de Cox-Snell. Comente o resultado. 
+
+## Solução:
+
+```{r}
+res_coxsnell <- df$CENSURA - residuals(modelo_final_cox, type = "martingale")
+
+# Ajustar a curva de sobrevivência para os resíduos
+ekm_coxsnell <- survfit(Surv(res_coxsnell, df$CENSURA) ~ 1)
+
+# Calcular a curva teórica de referência (exponencial(1))
+exp_coxsnell <- exp(-ekm_coxsnell$time)
+
+# Gráfico
+plot(ekm_coxsnell$surv, exp_coxsnell,
+     main = "Resíduos de Cox-Snell - Modelo de Cox Final",
+     xlab = "S(t) - Kaplan-Meier", ylab = "S(t) - Exponencial")
+abline(0, 1)
+```
+
+Note que  como não há indícios de grandes desvios sistêmicos, e o modelo é adequado para explicar a sobrevivência dos pacientes com neoplasia maligna do estômago (CID C16).
+
+(iv) também utilizando do conjunto de covariáveis obtido do item (ii), verifique a adequação do modelo utilizando o teste de hipóteses do Resíduo de Schoenfeld. Comente o resultado.  
+
+## Solução:
+
+```{r}
+# Teste de proporcionalidade (Schoenfeld) para o modelo de Cox final
+teste_schoenfeld <- cox.zph(modelo_final_cox, transform = "identity")
+
+# Exibir o resumo do teste
+print(teste_schoenfeld)
+
+# Plotar os gráficos para cada covariável
+plot(teste_schoenfeld)
+
+```
+
+Note que pelo Teste de Hipóteses do Resíduo de Schoenfeld temos que todos os p-valores são menores que 0.05, incluindo o teste global.
+Isso significa que a hipótese de riscos proporcionais é rejeitada para todas as covariáveis do modelo. Portanto, o modelo de Cox final não atende ao pressuposto de proporcionalidade dos riscos.
+
+Gráficos dos Resíduos de Schoenfeld mostram que as linhas contínuas (estimativas) não são planas e apresentam tendência ao longo do tempo.
+Isso reforça a rejeição da hipótese de proporcionalidade. Curvas inclinadas ou com padrões sistemáticos indicam que o efeito da covariável varia com o tempo, violando o pressuposto de riscos proporcionais.
+
+Com isso podemos concluir que  o modelo de Cox final (SEXO, CIRURGIA, RADIO, QUIMIO) viola o pressuposto de riscos proporcionais, tanto pelo teste de Schoenfeld quanto pelos gráficos.
+
