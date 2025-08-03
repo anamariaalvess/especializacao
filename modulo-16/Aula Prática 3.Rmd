@@ -1,0 +1,220 @@
+---
+title: "Aula Prática 3"
+author: "Prof. Márcio Viola"
+date: "17/07/2025"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+#Configurações globais do documento
+require(lme4)
+ library(plyr)
+ library(nlme)
+ library(ggplot2)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Exemplo: Estudo clinico aleatorizado, balanceado: 50 individuos em 
+cada grupo avaliados em 4 momentos, cuja variável resposta é contínua. Os
+objetivos foram: (1) comparar os dois tratamentos; (2) avaliar o comportamento temporal.
+
+Descrição: 
+
+O estudo envolvendo o tratamento de Criancas Expostas ao chumbo (TLC)
+foi clínico aleatorizado para placebo e um agente succimer em criancas
+com niveis de chumbo no sangue entre 20-44 microgramas/dL. Valores de referência # de normalidade para chumbo no sangue fica entre 1 e 14 mg/dl.
+Estes dados consistem de quatro medidas repetidas de niveis de chumbo
+no sangue obtidos na baseline (semana 0), semana 1, semana 4 e semana 6
+em 100 criancas aleatoriamente alocadas entre tratamento e placebo.
+
+Variáveis: 
+
+1- ID, 
+2- Groupo, 
+3- Week0, 
+4- Week1, 
+5- Week4, 
+6- Week6. 
+
+```{r}
+ dados<-read.table("chumbo.txt",header=T)
+ names(dados)
+ dim(dados)
+ dados[1:15,]
+```
+Análise Descritiva - dados gerais
+
+Cuidado: O Boxplot não considera a estrutura longitudinal por indíviduo.
+
+```{r}
+summary(dados$Week0) 
+summary(dados$Week1)
+summary(dados$Week4)
+summary(dados$Week6)
+boxplot(dados$Week0,dados$Week1,dados$Week4,dados$Week6,ylab="pb (mg/dl)",xlab="Semana") 
+axis(1, 1:4, c(0,1,4,6))
+```
+
+Análise Descritiva por grupo
+
+```{r}
+summary(subset(dados, Groupo=="P")[,3:6]) 
+summary(subset(dados, Groupo=="A")[,3:6]) 
+```
+
+```{r}
+datawide<-data.frame(dados$ID,dados$Groupo,dados$Week0,dados$Week1,
+dados$Week4,dados$Week6)
+```
+
+Conjunto de dados no formato longo
+
+```{r}
+datalong<-reshape(data=datawide,direction="long", idvar="ID", 
+varying = list(names(datawide)[3:6]), v.names="chumbo", time= c(0,1,4,6),
+timevar="tempo")
+datalong$Groupo<-datalong$dados.Groupo
+dim(datalong)
+names(datalong)
+datalong[1:15,]
+```
+
+
+
+```{r}
+length(unique(datalong$ID)) 
+table(datalong$tempo) 
+table(datalong$tempo,datalong$Groupo) 
+as.data.frame(table(datalong$ID)) 
+max(table(datalong$ID)) 
+min(table(datalong$ID))  
+tam <- function(x) {
+        length(unique(x))
+        }
+tapply(datalong$ID,datalong$Groupo, FUN=tam)
+```
+
+Estatisticas Descritivas realizadas no formato longo
+
+```{r}
+tapply(datalong$chumbo,list(datalong$Groupo), mean)
+tapply(datalong$chumbo,list(datalong$Groupo), sd)
+tapply(datalong$chumbo,list(datalong$Groupo,datalong$tempo), mean)
+boxplot(datalong$chumbo ~ datalong$tempo + datalong$Groupo, notch = T)
+abline(v = 4.5, lty = 2)
+abline(v = 10.5, lty = 2)
+title("Dispersão do chumbo por grupo")
+boxplot(datalong$chumbo ~ datalong$Groupo)   
+plot(datalong$tempo,datalong$chumbo)
+```
+Gráficos de perfis
+
+```{r}
+p1=ggplot(datalong, aes(x=tempo, y=chumbo, color=Groupo)) + theme_bw() + 
+geom_line(aes(group=ID)) + theme(legend.position="top") + 
+scale_x_continuous(breaks=unique(datalong$tempo))
+p1
+```
+
+Outra forma alternativa
+
+```{r}
+interaction.plot(datalong$tempo, datalong$Groupo, datalong$chumbo)
+```
+Explorando a Estrutura de Variância
+
+Avaliação da correlação geral e por grupo no formato longo
+
+Observação: As correlações dos dados deveriam ser feitas com resíduo
+
+```{r}
+round(cor(datawide[,3:6]),3) 
+round(cor(subset(datawide, dados.Groupo=="P")[,3:6]),3) 
+round(cor(subset(datawide, dados.Groupo=="A")[,3:6]),3) 
+```
+
+
+```{r}
+interaction.plot(datalong$tempo, datalong$Groupo, datalong$chumbo, trace.label = "Grupo",
+ xlab = "M?s", ylab = "Variancia Media", fun = var, fixed = T)
+```
+Explorando a estrutura de Variância - Utilizando resíduos 
+Modelo Maximal --> Minimos Quadrados Ordinarios  
+
+```{r}
+fit<-lm(chumbo ~  factor(Groupo)*factor(tempo),data=datalong) 
+res0<-subset(fit$residuals,datalong$tempo==0)
+res1<-subset(fit$residuals,datalong$tempo==1)
+res4<-subset(fit$residuals,datalong$tempo==4)
+res6<-subset(fit$residuals,datalong$tempo==6)
+res<-data.frame(res0,res1,res4,res6)
+cor(res) #possível indicação da estrutura de simetria composta
+cov(res) #possível heterocedasticidade
+```
+Modelos de Efeitos Fixos com Estrutura de Covariancia: simetria
+composta, nao-estruturada
+
+MODELO 1
+Modelo linear de efeito fixo (com intercepto) e Homocedasticidade
+
+```{r}
+#datalong$Groupo<-relevel(datalong$Groupo, ref="P") 
+out0<-lm(chumbo ~ factor(tempo)*factor(Groupo),data=datalong) # independente
+summary(out0)
+out1<-gls(chumbo ~ factor(tempo)*factor(Groupo),
+correlation=corCompSymm (form=~1|ID),data=datalong) #simetria composta
+summary(out1)
+out3<-gls(chumbo ~ factor(tempo)*factor(Groupo),
+correlation=corSymm (form=~1|ID),data=datalong) # não estruturada
+summary(out3)
+#Estrutura heterocedastica e Nao Estruturada
+out5<-gls(chumbo ~ factor(tempo)*factor(Groupo),correlation=corSymm (form=~1|ID), weights = varIdent(form = ~1 | factor(tempo)),data=datalong)
+summary(out5)
+plot(out5)
+anova(out5,out3)  #heterocedastico e significativo 
+#Estrutura heterocedastica e Simetria composta
+out4<-gls(chumbo ~ factor(tempo)*factor(Groupo),correlation=corCompSymm (form=~1|ID),
+weights = varIdent(form = ~1 | factor(tempo)),data=datalong)
+plot(out4)
+anova(out5,out4) #teste significativo --> out5
+```
+MODELO 2
+Modelo linear de efeito fixo (sem intercepto)
+mais simples de comparar os grupos em cada tempo
+
+```{r}
+out0<-lm(chumbo ~ factor(tempo) + factor(tempo):factor(Groupo) -1,data=datalong)
+summary(out0)
+plot(out0)
+out1<-gls(chumbo ~ factor(tempo) + factor(tempo):factor(Groupo) -1,
+correlation=corCompSymm (form=~1|ID),data=datalong) 
+summary(out1)
+plot(out1)
+out3<-gls(chumbo ~ factor(tempo) + factor(tempo):factor(Groupo) -1,
+correlation=corSymm (form=~1|ID),data=datalong) 
+summary(out3)
+plot(out3)
+#Estrutura heterocedastica e não estruturada
+out5<-gls(chumbo ~ factor(tempo)*factor(Groupo)-1,correlation=corSymm (form=~1|ID), weights = varIdent(form = ~1 | factor(tempo)),data=datalong)
+summary(out5)
+plot(out5)
+#Estrutura heterocedastica e Simetria composta
+out4<-gls(chumbo ~ factor(tempo)*factor(Groupo) -1,correlation=corCompSymm (form=~1|ID), weights = varIdent(form = ~1 | factor(tempo)),data=datalong)
+summary(out4)
+plot(out4)
+
+anova(out5,out4)
+
+#Estrutura heterocedástica e não estruturada sem efeito principal de grupo
+datalong$a<-model.matrix(~factor(datalong$tempo))[,-c(1)]
+datalong$inter<-datalong$a*model.matrix(~factor(datalong$Groupo))[,-c(1)]
+out6<-gls(chumbo ~ factor(tempo) + inter,correlation=corSymm (form=~1|ID),
+weights = varIdent(form = ~1 | factor(tempo)),data=datalong)
+summary(out6)
+names(out6)
+out6$varBeta
+plot(out6)
+```
+
+
+

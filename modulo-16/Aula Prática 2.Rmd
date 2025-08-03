@@ -1,0 +1,195 @@
+---
+title: "Aula Prática 2"
+author: "Prof. Márcio Viola"
+date: "03/07/2025"
+output: pdf_document
+---
+
+
+```{r setup, include=FALSE}
+# Configurações globais do documento
+library(ggplot2)
+library(plyr)
+library(car)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Exemplo: Experimento, cujo principal objetivo é comparar os efeitos de duas dietas experimentais (T1 e T2) e de uma dieta controle (T3) no ganho de peso e consumo alimentar de frangos de corte. A resposta é a conversão alimentar média, expressa em kg de consumo de ração por kg de ganho de peso após 7, 14, 21 e 28 dias desde o início do experimento.
+
+Carregando os dados
+
+```{r}
+dieta<- c('T1', 'T1', 'T1', 'T1', 'T2', 'T2', 'T2', 'T2', 'T3', 'T3', 'T3', 'T3')
+dia7<- c(1.399,  1.369, 1.389, 1.461, 1.427, 1.480, 1.501, 1.505, 1.484, 1.529, 1.629, 1.720)
+dia14<- c(1.526, 1.616, 1.618, 1.667, 1.627, 1.681, 1.689, 1.712, 1.549, 1.563, 1.641, 1.656)          
+dia21<- c(1.720, 1.783, 1.800, 1.836, 1.826, 1.843, 1.880, 1.898, 1.658, 1.678, 1.730, 1.737)                   
+dia28<- c(1.899, 1.927, 1.955, 1.979, 1.981, 2.034, 2.049, 2.082, 1.910, 1.926, 1.939, 1.952)
+dados<- data.frame(dieta, dia7, dia14, dia21, dia28)
+dados
+```
+
+Dados no formato longo e ordenando
+
+```{r}
+dados.long <- reshape(dados, varying = c("dia7", "dia14", "dia21", "dia28"), v.names="convalim",
+
+idvar="id", timevar="dias", times=c(7, 14, 21, 28), new.row.names = 1:48, direction="long")
+
+dados.sort <- dados.long[order(dados.long$id),]
+dados.sort
+```
+
+Gráfico de perfis individuais com perfil médio por tratamento
+
+```{r}
+ggplot(dados.sort, aes(x=dias, y=convalim, group=id)) +
+geom_line(aes(linetype = dieta), size = 0.5) +
+geom_point(aes(color = dieta), size = 1.5) +
+scale_x_continuous(breaks=c(7,14,21,28), labels=c("7", "14", "21", "28")) +
+stat_summary(fun.y=mean, geom="line",lwd=1.0, aes(group=dieta, color = dieta)) +
+xlab("Dias") +
+ylab("Conversão alimentar (kcal/kg)") +
+theme_bw() +
+theme(axis.text.x = element_text(size=13)) +
+theme(axis.text.y = element_text(size=13)) +
+facet_wrap(~dieta)
+```
+
+Gráfico de perfis individuais com perfil médio em conjunto
+
+```{r}
+ggplot(dados.sort, aes(x=dias, y=convalim, group=id)) +
+geom_line(aes(linetype = dieta), size = 0.5) +
+geom_point(size = 1) +
+scale_x_continuous(breaks=c(7,14,21,28), labels=c("7", "14", "21", "28")) +
+stat_summary(fun.y=mean, geom="line",lwd=1.5, aes(group=dieta, color=dieta)) +
+xlab("Dias") +
+ylab("Conversão alimentar (kcal/kg)") +
+theme_bw() +
+theme(axis.text.x = element_text(size=13)) +
+theme(axis.text.y = element_text(size=13))
+```
+Média e Desvio Padrão
+
+```{r}
+dados.resumo = ddply(dados.sort, .(dieta, dias), function(x){
+c(mean=mean(x$convalim), sd = sd(x$convalim))
+})
+dados.resumo
+```
+
+Análise de perfis via MANOVA
+
+```{r}
+fit.manova <- manova(cbind(dia7, dia14, dia21, dia28) ~ dieta -1, data=dados, contrasts = list(dieta = contr.SAS))
+fit.manova$coefficients
+summary(fit.manova)
+```
+Teste interacao dieta X tempo
+
+```{r}
+C<- matrix(c(1, -1, 0, 1, 0, -1), ncol = 3, by = T)
+U<- matrix(c(1, 0, 0, -1, 1, 0, 0, -1, 1, 0, 0, -1), nrow = 4, by = T)
+C
+U
+
+interacao <- linearHypothesis(model = fit.manova, hypothesis.matrix = C, P = U)
+interacao
+```
+
+Teste interacao dieta T1 e T2 X Tempo
+
+```{r}
+C <- matrix(c(1, -1, 0), ncol = 3, by = T)
+U <- matrix(c(1, 0, 0, -1, 1, 0, 0, -1, 1, 0, 0, -1), nrow = 4, by = T)
+C
+U
+
+interacaoT1T2 <- linearHypothesis(model = fit.manova, hypothesis.matrix = C, P = U)
+interacaoT1T2
+```
+Teste efeito dieta T1 T2
+
+```{r}
+C <- matrix(c(1, -1, 0), ncol = 3, by = T)
+U <- matrix(c(1, 1, 1, 1), nrow = 4, by = T)
+C
+U
+
+efeitoT1T2 <- linearHypothesis(model = fit.manova, hypothesis.matrix = C, P = U)
+efeitoT1T2
+```
+Teste efeito Tempo para dieta T1 T2
+
+```{r}
+C <- matrix(c(1, 1, 0), ncol = 3, by = T)
+U <- matrix(c(1, 0, 0, -1, 1, 0, 0, -1, 1, 0, 0, -1), nrow = 4, by = T)
+C
+U
+
+efeitoTempoT1T2 <- linearHypothesis(model = fit.manova, hypothesis.matrix = C, P = U)
+efeitoTempoT1T2
+```
+Teste efeito linear de Tempo para dieta T1 T2
+
+```{r}
+C <- matrix(c(1, 1, 0), ncol = 3, by = T)
+U <- matrix(c(1, -1, -1, 3, -1, -3, 1, 1), nrow = 4, by = T)
+C
+U
+
+efeitolinearTempoT1T2 <- linearHypothesis(model = fit.manova, hypothesis.matrix = C, P = U)
+efeitolinearTempoT1T2
+```
+Alternativamente podemos gerar os contrastes baseados em polinomios ortogonais como
+ct<-contr.poly(4)
+U <- as.matrix(ct[,2-3])
+
+Teste efeito quadrático de Tempo para dieta T3
+
+```{r}
+C <- matrix(c(0, 0, 1), ncol = 3, by = T)
+U <- matrix(c(-1, 3, -3, 1), nrow = 4, by = T)
+C
+U
+
+efeitoquadraticoTempoT3 <- linearHypothesis(model = fit.manova, hypothesis.matrix = C, P = U)
+efeitoquadraticoTempoT3
+```
+
+Alternativamente podemos gerar os contrastes baseados em polinomios ortogonais como
+ct<-contr.poly(4)
+U<- as.matrix(ct[, 3])
+
+Teste para comparacao conversao alimentar media
+
+```{r}
+C <- matrix(c(1, -1, 0, 1, 0, -1), ncol = 3, by = T)
+U <- matrix(c(1/4, 1/4, 1/4, 1/4), nrow = 4, by = T)
+C
+U
+
+efeitoconvalimmedia <- linearHypothesis(model = fit.manova, hypothesis.matrix = C, P = U)
+efeitoconvalimmedia
+```
+Estimacao da conversão alimentar média
+
+```{r}
+dados$convmedia<- (dados$dia7+dados$dia14+dados$dia21+dados$dia28)/4
+fit.convmedia<-lm(dados$convmedia~dieta-1, data=dados)
+fit.convmedia<-lm(dados$convmedia~1, data=dados)
+summary(fit.convmedia)
+
+names(fit.convmedia)
+```
+
+IC(95%) para conversão alimentar média
+
+```{r}
+liminf <- fit.convmedia$coefficients - 1.96*(summary(fit.convmedia)$sigma/(sqrt(fit.convmedia$df)))
+limsup <- fit.convmedia$coefficients + 1.96*(summary(fit.convmedia)$sigma/(sqrt(fit.convmedia$df)))
+liminf
+limsup
+```
+
+

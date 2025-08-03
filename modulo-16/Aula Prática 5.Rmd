@@ -1,0 +1,254 @@
+---
+title: "Aula Prática 5"
+author: "Prof. Márcio Viola"
+date: "17/07/2025"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+#Configurações globais do documento
+require(MASS)
+require(nlme)
+require(MASS)
+require(ggplot2)
+library(car)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Exemplo com dados simulados: 
+
+Amostra pareada: pré e pós tratamento
+100 pacientes
+
+Objetivo: Existe diferenÃ§a entre o pré e o pós?
+
+Geração dos Dados
+
+Grupo 1: pacientes com hipertensão Sistólica N(150,15)
+Pressao Sistolica Normal ate 120mmHG
+
+Grupo 2: mesmos pacientes pós tratamento N(110,15)
+rho = 0.8 (coeficiente de correlacao)
+cov=0.8*15*15=180
+
+```{r}
+n<-100
+mu=c(150,110) #vetor de médias pré e pós tratamento
+Sigma=matrix(c(225,180,180,225),2,2) #matriz de covariância
+#Sigma=matrix(c(225,112.5,112.5,225),2,2) #matriz de covariância
+resp<-round(mvrnorm(n,mu,Sigma))
+x1<-resp[,1]
+x2<-resp[,2]
+dados<-data.frame(x1,x2) # banco de dados
+names(dados)
+dim(dados)
+dados[1:15,]
+write.table(dados, file="testet.txt", sep=" ", row.names=F)
+```
+Leitura dos dados
+
+```{r}
+dados<-read.table("testet.txt",header=T)
+names(dados)    
+dim(dados)
+dados[1:15,]
+```
+
+Descritiva dos dados
+
+```{r}
+plot(dados$x1,dados$x2,xlab="y1",ylab="y2")
+cor(dados$x1,dados$x2)
+summary(dados$x1)
+summary(dados$x2)
+boxplot(dados$x1,dados$x2,ylab="pressão sistólica (mmHg)")
+axis(1, 1:2, c(1,2))  #Cuidado pois o Boxplot não considera o pareamento 
+cor(dados)
+cov(dados)
+t.test(dados$x1-dados$x2)
+#Usando o verdadeiro valor da Var(mean(x1)-mean(x2))
+numt<-mean(dados$x1-dados$x2)
+dentsq<-(1/n)*(cov(dados)[1,1]+cov(dados)[2,2]-2*cov(dados)[1,2])
+t<-numt/sqrt(dentsq)
+t
+#Ignorando covariância
+dentsq_er<-(1/n)*(cov(dados)[1,1]+cov(dados)[2,2])
+t_er<-numt/sqrt(dentsq_er)
+t_er
+```
+Usando Modelo de Regressão
+
+Banco de dados longo
+
+```{r}
+dados1<-stack(dados) 
+ident<-rep(1:100,2)
+grupo<-c(rep(1,100),rep(2,100))
+dados1<-data.frame(ident,dados1[1],grupo)
+dados1[1:15,]
+names(dados1)
+dim(dados1)
+```
+Banco de dados longo (uma medida por linha)
+
+```{r}
+length(unique(ident))  
+as.data.frame(table(ident)) 
+max(table(ident)) 
+min(table(ident)) 
+```
+Estatísticas Descritivas
+
+```{r}
+tapply(dados1$values,list(dados1$grupo), mean)  
+tapply(dados1$values,list(grupo),median)  
+tapply(dados1$values,list(grupo), sd)  
+tapply(dados1$values,list(grupo),summary)
+```
+Gráficos de Perfis
+
+```{r}
+m=length(unique(ident)) #somente 10 perfis m=10
+n=length(dados1$values)/m
+xl=range(grupo)
+yl=range(dados1$values)  
+choice=ident #somente 10 perfis choice=ident[1:20]
+j=ident==choice[1]
+plot(grupo[j],dados1$values[j],xaxt = "n", type="l",ylim=yl,xlim=xl,ylab="Pressão",
+xlab="Momento",main="Tratamento - Pressão")
+if(length(choice)>1){
+for(it in 3:length(choice)){
+j=ident==choice[it]
+lines(grupo[j],dados1$values[j])}
+axis(1, 1:3, c(1,2,3))
+}
+#Gráfico de médias
+mean<-c(mean(dados$x1),mean(dados$x2))
+lines(grupo[j],mean,type="l",col="blue",lwd=2)
+```
+Teste t - Pareado
+
+```{r}
+dif<-dados$x1-dados$x2  
+boxplot(dif)
+#verificação de normalidade           
+shapiro.test(dif)
+plot(qqnorm(dif),ylab="quantis amostrais",xlab="quantis normal")
+#teste t para diferenças           
+t.test(dif)
+#t.test(values~grupo, paired=TRUE,data=dados1)
+#teste não-paramétrico de Wilcoxon
+wilcox.test(dif)
+```
+MODELO MARGINAL 
+
+Modelando a Matriz de Covariancia - GLS
+
+```{r}
+#Ignorando a correlação entre as medidas antes e depois
+out0<-lm(values ~ grupo, data=dados1)
+summary(out0)
+plot(out0)
+#Simetria composta e mesma variância (2 componentes de variância)
+#estimando os componentes de variância  
+out1<-gls(values ~ grupo, dados1, correlation = corSymm(form = ~1 |ident))
+summary(out1)
+intervals(out1) #IC para os componentes de variância
+#Simetria composta e mesma variância (2 componentes de variância)
+#fixando a correlação = 0.8  
+cs <- corCompSymm(0.8, form = ~ 1 | ident,fixed=T)
+out2<-gls(values ~ grupo, dados1, correlation = cs)
+summary(out2)
+intervals(out2) #IC para os componentes de variância
+```
+Extensão para um terceiro tempo
+100 pacientes
+
+Geração dos Dados
+
+```{r}
+#Tempo 0: pacientes com hipertensao Sistolica N(150,15)
+#Pressão Sistólica Normal até 120mmHG
+#Tempo 30: mesmos pacientes 30 dias após tratamento N(110,15)
+#Tempo 60: mesmos pacientes 60 dias após tratamento N(110,15)
+#\rho = 0.8 (coeficiente de correlacao)
+#cov=0.8*15*15=180
+n<-100
+mu=c(150,110,110) #vetor de médias tempos:0,30,60
+Sigma=matrix(c(225,180,180,180,225,180,180,180,225),3,3) #matriz de covariância
+resp<-round(mvrnorm(n,mu,Sigma))
+x1<-resp[,1]
+x2<-resp[,2]
+x3<-resp[,3]
+dados3<-data.frame(x1,x2,x3) #banco de dados
+names(dados3)
+dim(dados3)
+dados3[1:15,]
+cor(dados3)
+cov(dados3)
+```
+Banco de Dados Longo
+
+```{r}
+values<-stack(dados3) 
+ident<-rep(1:100,3)
+grupo<-c(rep(1,100),rep(2,100),rep(3,100))
+dados4<-data.frame(ident,values[1],grupo)
+dados4[1:15,]
+dim(dados4)
+names(dados4)
+```
+Estatísticas Descritivas
+
+```{r}
+names(dados4)[3] <- "Momento" 
+names(dados4)[2] <- "Pressão" 
+p<-ggplot(dados4,aes(Momento, Press?o,group=ident)) + geom_line()
+names(dados4)[2] <- "values" 
+interaction.plot(dados4$Momento,rep(1,300),dados4$values,xlab="momento",
+ylab="pressão (mmHg)",legend=F, main="gráfico de médias")
+```
+ANOVA usual: um fator em blocos (somente válida sob esfericidade)
+
+```{r}
+anova<-aov(values~factor(grupo)+factor(ident),data=dados4)           
+summary(anova)
+anova_random.lme<-lme(values ~ factor(grupo), data=dados4, random= ~1|ident, m="REML")
+summary(anova_random.lme) 
+#Comparações Múltiplas
+cvm<-cbind(x1,x2,x3)
+contraste1 <- cvm[,2]-cvm[,1]
+contraste2 <- cvm[,3]-cvm[,2]
+contraste3 <- cvm[,1]-cvm[,3]
+t.test(contraste1)
+t.test(contraste2)
+t.test(contraste3)
+```
+Teste de Esfericidade - ANOVA com Correção de Grau de Liberdade
+
+Teste de Esfericidade e MANOVA
+
+```{r}
+#O primeiro passo é organizar os dados na forma de matriz em que
+#cada indivíduo é uma linha
+cvm<-cbind(x1,x2,x3)
+#O segundo passo é definir um modelo linear multivariado
+mlm<-lm(cvm~1)
+mlm
+#O terceiro passo é definir a variável de deliamento
+rfactor<-factor(c(1,2,3))
+rfactor
+#usando a biblioteca car
+mlm1<-Anova(mlm, idata = data.frame(rfactor), idesign=~rfactor, 
+type="III")
+summary(mlm1, multivariate=F) # exclui os testes multivariados
+```
+Teste Não-Paramétrico de Friedman - Comparação de Grupos em Blocos
+
+Objetivo: comparar grupos (4 instantes - meses)
+
+Bloco: cada criança
+
+```{r}
+friedman.test(dados4$values, dados4$Momento, dados4$ident)
+```

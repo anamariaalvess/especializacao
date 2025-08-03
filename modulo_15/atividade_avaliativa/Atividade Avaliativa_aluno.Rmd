@@ -1,0 +1,128 @@
+---
+title: "Curso de Especialização em *Data Science* e Estatística Aplicada\n
+       Módulo IV - Análise de Séries Temporais"
+author: "Prof. Dr. Eder Angelo Milani"    
+date: "21/06/2025"
+output: pdf_document
+---
+
+# Instruções
+
+\begin{itemize}
+\item O desenvolvimento desta atividade deve ser realizada de forma individual ou em dupla.
+\item Deve-se completar o arquivo Rmd enviado na atividade.
+\item É necessário devolver o arquivo em Rmd e em pdf.
+\item Valor da atividade: 10 pontos.
+\item Use o código fornecido como base.
+\end{itemize}
+
+
+# Descrição da atividade 
+
+
+A seguir apresentamos as temperaturas médias mensais, em graus centígrados, da cidade de Ubatuba (município brasileiro do litoral de São Paulo), de janeiro de 1976 a dezembro de 1985. A série temporal foi retirada de Morettin e Toloi (2006). O objetivo é buscar um modelo que realize boas previsões, para isso considere:
+
+(i) selecione os primeiros 108 valores da série para treinar os modelos que serão detalhados nos próximos itens, e deixe os últimos 12 valores para realizar o cálculo das métricas envolvendo as previsões;
+
+(ii) considere o ajuste dado por: 
+(a) realize o ajuste da tendência utilizando um polinômio de primeiro grau, para a sazonalidade utilize a técnica de variáveis *dummies*;
+(b) utilizando a série dos resíduos ($\hat{Y}_t = Z_t - \hat{T}_t - \hat{S}_t$), ajuste um modelo ARMA (adotar *seasonal=F* na função *auto.arima*);
+(c) faça um ajuste conjunto das componentes da regressão + ARMA
+(d) realize previsões para o ano de 1985, com origem em dezembro de 1984, ou seja, previsões até 12 passos a frente.
+
+
+(iii) repita todo o procedimento do item (ii), mas agora considerando um par de seno e cosseno para ajustar a sazonalidade.
+
+(iv) considere a suavização de Holt-Winterns, ajuste dois modelos, o aditivo e o multiplicativo, sempre com o parâmetro *initial = 'simple'*. Realize previsões nas mesmas condições do item (ii)-d.
+
+(v) ajuste um modelo SARIMA utilizando a função *auto.arima*, adicionando na função o parâmetro *allowdrift = F*. A partir do resultado, busque um modelo que apresente todos os parâmetros significativos, começando a eliminação pelo parâmetro não significativo de maior ordem. A partir do modelo com todos os parâmetros significativos, realize previsões nas mesmas condições do item (ii)-d.
+
+
+(vi) A partir das métricas RMSE, MAE e MAPE, indique o modelo que apresentou as melhores previsões. 
+
+
+
+# Solução 
+
+```{r, eval=FALSE}
+library(forecast)
+
+# fazendo a leitura do conjunto de dados
+setwd("G:\\Meu Drive\\UFG\\Especializacao\\Aulas de series temporais\\Codigos")
+
+library(readxl)
+temperatura <- read_excel("temperatura.xls")
+head(temperatura)
+
+temp.ubatuba_ts <- ts(temperatura$Ubatuba, start = c(1976, 1), frequency = 12)
+
+# grafico da serie temporal
+plot.ts(temp.ubatuba_ts, type="b", ylab="Temperatura em ºC", xlab="Ano")
+
+## item (i)
+trein_temp.ubatuba_ts <- 
+
+novos_ubatuba_ts <- 
+
+## item (ii)
+ajuste1_aux <- tslm(trein_temp.ubatuba_ts ~ )
+
+# ajuste do modelo ARMA aos residuos
+
+auto.arima(   ,seasonal=F)
+
+Arima()
+
+forecast( , h=12)
+
+
+## item (iii)
+
+ajuste2_aux <- tslm(trein_temp.ubatuba_ts ~ )
+
+# ajuste do modelo ARMA aos residuos
+
+auto.arima(    ,seasonal=F)
+
+Arima()
+
+forecast( , h=12)
+
+## (iv)
+
+# ajuste do modelo da suavizacao Holt-Winters multiplicativo
+
+ajuste3 <- hw(   , seasonal = "multiplicative", initial = "simple")
+
+# ajuste do modelo da suavizacao Holt-Winters aditivo 
+
+ajuste4 <- hw(    , seasonal = "additive", initial = "simple")
+
+# item (v) - ajuste do modelo sarima 
+
+ajuste5 <- auto.arima(  , allowdrift = F)
+
+ajuste5_v2 <- Arima(    , order = c(1, 0, 1), 
+                    seasonal = list(order = c(1, 1, 1), period = 12))
+
+forecast()
+
+## item (v)
+
+previsoes <- data.frame(Modelo1 = ),
+                        Modelo2 = ),
+                        Modelo3 = ),
+                        Modelo4 = ),
+                        Modelo5 = ))
+
+
+# Adicionar os nomes das linhas 
+rownames(previsoes) <- c("RMSE", "MAE", "MAPE")
+
+round(previsoes, 2)
+
+# O modelo ????? foi o 
+# modelo que forneceu as melhores previsoes 
+```
+
+

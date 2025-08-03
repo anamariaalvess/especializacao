@@ -1,0 +1,437 @@
+---
+title: "Análise de Séries Temporais"
+author: "Ana Maria Alves"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+  html_document: default
+  always_allow_html: true
+    
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = 'center'  # centraliza todas as figuras
+)
+```
+
+
+# Instruções
+
+\begin{itemize}
+\item O desenvolvimento desta atividade deve ser realizada de forma individual ou em dupla.
+\item Deve-se completar o arquivo Rmd enviado na atividade.
+\item É necessário devolver o arquivo em Rmd e em pdf.
+\item Valor da atividade: 10 pontos.
+\item Use o código fornecido como base.
+\end{itemize}
+
+# Descrição da atividade 
+
+
+A seguir apresentamos as temperaturas médias mensais, em graus centígrados, da cidade de Ubatuba (município brasileiro do litoral de São Paulo), de janeiro de 1976 a dezembro de 1985. A série temporal foi retirada de Morettin e Toloi (2006). O objetivo é buscar um modelo que realize boas previsões, para isso considere:
+
+(i) selecione os primeiros 108 valores da série para treinar os modelos que serão detalhados nos próximos itens, e deixe os últimos 12 valores para realizar o cálculo das métricas envolvendo as previsões;
+
+## Solução item i:
+
+Primeiramente, vamos carregar o conjunto de dados.
+
+```{r}
+library(readxl)
+
+# Ler o arquivo Excel
+dados  <- read_excel("temperatura.xls")
+
+# Verificar as primeiras linhas do dataset
+head(dados)
+``` 
+
+Note que será necessário completar os valores ausentes dos respectivos anos, isso é, 1976 até chegar em 1978 e assim sucessivamente. 
+
+```{r}
+anos <- rep(1976:1985, each = 12)
+
+# Atribui esse vetor à coluna 'Ano' (sobrescrevendo ou criando uma nova coluna correta)
+dados$Ano <- anos
+
+# Exibe os primeiros dados
+head(dados, 20)
+```
+
+Agora vamos separar os dados de treino e teste.
+
+```{r}
+ubatuba_ts <- ts(dados$Ubatuba, start = c(1976, 1), frequency = 12)
+cananeia_ts <- ts(dados$Cananeia, start = c(1976, 1), frequency = 12)
+# Ubatuba
+ubatuba_treino <- window(ubatuba_ts, end = c(1984, 12))
+ubatuba_teste <- window(ubatuba_ts, start = c(1985, 1))
+
+# Cananeia
+cananeia_treino <- window(cananeia_ts, end = c(1984, 12))
+cananeia_teste <- window(cananeia_ts, start = c(1985, 1))
+
+# Verificações
+length(ubatuba_treino)   # 108
+length(ubatuba_teste)    # 12
+```
+
+(ii) considere o ajuste dado por: 
+(a) realize o ajuste da tendência utilizando um polinômio de primeiro grau, para a sazonalidade utilize a técnica de variáveis *dummies*;
+
+## Solução item ii-a: 
+
+```{r}
+# Número de observações de treino
+n <- length(ubatuba_treino)
+
+# Criar a variável tempo (1 a 108)
+tempo <- 1:n
+
+# Criar fator com os meses (1 a 12, repetidos)
+mes <- factor(rep(1:12, times = 9))  # 9 anos * 12 meses = 108
+
+# Ajuste da regressão com tendência linear e dummies mensais
+modelo_ubatuba <- lm(ubatuba_treino ~ tempo + mes)
+
+# Ver resumo do modelo
+summary(modelo_ubatuba)
+
+```
+Note que a cada mês, a temperatura média tende a cair cerca de 0,024°C. Isso indica uma tendência de queda suave ao longo dos anos e capta bem a forte sazonalidade da série  identificando uma leve tendência de queda ao longo do tempo.
+
+```{r}
+# Previsões do modelo
+ajuste <- fitted(modelo_ubatuba)
+
+# Plot da série original com ajuste
+plot(ubatuba_treino, type = "l", col = "black", lwd = 2, ylab = "Temperatura", 
+     xlab = "Tempo", main = "Ajuste com Tendência + Sazonalidade")
+lines(ajuste, col = "blue", lwd = 2)
+legend("topright", legend = c("Original", "Ajuste"), 
+       col = c("black", "blue"), lty = 1, lwd = 2)
+
+```
+
+
+(b) utilizando a série dos resíduos ($\hat{Y}_t = Z_t - \hat{T}_t - \hat{S}_t$), ajuste um modelo ARMA (adotar *seasonal=F* na função *auto.arima*);
+
+## Solução item ii-b:
+
+```{r}
+residuos <- residuals(modelo_ubatuba)
+library(forecast)
+
+# Ajuste automático de modelo ARMA (sem parte sazonal)
+modelo_arma <- auto.arima(residuos, seasonal = FALSE)
+
+# Resumo do modelo ajustado
+summary(modelo_arma)
+
+# Diagnóstico dos resíduos do modelo ARMA
+checkresiduals(modelo_arma)
+
+
+```
+
+Note que o  modelo de tendência linear com  sazonalidade com dummies e AR(1) está muito bem ajustado. Os resíduos finais não apresentam estrutura temporal indicando que o modelo é estatisticamente adequado para previsão.
+
+(c) faça um ajuste conjunto das componentes da regressão + ARMA
+
+## Solução item ii-c:
+
+```{r}
+# Regressor de tempo (tendência)
+tempo <- 1:108
+
+# Criar dummies para os meses (excluindo a base automaticamente)
+mes <- factor(rep(1:12, times = 9))  # 9 anos
+
+# Matriz de regressores (tempo + dummies)
+X <- model.matrix(~ tempo + mes)[, -1]  # remove intercepto duplicado
+library(forecast)
+
+# Ajuste do modelo conjunto: regressão + ARMA(1,0)
+modelo_conjunto <- Arima(ubatuba_treino, xreg = X, order = c(1, 0, 0))
+
+# Resumo do modelo
+summary(modelo_conjunto)
+
+```
+
+Note que o modelo captura muito bem a estrutura da série de temperatura. Como a tendência de queda, forte sazonalidade e a dependência temporal residual com AR(1). Os resíduos finais são aproximadamente ruído branco, o que valida a adequação estatística. A performance (MAPE ~ 3,5%) é muito boa para séries climáticas.
+
+(d) realize previsões para o ano de 1985, com origem em dezembro de 1984, ou seja, previsões até 12 passos a frente.
+## Solução item ii-d:
+
+```{r}
+# Criar as variáveis para os 12 meses de 1985
+tempo_futuro <- 109:120
+mes_futuro <- factor(rep(1:12, times = 1))
+
+# Criar matriz de regressores para previsão
+X_futuro <- model.matrix(~ tempo_futuro + mes_futuro)[, -1]
+# Previsão com 12 passos à frente
+previsao <- forecast(modelo_conjunto, xreg = X_futuro, h = 12)
+
+# Visualizar previsão
+plot(previsao, main = "Previsão para 1985 - Ubatuba")
+
+# Ver os valores previstos
+previsao$mean
+
+# Erros
+erro <- ubatuba_teste - previsao$mean
+
+# Métricas
+RMSE <- sqrt(mean(erro^2))
+MAE <- mean(abs(erro))
+MAPE <- mean(abs(erro / ubatuba_teste)) * 100
+
+# Mostrar resultados
+cat("RMSE:", round(RMSE, 4), "\n")
+cat("MAE :", round(MAE, 4), "\n")
+cat("MAPE:", round(MAPE, 2), "%\n")
+
+```
+
+Note que As previsões estão bem alinhadas com os ciclos sazonais da série, o que mostra que o modelo conseguiu capturar adequadamente a estrutura da série temporal. Isso significa que o  modelo foi bem-sucedido na tarefa de previsão. O erro percentual médio (MAPE) de 7.55% indica um desempenho excelente para séries ambientais, que são naturalmente ruidosas.
+
+(iii) repita todo o procedimento do item (ii), mas agora considerando um par de seno e cosseno para ajustar a sazonalidade.
+
+## Solução item iii:
+
+(a) Ajuste da tendência (linear) + sazonalidade (seno e cosseno):
+
+```{r}
+# Tempo de 1 a 108
+tempo <- 1:108
+
+# Sazonalidade com senos e cossenos (período 12)
+seno <- sin(2 * pi * tempo / 12)
+cosseno <- cos(2 * pi * tempo / 12)
+
+# Ajuste da regressão com tendência e componentes harmônicas
+modelo_harm <- lm(ubatuba_treino ~ tempo + seno + cosseno)
+
+# Ver resumo
+summary(modelo_harm)
+
+# Previsões ajustadas
+ajuste_harm <- fitted(modelo_harm)
+
+# Plot comparativo
+plot(ubatuba_treino, type = "l", main = "Ajuste com Tendência + Seno/Cosseno", 
+     ylab = "Temperatura")
+lines(ajuste_harm, col = "blue")
+legend("topright", legend = c("Original", "Ajuste"), 
+       col = c("black", "blue"), lty = 1)
+
+```
+O modelo com tendência + seno/cosseno é estatisticamente sólido e parcimonioso. Capta com alta fidelidade a sazonalidade com apenas dois parâmetros sazonais, ao contrário de 11 dummies. Tem desempenho comparável ao modelo com dummies, com a vantagem de ser mais simples e suave.
+
+
+(b) Ajuste ARMA aos resíduos da regressão harmônica
+```{r}
+residuos_harm <- residuals(modelo_harm)
+
+# Ajuste de ARMA aos resíduos (sem parte sazonal)
+library(forecast)
+modelo_arma_harm <- auto.arima(residuos_harm, seasonal = FALSE)
+
+# Diagnóstico
+summary(modelo_arma_harm)
+checkresiduals(modelo_arma_harm)
+
+```
+O modelo AR(1) aplicado aos resíduos do ajuste harmônico é estatisticamente adequado. Note que ele removeu a dependência temporal restante da regressão inicial.Está pronto para ser usado em um modelo conjunto (Arima com xreg).
+
+(c) Ajuste conjunto com Arima() (regressão + ARMA)
+
+```{r}
+# Matriz de regressão: tempo + seno + cosseno
+X_harm <- cbind(tempo, seno, cosseno)
+
+# Ajuste conjunto
+modelo_conjunto_harm <- Arima(ubatuba_treino, xreg = X_harm, order = c(1, 0, 0))  # se AR(1) foi escolhido
+summary(modelo_conjunto_harm)
+
+```
+O modelo ajustado com tendência + harmônicos + AR(1) é estatisticamente robusto, com ótimo desempenho. Os erros finais são ligeiramente maiores do que no modelo com dummies (MAPE anterior ~7,55%), mas o modelo harmônico está usando menos parâmetros (maior parcimônia) além disso também produz um ajuste mais suave. É especialmente útil para previsões longas ou séries com poucos dados por categoria
+
+(d) Previsões para 1985 (12 meses à frente)
+
+```{r}
+# Variáveis para 1985 (tempo = 109 a 120)
+tempo_futuro <- 109:120
+seno_futuro <- sin(2 * pi * tempo_futuro / 12)
+cosseno_futuro <- cos(2 * pi * tempo_futuro / 12)
+X_futuro_harm <- cbind(tempo_futuro, seno_futuro, cosseno_futuro)
+
+# Previsões
+previsao_harm <- forecast(modelo_conjunto_harm, xreg = X_futuro_harm, h = 12)
+
+# Plot
+plot(previsao_harm, main = "Previsão para 1985 - Seno/Cosseno")
+
+# Erros e métricas
+erro_harm <- ubatuba_teste - previsao_harm$mean
+RMSE_harm <- sqrt(mean(erro_harm^2))
+MAE_harm <- mean(abs(erro_harm))
+MAPE_harm <- mean(abs(erro_harm / ubatuba_teste)) * 100
+
+cat("RMSE:", round(RMSE_harm, 4), "\n")
+cat("MAE :", round(MAE_harm, 4), "\n")
+cat("MAPE:", round(MAPE_harm, 2), "%\n")
+
+```
+
+O modelo com seno/cosseno + AR(1) foi muito competente nas previsões. A MAPE = 7.71% é excelente para uma série de temperatura, indicando alta precisão.
+Embora o modelo com dummies mensais tenha desempenho levemente melhor, o modelo harmônico usa menos parâmetros e é mais parcimonioso. oferecendo previsões mais suaves, ideais para extrapolação.
+
+
+(iv) considere a suavização de Holt-Winterns, ajuste dois modelos, o aditivo e o multiplicativo, sempre com o parâmetro *initial = 'simple'*. Realize previsões nas mesmas condições do item (ii)-d.
+
+## Solução item iv:
+
+```{r}
+# Ajuste do modelo aditivo
+modelo_hw_ad <- hw(ubatuba_treino, seasonal = "additive", h = 12, initial = "simple")
+
+# Previsão
+plot(modelo_hw_ad, main = "Previsao Holt-Winters Aditivo - 1985")
+
+# Ajuste do modelo multiplicativo
+modelo_hw_mul <- hw(ubatuba_treino, seasonal = "multiplicative", h = 12, initial = "simple")
+
+# Previsão
+plot(modelo_hw_mul, main = "Previsao Holt-Winters Multiplicativo - 1985")
+
+# Previsões
+prev_ad <- modelo_hw_ad$mean
+prev_mul <- modelo_hw_mul$mean
+
+# Erros
+erro_ad <- ubatuba_teste - prev_ad
+erro_mul <- ubatuba_teste - prev_mul
+
+# Métricas para o aditivo
+RMSE_ad <- sqrt(mean(erro_ad^2))
+MAE_ad  <- mean(abs(erro_ad))
+MAPE_ad <- mean(abs(erro_ad / ubatuba_teste)) * 100
+
+# Métricas para o multiplicativo
+RMSE_mul <- sqrt(mean(erro_mul^2))
+MAE_mul  <- mean(abs(erro_mul))
+MAPE_mul <- mean(abs(erro_mul / ubatuba_teste)) * 100
+
+# Exibir resultados
+cat("Modelo Aditivo:\n")
+cat("RMSE:", round(RMSE_ad, 4), "\nMAE :", round(MAE_ad, 4), "\nMAPE:", round(MAPE_ad, 2), "%\n\n")
+
+cat("Modelo Multiplicativo:\n")
+cat("RMSE:", round(RMSE_mul, 4), "\nMAE :", round(MAE_mul, 4), "\nMAPE:", round(MAPE_mul, 2), "%\n")
+
+```
+
+O método de Holt-Winters multiplicativo, com initial = "simple", é muito eficaz para prever a série. Superando o desempenho dos modelos anteriores (regressão com dummies e harmônicos + ARMA), com menor erro e ajuste simples. Ele é recomendado para séries com sazonalidade proporcional ao nível, como parece ser o caso da temperatura média mensal de Ubatuba.
+
+(v) ajuste um modelo SARIMA utilizando a função *auto.arima*, adicionando na função o parâmetro *allowdrift = F*. A partir do resultado, busque um modelo que apresente todos os parâmetros significativos, começando a eliminação pelo parâmetro não significativo de maior ordem. A partir do modelo com todos os parâmetros significativos, realize previsões nas mesmas condições do item (ii)-d.
+
+## Solução item v:
+
+```{r}
+
+# Ajuste automático de SARIMA sem drift
+modelo_sarima <- auto.arima(ubatuba_treino, seasonal = TRUE, allowdrift = FALSE)
+
+# Ver o modelo ajustado
+summary(modelo_sarima)
+
+# Exemplo: reduzir modelo ARIMA(2,0,2)(1,0,1)[12] para ARIMA(1,0,1)(1,0,1)[12]
+modelo_reduzido <- Arima(ubatuba_treino, order = c(1,0,1), seasonal = c(1,0,1), include.drift = FALSE)
+
+# Ver resumo
+summary(modelo_reduzido)
+
+# Previsão final com o modelo selecionado
+previsao_sarima <- forecast(modelo_reduzido, h = 12)
+
+# Plot
+plot(previsao_sarima, main = "Previsao SARIMA - 1985")
+
+# Comparar com dados reais
+erro_sarima <- ubatuba_teste - previsao_sarima$mean
+
+RMSE_sarima <- sqrt(mean(erro_sarima^2))
+MAE_sarima  <- mean(abs(erro_sarima))
+MAPE_sarima <- mean(abs(erro_sarima / ubatuba_teste)) * 100
+
+cat("RMSE:", round(RMSE_sarima, 4), "\n")
+cat("MAE :", round(MAE_sarima, 4), "\n")
+cat("MAPE:", round(MAPE_sarima, 2), "%\n")
+```
+
+O modelo SARIMA(1,0,1)(1,0,1)[12] é estatisticamente bem ajustado, com todos os parâmetros significativos com previsões dentro da faixa esperada e segue a sazonalidade anual. Em termos de MAPE, está entre os melhores modelos testados, com desempenho semelhante ao modelo com dummies + AR(1) (aproximadamente 7.55%) e harmônicos + AR(1) (aproximadamente 7.71%).
+
+(vi) A partir das métricas RMSE, MAE e MAPE, indique o modelo que apresentou as melhores previsões. 
+
+## Solução item vi:
+
+
+| Modelo                             | RMSE   | MAE    | MAPE        |
+| ---------------------------------- | ------ | ------ | ----------- |
+| Regressão com dummies + AR(1)      | 1.8302 | 1.6846 | 7.55%       |
+| Regressão com seno/cosseno + AR(1) | 1.8819 | 1.7209 | 7.71%       |
+| Holt-Winters **Aditivo**           | 1.0473 | 0.7014 | 3.01%       |
+| Holt-Winters **Multiplicativo**    | 1.0495 | 0.6832 | **2.91%**   |
+| **SARIMA(1,0,1)(1,0,1)\[12]**      | 1.4772 | 1.1533 | 5.07%       |
+
+Melhor Modelo segundo cada métrica: 
+
+1. RMSE (menor erro quadrático): Holt-Winters Aditivo (1.0473)
+
+2. MAE (menor erro absoluto): Holt-Winters Multiplicativo (0.6832)
+
+3. MAPE (melhor percentual): Holt-Winters Multiplicativo (2.91%)
+
+**Conclusão*:* O melhor modelo preditivo, com base nas três métricas (especialmente MAPE), é o Holt-Winters Multiplicativo. Pois ele apresentou previsões suaves e estáveis, com forte capacidade de capturar a sazonalidade proporcional da série. Além de ter menor erro percentual, sendo altamente adequado para aplicações com foco em precisão relativa.
+
+
+O gráfico abaixo mostra a comparação entre as previsões dos diferentes modelos e os valores reais observados em 1985. O modelo Holt-Winters multiplicativo (HW_Mult) apresenta o melhor alinhamento com os dados reais ao longo dos 12 meses, reforçando o resultado obtido pelas métricas de erro, especialmente o MAPE (2.91%).
+
+```{r}
+# Comparando todas as previsões com os dados reais de 1985
+library(ggplot2)
+library(tibble)
+
+# Organiza os dados em um data frame
+comparativo <- tibble::tibble(
+  Mes = 1:12,
+  Real = as.numeric(ubatuba_teste),
+  Dummies_AR = as.numeric(previsao$mean),
+  Harm_AR = as.numeric(previsao_harm$mean),
+  HW_Add = as.numeric(modelo_hw_ad$mean),
+  HW_Mult = as.numeric(modelo_hw_mul$mean),
+  SARIMA = as.numeric(previsao_sarima$mean)
+)
+
+# Gráfico
+comparativo_long <- tidyr::pivot_longer(comparativo, -Mes, names_to = "Modelo", 
+                                        values_to = "Temperatura")
+
+ggplot(comparativo_long, aes(x = Mes, y = Temperatura, color = Modelo, 
+                             linetype = Modelo)) +
+  geom_line(size = 1) +
+  labs(title = "Comparacao das Previsoes (1985)", x = "Mes", 
+       y = "Temperatura (C)") +
+  theme_minimal()
+
+
+```

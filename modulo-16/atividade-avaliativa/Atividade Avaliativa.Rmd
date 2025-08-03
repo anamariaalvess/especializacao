@@ -1,0 +1,67 @@
+---
+title: "Atividade Avaliativa - Análise de Dados Longitudinais"
+author: "Prof. Dr. Márcio Luis Lanfredi Viola"
+date: "19/07/2025"
+output: pdf_document
+---
+
+
+# Instruções
+
+- O desenvolvimento desta atividade deve ser realizada de forma individual. 
+
+- Deve-se completar o arquivo Rmd enviado na atividade. 
+
+- É necessário devolver o arquivo em Rmd e em pdf. 
+
+- Valor da atividade: 10 pontos. 
+
+**Data disponível: 19/07/2025**
+
+**Data máxima para entrega: 15/08/2025**
+
+
+# Atividade
+
+Um estudo foi realizado para avaliar o efeito de MgSO4 na pressão arterial média (PAM, em mmHg) de cães. A resposta foi medida antes e depois da aplicação desse sal em dois grupos de animais: o primeiro (n = 12) previamente tratado com indometacina e o outro (n = 12) previamente tratado com nifedipina. O conjunto de dados (arquivo "caes.txt") apresenta as seguintes variáveis:
+
+1- Cão: Identificação (Id) dos cães;
+
+2- Grupo: Indica o tipo de tratamento (indometacina ou nifedipina);
+
+3- Antes: Pressão Arterial Média dos cães antes da aplicação de MgSO4;
+
+4- Depois: Pressão Arterial Média dos cães depois da aplicação de MgSO4.
+
+Para facilitar a organização, a Atividade Avaliativa está dividida em três Partes: Partes (i), (ii) e (iii).
+
+Parte (i): Análise Descritiva
+
+(1) (1 ponto) Faça o gráfico de perfis individuais e médios. Quais conclusões podemos obter?
+
+(2) (1 ponto) Faça o gráfico Box Plot da Pressão Arterial Média por tratamento, antes e depois da aplicação de MgSO4. Quais conclusões podemos obter?
+
+(3) (1 ponto) Faça o gráfico Box Plot da diferença entre a Pressão Arterial Média depois e antes da aplicação de MgSO4. Quais conclusões podemos obter?
+
+Parte (ii): Análise sob a perspectiva de Análise de Variância Multivariada (MANOVA):
+
+(4) (1 ponto) Avalie o efeito de interação entre tratamento e tempo.
+
+(5) (1 ponto) Avalie o efeito principal de tratamento (na ausência de interação entre tratamento e tempo).
+
+(6) (2 pontos) Caso o efeito principal de tratamento não seja significativo (perfis coincidentes), avalie o efeito principal de tempo (na ausência de interação entre tratamento e tempo). Caso contrário, avalie o efeito principal de tempo em cada tratamento.
+
+(7) (1 ponto) Avalie o efeito de tratamento sobre a PAM esperada pré-teste (se houver interação essencial).
+
+Parte 3: Análise utilizando modelo marginal de efeito fixo com estrutura da matriz de covariâncias/correlações:
+
+(8) (2 pontos) Utilizando o comando gls do pacote nlme, ajuste um modelo marginal de efeito fixo que inclua os efeitos principais de tempo (Pré e Pós) e de grupo (indometacina e nifedipina) e a interação entre tempo e grupo, considerando a simetria composta como estrutura da matriz de correlações. Após o ajuste do modelo, analisando o p-valor associado a cada estimativa dos parâmetros do modelo, quais conclusões podemos obter a respeito do efeito de interação entre tratamento e tempo e dos efeitos principais (tratamento e tempo)?
+
+Observação: Utilize os seguintes pacotes: ggplot2, plyr, car e nlme. 
+
+
+## Solução
+
+
+
+

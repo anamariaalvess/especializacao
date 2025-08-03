@@ -1,0 +1,283 @@
+---
+title: "Análise de Dados Longitudinais"
+author: "Ana Maria Alves"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+  html_document: default
+  always_allow_html: true
+    
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.align = 'center'  # centraliza todas as figuras
+)
+```
+
+# Atividade
+
+Um estudo foi realizado para avaliar o efeito de MgSO4 na pressão arterial média (PAM, em mmHg) de cães. A resposta foi medida antes e depois da aplicação desse sal em dois grupos de animais: o primeiro (n = 12) previamente tratado com indometacina e o outro (n = 12) previamente tratado com nifedipina. O conjunto de dados (arquivo "caes.txt") apresenta as seguintes variáveis:
+
+1- Cão: Identificação (Id) dos cães;
+
+2- Grupo: Indica o tipo de tratamento (indometacina ou nifedipina);
+
+3- Antes: Pressão Arterial Média dos cães antes da aplicação de MgSO4;
+
+4- Depois: Pressão Arterial Média dos cães depois da aplicação de MgSO4.
+
+Observação: Utilize os seguintes pacotes: ggplot2, plyr, car e nlme. 
+
+Para facilitar a organização, a Atividade Avaliativa está dividida em três Partes: Partes (i), (ii) e (iii).
+
+Parte (i): Análise Descritiva
+
+(1) (1 ponto) Faça o gráfico de perfis individuais e médios. Quais conclusões podemos obter?
+## Solução:
+
+Primeiro vamos carregar o conjunto de dados e verificar se há valores ausentes.
+
+```{r}
+# Leitura dos dados
+dados <- read.table("caes.txt", header = TRUE)
+
+# Visualização das primeiras linhas
+head(dados)
+
+# Verificação de valores ausentes
+summary(dados)
+print(any(is.na(dados)))
+
+```
+
+Agora vamos gerar os gráficos de perfis individuais.
+
+```{r}
+library(ggplot2)
+library(tidyr)
+
+# Transformar os dados para formato longo
+dados_long <- pivot_longer(dados, cols = c(Antes, Depois), 
+                           names_to = "Tempo", values_to = "PAM")
+
+# Gráfico de perfis individuais
+ggplot(dados_long, aes(x = Tempo, y = PAM, group = Cão)) +
+  geom_line(aes(color = Grupo), alpha = 0.7) +
+  geom_point(aes(color = Grupo)) +
+  labs(title = "Perfis Individuais da PAM", x = "Tempo", y = "PAM (mmHg)") +
+  theme_minimal()
+
+```
+
+Agora vejamos a média por grupo:
+
+```{r}
+# Cálculo das médias
+library(dplyr)
+
+medias <- dados_long %>%
+  group_by(Grupo, Tempo) %>%
+  summarise(media_PAM = mean(PAM), .groups = 'drop')
+
+# Gráfico
+ggplot(medias, aes(x = Tempo, y = media_PAM, group = Grupo, color = Grupo)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 3) +
+  labs(title = "Perfis Médios da PAM por Grupo", x = "Tempo", y = "PAM média (mmHg)") +
+  theme_minimal()
+
+```
+
+Com base nos gráficos acima, podemos concluir que  MgSO4 foi eficaz em reduzir a PAM nos dois grupos. Além disso o grupo nifedipina apresentou maior redução média na pressão arterial, mesmo começando com valores mais baixos.
+
+(2) (1 ponto) Faça o gráfico Box Plot da Pressão Arterial Média por tratamento, antes e depois da aplicação de MgSO4. Quais conclusões podemos obter?
+
+## Solução:
+
+```{r boxplot-pam, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(tidyr)
+
+# Transformar para formato longo
+dados_long <- pivot_longer(dados, cols = c(Antes, Depois), 
+                           names_to = "Tempo", values_to = "PAM")
+
+# Boxplot
+ggplot(dados_long, aes(x = Tempo, y = PAM, fill = Grupo)) +
+  geom_boxplot(alpha = 0.7) +
+  labs(title = "Boxplot da PAM por Tratamento (Antes e Depois de MgSO4)",
+       x = "Tempo", y = "Pressão Arterial Média (mmHg)") +
+  theme_minimal()
+
+```
+
+Com base no boxplot da Pressão Arterial Média (PAM) antes e depois da aplicação de MgSO4, segmentado por grupo de tratamento (indometacina e nifedipina) podemos conlcuir que o  MgSO4 reduziu a pressão arterial de forma significativa, mais intensamente no grupo nifedipina.
+A combinação de nifedipina + MgSO4 pode ser mais eficiente ou sinérgica na redução da PAM, com resultados mais consistentes entre os indivíduos.
+
+(3) (1 ponto) Faça o gráfico Box Plot da diferença entre a Pressão Arterial Média depois e antes da aplicação de MgSO4. Quais conclusões podemos obter?
+
+## Solução:
+
+```{r boxplot-diferenca}
+library(dplyr)
+library(ggplot2)
+
+# Criar a variável de diferença
+dados <- dados %>%
+  mutate(Diferenca = Depois - Antes)  # valores negativos indicam redução da PAM
+
+# Boxplot da diferença por grupo
+ggplot(dados, aes(x = Grupo, y = Diferenca, fill = Grupo)) +
+  geom_boxplot(alpha = 0.7) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  labs(title = "Boxplot da Diferença (Depois - Antes) da PAM por Grupo",
+       x = "Grupo", y = "Diferença na PAM (mmHg)") +
+  theme_minimal()
+
+```
+
+Com o gráfico acima podemos concluir que a redução da PAM foi estatisticamente relevante nos dois grupos. A redução foi ligeiramente maior e mais uniforme no grupo nifedipina, o que pode indicar uma interação favorável entre nifedipina e MgSO4. Esses resultados visuais sugerem a importância de confirmar as diferenças com um teste t para amostras independentes sobre a variável Diferença.
+
+Parte (ii): Análise sob a perspectiva de Análise de Variância Multivariada (MANOVA):
+
+(4) (1 ponto) Avalie o efeito de interação entre tratamento e tempo.
+## Solução:
+
+1. Primeiro vamos reestruturar os dados para MANOVA:
+```{r}
+# Transformar para formato longo
+library(tidyr)
+dados_long <- pivot_longer(dados, cols = c(Antes, Depois), names_to = "Tempo", values_to = "PAM")
+
+# Garantir que as variáveis sejam fatores
+dados_long$Grupo <- factor(dados_long$Grupo)
+dados_long$Tempo <- factor(dados_long$Tempo, levels = c("Antes", "Depois"))
+
+# Reorganizar em formato wide para MANOVA
+dados_wide <- pivot_wider(dados_long, names_from = Tempo, values_from = PAM)
+
+# Conferência
+head(dados_wide)
+
+```
+
+2. Moanova com lm() e Anova():
+
+```{r}
+# Ajustar modelo MANOVA com dois tempos como variáveis dependentes
+modelo_manova <- lm(cbind(Antes, Depois) ~ Grupo, data = dados_wide)
+
+# Teste MANOVA (Wilks' Lambda)
+library(car)
+Anova(modelo_manova, test = "Wilks")
+
+```
+Note que neste caso o teste avalia se o conjunto das variáveis dependentes (Antes, Depois) difere entre os grupos (indometacina vs nifedipina).
+Como p < 0.01, há uma diferença estatisticamente significativa entre os grupos considerando os dois tempos em conjunto, indicando que o perfil multivariado de PAM difere entre os grupos.
+
+3. Manova com interação grupo*Tempo
+
+```{r}
+# MANOVA com interação (em formato longo)
+modelo_interacao <- aov(PAM ~ Grupo * Tempo + Error(Cão/Tempo), data = dados_long)
+summary(modelo_interacao)
+
+```
+
+neste caso o teste avalia se houve interação entre o tipo de tratamento e o tempo, ou seja, se a mudança da PAM ao longo do tempo depende do grupo.
+O p-valor alto indica que não há evidência estatística de interação, ou seja, a redução da pressão arterial com MgSO₄ foi similar nos dois grupos, mesmo que os níveis absolutos sejam diferentes.
+
+Logo, podemos concluir que não foi detectado efeito de interação entre tratamento e tempo.
+Isso indica que a magnitude da mudança da PAM de “antes” para “depois” foi semelhante entre os grupos indometacina e nifedipina.
+Apesar disso, a diferença geral entre os grupos é significativa (pela MANOVA), sugerindo que os grupos apresentavam perfis de PAM diferentes de forma geral, mas o efeito do tempo (redução) foi paralelo.
+
+(5) (1 ponto) Avalie o efeito principal de tratamento (na ausência de interação entre tratamento e tempo).
+
+## Solução:
+
+O p-valor = 0.0515 está muito próximo do limiar de significância de 0.05, mas não atinge significância estatística ao nível tradicional de 5%.
+Portanto, não podemos afirmar com 95% de confiança que houve diferença estatisticamente significativa entre os tratamentos, embora haja uma tendência moderada sugerindo que os grupos podem ter efeitos distintos.
+
+
+(6) (2 pontos) Caso o efeito principal de tratamento não seja significativo (perfis coincidentes), avalie o efeito principal de tempo (na ausência de interação entre tratamento e tempo). Caso contrário, avalie o efeito principal de tempo em cada tratamento.
+
+## Solução:
+
+O p-valor > 0.05, ou seja, não há evidência estatística suficiente para afirmar que houve efeito significativo do tempo na PAM dos cães.
+Isso significa que, na ausência de interação e com perfis paralelos entre os grupos, não se observou uma mudança significativa da PAM de “Antes” para “Depois” do tratamento com MgSO4 ao nível de 5%.
+
+(7) (1 ponto) Avalie o efeito de tratamento sobre a PAM esperada pré-teste (se houver interação essencial).
+
+## Solução:
+Como não houve interação significativa entre tratamento e tempo, não é necessário avaliar o efeito do tratamento sobre a PAM esperada pré-teste (ou seja, antes da aplicação de MgSO₄).
+A ausência de interação indica que os grupos apresentaram perfis paralelos, e qualquer diferença no tempo "Antes" é tratada como parte do efeito principal do tratamento, já avaliado anteriormente. 
+
+Note que se a interação tivesse sido significativa,  poderiamos comparar os grupos no tempo “Antes” assim:
+
+```{r}
+# Comparação dos grupos apenas no tempo "Antes"
+dados_antes <- subset(dados_long, Tempo == "Antes")
+
+# ANOVA para comparar tratamentos no pré-teste
+modelo_antes <- aov(PAM ~ Grupo, data = dados_antes)
+summary(modelo_antes)
+
+```
+
+
+Parte 3: Análise utilizando modelo marginal de efeito fixo com estrutura da matriz de covariâncias/correlações:
+
+(8) (2 pontos) Utilizando o comando gls do pacote nlme, ajuste um modelo marginal de efeito fixo que inclua os efeitos principais de tempo (Pré e Pós) e de grupo (indometacina e nifedipina) e a interação entre tempo e grupo, considerando a simetria composta como estrutura da matriz de correlações. Após o ajuste do modelo, analisando o p-valor associado a cada estimativa dos parâmetros do modelo, quais conclusões podemos obter a respeito do efeito de interação entre tratamento e tempo e dos efeitos principais (tratamento e tempo)?
+
+## Solução:
+
+```{r}
+
+library(ggplot2)
+library(plyr)
+library(car)
+library(nlme)
+# Supondo que 'dados' já esteja carregado
+library(tidyr)
+
+dados_long <- pivot_longer(dados, cols = c(Antes, Depois),
+                           names_to = "Tempo", values_to = "PAM")
+
+# Ajuste dos fatores
+dados_long$Tempo <- factor(dados_long$Tempo, levels = c("Antes", "Depois"))
+dados_long$Grupo <- factor(dados_long$Grupo)
+dados_long$Cão <- factor(dados_long$Cão)
+
+library(nlme)
+
+modelo_gls <- gls(PAM ~ Grupo * Tempo,
+                  correlation = corCompSymm(form = ~ 1 | Cão),
+                  data = dados_long)
+
+summary(modelo_gls)
+
+
+```
+
+Conclusões:
+
+1. Interação grupo × tempo:
+-- Não foi significativa (p = 0.8229), o que indica que a redução na PAM com MgSO₄ foi semelhante entre os grupos.
+-- Os perfis de resposta ao tempo são paralelos.
+
+2. Efeito principal de tratamento (grupo):
+-- Foi significativo (p = 0.0002).
+-- O grupo nifedipina apresentou PAM significativamente menor que o grupo indometacina no pré-teste.
+
+3. Efeito principal de tempo:
+-- Foi significativo (p < 0.001).
+-- Ou seja, houve uma redução significativa da pressão arterial média após o uso de MgSO4, independentemente do tratamento prévio.
+
+Portanto, o modelo marginal com estrutura de simetria composta revelou que ambos os tratamentos levaram a uma redução significativa da pressão arterial após o uso de MgSO4 (efeito de tempo), sendo que o grupo nifedipina já apresentava valores médios mais baixos de PAM.
+Contudo, não houve interação significativa, o que sugere que o efeito do tempo foi similar nos dois grupos.

@@ -1,0 +1,142 @@
+---
+title: "Aula Prática 4"
+author: "Prof. Márcio Viola"
+date: "17/07/2025"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+#Configurações globais do documento
+require(nlme)
+require(lme4)
+require (geepack)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Exemplo: 
+
+151 recém-nascidos acompanhados nos primeiros 12 meses de vida. Foram previstos um total de 1812 (151*12) medições mensais. Entretanto, sete crianças perderam o acompanhamento em algum momento, resultando em um total de 1751 medidas. Ou seja, tivemos 61 valores perdidos ao longo do 
+acompanhamento de 12 meses.
+
+Este estudo apresenta cinco variáveis respostas: (1) Binárias: Dificuldade 
+para evacuar (difevac), Esforço evacuatório (esfevac), Dor ao evacuar (dorevac), Tipo de fezes (Tipofezcod) e (2) Contagem: Freqüência evacuatória/semana (freqevac). 
+
+Variável temporal: Idade (em dias (idadedias) ou em meses (idademeses)).
+
+Foram registradas uma covariáveis fixa (sexo) e as seguintes dependentes do tempo:
+
+1- Aleitamento maternal (2): uma com dois níveis (materno e outros) e 
+outra com 3 (materno, misto e artificial (mamadeira)).
+
+2- Dieta (binária:s/n): cereais; frutas; vegetais, legumin (leguminosas), leitev (leite de vaca), leitec (leite de cabra), formpart (fórmula de partida), formsegui (fórmula de seguimento), carnes, açudoces (açúcar e doces), sangue nas fezes, dirreia, constag (constipação).
+
+Na análise consideramos as variáveis:
+
+Variável resposta binária: Dificuldade para evacuar (difevac) 
+Covariáveis: idade (idademeses);sexo (0-menina e 1- menino); consumo de cereais (cereais); consumo de carne (carnes); aleitamento materno (aleitamcod3(0-peito, 1-misto e 2-artificial))
+
+Carregando o conjunto de dados
+
+```{r}
+dados<-read.table('evac.txt',dec=",",header=T)
+names(dados)
+head(dados)
+is.numeric(dados$idademeses)
+is.numeric(dados$freqevac)
+summary(dados)
+dim(dados)
+```
+
+Análise Descritiva
+
+```{r}
+length(unique(dados$Paciente))  
+table(dados$Paciente) 
+as.data.frame(table(dados$Paciente)) 
+dados[dados$Paciente==108,] #Paciente 108 somente uma medida com 53 dias
+max(table(dados$Paciente)) 
+min(table(dados$Paciente)) 
+tam<-function(x) {length(unique(x))}
+tam(dados$sexo)
+tapply(dados$Paciente,dados$sexo, FUN=tam) 
+#Categorizandoa idade somente para termos uma ideia preliminar do comportamento das variáveis ao longo do acompanhamento
+dados$idade<-round(dados$idademeses)
+table(dados$idade)
+tam(dados$idade)
+```
+
+Variável Resposta binária: difpevac
+
+```{r}
+y=dados$difpevac
+x<-table(y,dados$idade)
+x
+prop<-x[2,]/(x[1,]+x[2,]) 
+prop
+eixox<-c(1:13)
+plot(eixox,prop,type="l",xlab="idade (meses)", ylab="proporção")
+title(main="Dificuldade de Evacuar")
+#Gráfico na escala do logit
+plot(eixox,log(prop/(1-prop)),type="l",xlab="idade (meses)", ylab="logit")
+title(main="Dificuldade de Evacuar (escala logit)")
+```
+
+Estratificando por sexo
+
+```{r}
+dados1<-subset(dados,sexo==0)
+dados2<-subset(dados,sexo==1)
+par(mfrow=c(1,2))
+y1=dados1$difpevac
+x1<-table(y1,dados1$idade)
+x1
+prop1<-x1[2,]/(x1[1,]+x1[2,]) 
+prop1
+y2=dados2$difpevac
+x2<-table(y2,dados2$idade)
+x2
+prop2<-x2[2,]/(x2[1,]+x2[2,]) 
+prop2
+eixox<-c(1:13)
+plot(lowess(eixox,prop1),type="l",xlab="idade (meses)", ylab="proporção",ylim=c(0,.40))
+title(main="Dificuldade de Evacuar")
+lines(lowess(eixox,prop2),type="l",lty=2)
+legend(2, .35, legend = c("meninas","meninos"), 
+lty = c(1,2), bty = "n", cex = 1)
+#Gráfico na escala do logit
+plot(eixox,log(prop1/(1-prop1)),type="l",xlab="idade (meses)", ylab="logit")
+title(main="Dificuldade de Evacuar (escala logit)")
+lines(eixox,log(prop2/(1-prop2)),type="l",xlab="idade (meses)", ylab="logit",lty=2)
+title(main="Dificuldade de Evacuar (escala logit)")
+legend(2, -2, legend = c("meninas","meninos"), 
+lty = c(1,2), bty = "n", cex = 1)
+```
+GEE - variável resposta binária
+
+Simetria Composta
+
+```{r}
+out<-geeglm(difpevac~sexo+legumin+idademeses+sangue+constag+cereais+factor(aleitamcod3)+sexo:idademeses+carnes+factor(aleitamcod3)*idademeses, 
+family=binomial(link="logit"), data=dados, id=Paciente,corstr="exchangeable", std.err="san.se")
+summary(out)
+out1<-geeglm(difpevac~sexo+legumin+idademeses+sangue+constag+cereais+factor(aleitamcod3)+carnes, family=binomial(link="logit"), data=dados, id=Paciente,corstr ="exchangeable", std.err="san.se")
+summary(out1)
+out2<-geeglm(difpevac~sexo+legumin+idademeses+sangue+constag+factor(aleitamcod3), family=binomial(link="logit"), data=dados, id=Paciente,
+corstr ="exchangeable", std.err="san.se")
+summary(out2)
+```
+Modelo Misto - variável resposta binária
+
+```{r}
+m1 <- glmer(difpevac~(1|Paciente)+sexo+aleitamcod2+legumin+idademeses+
+sangue+ constag,family=binomial,data=dados)
+summary(m1)
+```
+
+OBSERVAÇÃO: No argumento "family" das funções "geeglm" e "glmer", especifica-se a distribuição e a função de ligação usadas na modelagem
+
+Por exemplo, para modelar uma variável resposta com distribuição Poisson (variável resposta de contagem) e função de ligação logaritmica (log(média da variável resposta)), utiliza-se o argumento family=poisson(link="log")
+
+
+
+

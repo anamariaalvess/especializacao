@@ -1,0 +1,258 @@
+---
+title: "Aula Prática 3 (continuação)"
+author: "Prof. Márcio Viola"
+date: "18/07/2025"
+output:
+  word_document: default
+  pdf_document: default
+---
+```{r setup, include=FALSE}
+#Configurações globais do documento
+require(nlme)
+library(ggplot2)
+require(growth)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Exemplo: 
+
+Coorte aberta de mães HIV positiva - Desenho desbalanceado
+
+Variável Resposta: comprimento do Récem-nascido nos primeiros 18 meses de vida
+
+Covariáveis: Sexo (0 menina, 1- menino)
+             Status (0 sororevertor,1- infectado)
+
+
+Carregando o conjunto de dados
+
+```{r}
+dados<-read.table("alturalong.txt",header=T) 
+names(dados)
+dim(dados)
+dados[1:15,] #já está no formato longo
+```
+Banco Longo (uma medida por linha)
+
+```{r}
+length(unique(dados$ident))  
+as.data.frame(table(dados$ident)) 
+max(table(dados$ident)) 
+min(table(dados$ident)) 
+crianca386<-subset(dados,ident==386) #seleciona criança com uma única medida
+crianca386
+tam<-function(x) {length(unique(x))}
+tam(dados$status)
+tapply(dados$ident, dados$status, tam) #número de indivíduos por status
+tapply(dados$ident, dados$sexo, tam) #número de indivíduos por sexo
+median(tapply(dados$Idade,list(dados$ident), max)) #tempo mediano de acompanhamento
+min(tapply(dados$Idade,list(dados$ident), max)) # tempo mínimo de acompanhamento
+max(tapply(dados$Idade,list(dados$ident), max)) # tempo máximo de acompanhamento
+median(tapply(dados$Idade[dados$sexo==0],list(dados$ident[dados$sexo==0]),max)) #mediana para sexo=0
+```
+Gráficos de Perfis
+
+```{r}
+m=length(unique(dados$ident))
+n=length(dados$Altura)/m
+xl=range(dados$Idade)
+yl=range(dados$Altura)  
+choice=dados$ident  
+j=dados$ident==choice[1]
+plot(dados$Idade[j],dados$Altura[j], type="l",ylim=yl,xlim=xl,ylab="Altura (cm)",xlab="Idade (meses)",main="Perfis das Crianças")
+if(length(choice)>1){
+for(it in 2:length(choice)){
+j=dados$ident==choice[it]
+lines(dados$Idade[j],dados$Altura[j])}
+}
+cat("\n")
+#Fazendo um alisamento no grafico de perfis 
+lines(lowess(dados$Idade,dados$Altura), col = 2, type="l",ylab="Altura",xlab="Idade") 
+ p1=ggplot(dados, aes(x=Idade, y=Altura, color=status)) +	theme_bw() + 
+geom_line(aes(group=ident)) + theme(legend.position="top") + 
+scale_x_continuous(breaks=unique(dados$Idade))
+p1 
+```
+Graficos Alisados para Meninos e Meninas
+
+```{r}
+par(mfrow=c(1,2))
+meninos<-subset(dados,sexo==0)
+plot(lowess(meninos$Idade,meninos$Altura),type="l",ylab="altura (cms)",
+xlab="idade (meses)", main="Pefis por Sexo")  
+meninas<-subset(dados,sexo==1)
+lines(lowess(meninas$Idade,meninas$Altura),lty=2,type="l")
+legend(0, 78, legend = c("meninas","meninos"),lty = c(1,2), bty = "n", cex = 0.8)
+grupo1<-subset(dados,status==0)
+plot(lowess(grupo1$Idade,grupo1$Altura),type="l",ylab="altura (cms)",
+xlab="idade (meses)", main="Pefis por Grupo") 
+grupo2<-subset(dados,status==1)
+lines(lowess(grupo2$Idade,grupo2$Altura),lty=2,type="l") 
+legend(0, 78, legend = c("não infectados","infectados"), 
+lty = c(1,2), bty = "n", cex = 0.8)
+```
+Estrutura da Média (polinomial ou spline)
+#      Devemos centrar na média amostral para evitar colinearidade.
+   mean(dados$Idade) # vamos centrar em idade=7
+   
+```{r}
+#Estrutura1: Termo Quadrático 
+# Idade corrigida pela média (7 meses)
+dados$Idadec<-dados$Idade-7
+#
+#Estrutura2: Regressão com duas inclinações
+# Age: segunda inclinação
+S<-length(dados$Idade)
+dados$Age<-rep(0,S)
+for(i in 1:S)
+{
+if(dados$Idade[i]>5)
+{dados$Age[i]<-dados$Idade[i]-7}
+}
+names(dados)
+```
+Modelos de Efeito Aleatorio
+
+```{r}
+#Modelo com Duas Inclinações
+modelo1<-lme(Altura ~ Idadec+Age+sexo+status+Idadec:status+Age:status+
+Idadec:sexo+Age:sexo,random=~Idadec+Age|ident,data=dados)
+summary(modelo1)
+plot(modelo1)
+plot(Variogram(modelo1,form=~Idadec+Age,resType="n", robust=T))
+modelo11<-update(modelo1,weights = varPower())
+summary(modelo11)
+plot(modelo11)
+plot(modelo11,resid(.,type="p")~fitted(.)|status,id=0.05,adj=-0.3)
+plot(modelo11,Altura~fitted(.),adj=-0.3) # predito vs obs.
+plot(Variogram(modelo11,form=~Idade,resType="n", robust=T))
+anova(modelo1,modelo11)
+#
+#Modelo Quadrático
+#
+out<-lme(Altura~Idadec+I(Idadec^2)+sexo+status+Idadec:sexo+Idadec:status+
+I(Idadec^2):sexo+I(Idadec^2):status, random= ~Idadec+I(Idadec^2)|
+ident,data=dados)
+plot(out)
+summary(out)
+plot(Variogram(out,form=~Idadec+I(Idadec^2),resType="n", robust=T))
+out1<-lme(Altura~Idadec+I(Idadec^2)+sexo+status+Idadec*sexo+Idadec*status+
+I(Idadec^2)*sexo+I(Idadec^2)*status, random= ~Idadec|ident,data=dados)
+plot(out1)
+plot(Variogram(out1,form=~Idadec,resType="n", robust=T))
+anova(out,out1) # deveria ser comparado com uma combinação de qui-quadrado
+plot(out,Altura~fitted(.),adj=-0.3) # predito vs obs.
+plot(Variogram(out, form = ~ Idadec+I(Idadec^2) | ident, nint = 20, robust = TRUE))
+out2<-lme(Altura~Idadec+I(Idadec^2)+sexo+status+Idadec:sexo+Idadec:status+
+I(Idadec^2):sexo+I(Idadec^2):status, random= ~Idadec+I(Idadec^2)|
+ident,weights=varPower(),data=dados)
+plot(out2)
+summary(out2)
+plot(out2,Altura~fitted(.),adj=-0.3) # predito vs obs.
+plot(Variogram(out2, form = ~ Idadec+I(Idadec^2)| ident, nint = 20, robust = TRUE))
+anova(out,out2) 
+```
+Análise de resíduos - Modelo out 
+
+```{r}
+#Resíduos não-transformados
+res = out$residuals[,1]
+pred = out$fitted[,1]
+length(res)
+#Resíduos transformados
+g11 = 2.13539904^2
+g22 = 0.56059959^2
+g33 = 0.03098822^2
+g12 = -0.129*2.13539904*0.56059959
+g13 = 0.003
+g23 = -0.918*0.56059959*0.03098822
+G = matrix(c(g11,g12,g13,g12,g22,g23,g13,g23,g33),3,3,byrow=T)
+sigma2 = (out$sigma)^2
+Z1 = rep(1,1318)
+Z2 = dados$Idade-7
+Z3 = I((dados$Idade-7)^2)
+ID<-dados$ident
+Z = cbind(ID,Z1,Z2,Z3)
+resID = cbind(res,ID)
+predID = cbind(pred,ID)
+timeID = cbind(dados$Idade-7,ID)
+rest = NULL
+predt = NULL
+timet = NULL
+#
+j=0
+for(i in 1:139){
+j=unique(dados$ident)[i]
+a<-dim(subset(dados,dados$ident==j))
+i<-ifelse(a[1]>1,i,i+1)
+j=unique(dados$ident)[i]
+covYi = Z[ID==j,2:4]%*%G%*%t(Z[ID==j,2:4])+sigma2*diag(sum(ID==j))
+rest = c(rest,as.vector(solve(chol(covYi))%*%resID[ID==j,1]))
+predt = c(predt,as.vector(solve(chol(covYi))%*%predID[ID==j,1]))
+timet = c(timet,as.vector(solve(chol(covYi))%*%timeID[ID==j,1]))
+}
+#
+#Histogramas com curva normal
+par(mfrow=c(1,2))
+x = seq(min(res)-1,max(res)+1,by=1)
+hist(res,prob=T,xlab="Resíduos",ylab="Densidade",main="")
+lines(x,dnorm(x,mean=mean(res),sd=sd(res)))
+x = seq(min(rest)-1,max(rest)+1,by=0.05)
+hist(rest,prob=T,xlab="Resíduos transformados",ylab="Densidade",main="")
+lines(x,dnorm(x,mean=mean(rest),sd=sd(rest)))
+# 
+#Gráfico de Probabilidade Normal dos Resíduos
+par(mfrow=c(1,2))
+qqnorm(res,xlab="Quantis da Normal Padrão",ylab="Quantis dos Resíduos",main="")
+qqline(res)
+qqnorm(rest,xlab="Quantis da Normal Padrão",ylab="Quantis dos Resíduos Transformados",main="")
+qqline(rest)
+# 
+#Gráfico de dispersão dos Resíduos versus Valores ajustados
+par(mfrow=c(1,2))
+plot(pred,res,xlab="Valores preditos",ylab="Resíduos")
+abline(h=0)
+lines(lowess(pred,res),type="l",lwd=2,col="red")
+plot(predt,rest,xlab="Valores preditos transformados",ylab="Resíduos transformados")
+abline(h=0)
+lines(lowess(predt,rest),type="l",lwd=2,col="red")
+# 
+#Gráfico de dispersão dos Resíduos versus Variável Tempo
+par(mfrow=c(1,2))
+plot(dados$Idadec,res,xlab="Idade",ylab="Resíduos")
+abline(h=0)
+lines(lowess(dados$Idadec,res),type="l",lwd=2,col="red")
+plot(timet,rest,xlab="Tempo transformado",ylab="Resíduos transformados")
+abline(h=0)
+lines(lowess(timet,rest),type="l",lwd=2,col="red")
+# 
+Idade_centrada<-dados$Idade-7
+plot(Variogram(out,form=~Idade_centrada,resType="n", robust=T))
+```
+Gráficos dos Preditos - Modelo out 
+
+```{r}
+fitted<-out$fitted[,1]
+Idade<-dados$Idadec
+dados1<-data.frame(dados,fitted)
+meninos<-subset(dados1,sexo==0)
+attach(meninos)
+par(mfrow=c(1,2))
+plot(lowess(meninos$Idade,meninos$Altura),type="l",col=2,ylab="Altura (cms)",
+xlab="Idade (mês)",main="Gênero")  
+lines(lowess(meninos$Idade,meninos$fitted),lty=2,col=3,type="l")
+meninas<-subset(dados1,sexo==1)
+attach(meninas)
+lines(lowess(meninas$Idade,meninas$Altura),type="l",col=2)  
+lines(lowess(meninas$Idade,meninas$fitted),lty=2,col=3,type="l")
+casos<-subset(dados1,status==0)
+attach(casos)
+plot(lowess(casos$Idade,casos$Altura),type="l",col=2,ylab="Altura (cms)",
+xlab="Idade (mês)",main="Grupo")  
+lines(lowess(casos$Idade,casos$fitted),lty=2,col=3,type="l")
+control<-subset(dados1,status==1)
+attach(control)
+lines(lowess(control$Idade,control$Altura),type="l",col=2)  
+lines(lowess(control$Idade,control$fitted),lty=2,col=3,type="l")
+```
+

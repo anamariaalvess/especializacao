@@ -1,0 +1,201 @@
+% Template de Artigo Científico - TCC
+% Curso de Especialização em Data Science e Estatística Aplicada
+% Instituto de Matemática e Estatística e Faculdade de Enfermagem
+% Universidade Federal de Goiás
+% Última atualização: 02/05/2025
+% Contato: Amanda Buosi Gazon Milani - amandamilani@ufg.br
+
+%%--------------------- Preâmbulo ---------------------
+\documentclass[12pt]{article}
+\usepackage{fontspec}
+\setmainfont{Arial}  %%% Atenção! Mudar o compilador para XeLaTeX (Overleaf: Menu -> Compilador -> XeLaTeX)
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+\usepackage{amsmath, amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{lipsum}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage[skip=1em]{caption}
+\usepackage{enumitem}
+\geometry{a4paper, left=3cm, right=2cm, top=3cm, bottom=2cm}
+\usepackage{titlesec}
+
+% Tamanho da fonte dos títulos das seções:
+\titleformat{\section}
+  {\large\bfseries}
+  {\thesection}{1em}{}
+
+\titleformat{\subsection}
+  {\normalsize\itshape\bfseries}
+  {\thesubsection}{1em}{}
+
+%% Bibliografia:
+\usepackage{csquotes}  % recomendado com biblatex
+\usepackage[style=abnt,backend=biber]{biblatex} %style = abnt, authoryear, numeric, apa
+\addbibresource{bibliografia.bib}  % seu arquivo .bib
+
+
+
+%%--------------------- Início do documento ---------------------
+\begin{document}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Título do artigo:
+\begin{center}
+{\bfseries 
+TÍTULO DO MANUSCRITO: SUBTÍTULO (se houver)
+}
+\end{center}
+
+\vspace{0.5cm}
+
+%% Nome dos autores:
+{\noindent \textbf{Autores:} 
+Nome completo do primeiro autor$^1$; Nome completo do segundo autor$^{2*}$
+\par}
+
+
+\vspace{0.5cm}
+
+%% Instituição dos autores:
+{\footnotesize
+\noindent $^1$Faculdade de Enfermagem. Universidade Federal de Goiás, Goiânia, GO, Brasil.\\
+\noindent $^2$ xxxxxxxxxxxxxxx (Instituição do segundo autor).\\
+
+%% Informações (endereço) do autor correspondente:
+{\bfseries \noindent Autor correspondente:}\\
+Nome, Endereço, E-mail
+\par}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Resumo}
+Deve apresentar de maneira objetiva os principais pontos do trabalho, incluindo seus objetivos, métodos, principais resultados e conclusões. O texto deve ser redigido de forma concisa, preferencialmente em um único parágrafo, empregando verbos na voz ativa e na terceira pessoa do singular. O resumo deve conter entre 100 e 250 palavras e ser seguido de palavras-chave ou descritores conforme a NBR 6028. Deve-se evitar o uso de símbolos, contrações incomuns, fórmulas ou diagramas, a menos que sejam estritamente necessários.
+
+\vspace{0.2cm}
+
+\noindent \textbf{Palavras-chave (3-6):} artigo científico; normalização; pesquisa; modelo de Cox.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Introdução}
+A introdução deve contextualizar o tema do artigo de maneira geral, delimitando o objeto de estudo e destacando a relevância do tema abordado. Deve também apresentar o objetivo do trabalho, o problema, bem como a justificativa para a escolha do tema. 
+O texto do trabalho deve ser digitado com espaçamento simples, padronizado para todo o artigo.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Métodos}
+Deve apresentar uma descrição completa e concisa dos materiais e métodos utilizados, permitindo ao leitor compreender e interpretar os resultados, assim como também a reprodução do estudo ou a utilização do método por outros pesquisadores.
+
+\subsection*{Equações e fórmulas}
+Para facilitar a leitura, devem ser destacadas no texto e, se necessário, numeradas com algarismos arábicos entre parênteses, alinhados à direita. Na sequência normal do texto, é permitido o uso de uma entrelinha maior, que comporte seus elementos (expoentes, índices e outros).
+
+Exemplo:
+\begin{equation}
+x^2 + y^2 = z^2
+\label{eq:exemplo1}
+\end{equation}
+
+\subsection*{Formatação de ilustração}
+Sua identificação aparece na parte superior, precedida da palavra designativa, seguida de seu número de ordem de ocorrência no texto, em algarismos arábicos, do respectivo título e/ou legenda explicativa. Após a ilustração, na parte inferior, indicar a fonte consultada (elemento obrigatório, mesmo que seja produção do próprio autor) conforme a ABNT NBR 10520, legenda, notas e outras informações necessárias à sua compreensão (se houver). A ilustração deve ser citada no texto e inserida o mais próximo possível do trecho a que se refere (ABNT, 2018).
+Tipo, número de ordem, título, fonte, legendas e notas devem acompanhar as margens da ilustração.
+
+\begin{figure}[h]
+    \centering
+    \caption{Ilustração do box-plot}    
+    \includegraphics[width=0.5\linewidth]{figs/boxplot.png}
+{\vspace{0.5em} \linebreak \footnotesize  Fonte: \textcite[p. 48, adaptado]{bussab2010estatistica} }
+    \label{fig:boxplot}
+\end{figure}
+
+\subsection*{Formatação de tabelas}
+Devem ser citadas no texto, inseridas o mais próximo possível do trecho a que se referem e padronizadas conforme as Normas de apresentação tabular do IBGE. Deve-se indicar fonte consultada (elemento obrigatório, mesmo que seja produção do próprio autor), de acordo com a ABNT NBR 10520. Para construir uma tabela consulte a norma para apresentação tabular do Instituto Brasileiro de Geografia e Estatística.\\
+
+Um exemplo de tabela:
+
+
+\begin{table}[H]
+    \centering
+    \onehalfspacing
+    \caption{Distribuição de frequências dos 2000 empregados da Companhia MB, segundo o grau de instrução}
+    \begin{tabular}{lcc} \hline
+\bfseries Grau de Instrução & \bfseries Frequência & \bfseries Porcentagem (\%) \\ \hline
+Fundamental       & 650        & 32,5 \\
+Médio             & 1020       & 51,0 \\
+Superior          & 330        & 16,5\\ \hline
+Total             & 2000       & 100,0\\ \hline
+    \end{tabular}
+{\vspace{0.5em} \linebreak   \footnotesize   Fonte: \textcite[p. 12]{bussab2010estatistica}}
+    \label{tab:exemplo1}
+\end{table}
+
+
+
+
+\subsection*{Fonte}
+Conforme a NBR 14724 (ASSOCIAÇÃO BRASILEIRA DE NORMAS TÉCNICAS, 2011) deve-se usar a fonte tamanho 12, padronizado para todo o artigo. As citações longas, notas, paginação, legendas e fontes das ilustrações e tabelas devem ser em tamanho menor e uniforme, sugerimos tamanho 10. Neste modelo foi utilizado a fonte “Arial”. O projeto gráfico fica a critério do editor.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Resultados}
+Os resultados devem ser apresentados de forma objetiva, exata, clara e lógica, podendo-se utilizar tabelas, figuras e fotografias para a complementação do texto. O texto não deve repetir dados expostos em tabelas e/ou figuras, apenas complementar.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Discussão}
+Esta seção interpreta os principais resultados à luz dos objetivos do estudo, relacionando-os com a literatura existente. Deve destacar implicações, possíveis explicações para os achados, limitações do estudo e sugestões para pesquisas futuras.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Conclusão}
+Parte final do artigo, na qual se apresentam as considerações correspondentes aos objetivos e/ou hipóteses. Deve sintetizar os resultados obtidos, destacar as contribuições do estudo e sugerir direções para pesquisas futuras.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Referências}
+Parte final do artigo, na qual se apresentam as considerações correspondentes aos objetivos e/ou hipóteses. Esta seção apresenta as principais descobertas do estudo, retomando os objetivos propostos e indicando se foram alcançados. Deve sintetizar os resultados obtidos, destacar as contribuições da pesquisa para a área de estudo e sugerir possíveis direções para pesquisas futuras.
+
+\vspace{1cm}
+
+\noindent {\itshape Exemplo:}
+
+
+% Para imprimir a bibliografia:
+\printbibliography
+
+% Adicionar manualmente (não recomendado):
+% \begin{itemize}[leftmargin=0pt]
+% \item[] MORETTIN, Pedro A.; BUSSAB, Wilton de O. \textbf{Estatística Básica}. 6a edição. São Paulo: Saraiva, 2010.
+% \end{itemize}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Anexos e Apêndices}
+
+Os apêndices são textos e/ou documentos elaborados pelo próprio autor para complementar o texto principal. Deve ser identificado nesta ordem: a palavra Apêndice seguida de letras maiúsculas consecutivas, travessão e respectivo título, com o mesmo destaque tipográfico das seções primárias e centralizado, conforme a ABNT NBR 6024. O anexo é um texto ou documento não elaborado pelo autor, que serve de fundamentação, comprovação e ilustração. Deve ser identificado nesta ordem: a palavra Anexo seguida de letras maiúsculas consecutivas, travessão e respectivo título, com o mesmo destaque tipográfico das seções primárias e centralizado, conforme a ABNT NBR 6024. 
+No presente trabalho é obrigatório o envio do conjunto de dados (anexo) e os scripts utilizados (apêndice).
+
+\vspace{1cm}
+
+
+\noindent {\itshape Exemplos:\\}
+
+\noindent \textbf{Anexo A} -- Conjunto de dados/{\it data frames}, com link da fonte de dados. \\[0.3cm]
+\noindent \textbf{Apêndice B} -- {\it Scripts} desenvolvidos e disponibilizados em linguagem de programação no trabalho.
+
+
+
+%%%%%%%%%%%%%
+
+\vspace{2cm}
+
+\textcolor{red}{\bfseries \underline{ATENÇÃO!} O template é somente um modelo, siga sempre as orientações das Normas de TCC do Curso de Especialização em {\itshape \bfseries Data Science} e Estatística Aplicada ou as Normas da ABNT atualizadas.}
+
+
+
+\end{document}
+%%--------------------- Fim do documento ---------------------
